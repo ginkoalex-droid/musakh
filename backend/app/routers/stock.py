@@ -6,9 +6,19 @@ from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models import Stock, Part, StockMovement, MovementType, User
+from app.models import Stock, Part, StockMovement, MovementType, User, UserRole
 from app.schemas import StockRow, StockAdjustment, IssueRequest, MovementOut
 from app.auth import get_current_user
+
+
+def _require_can_issue(user: User):
+    if user.role == UserRole.readonly:
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+
+
+def _require_warehouse(user: User):
+    if user.role not in (UserRole.admin, UserRole.warehouse):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
 
 router = APIRouter(prefix="/api/stock", tags=["stock"])
 
@@ -58,6 +68,7 @@ async def adjust_stock(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    _require_warehouse(current_user)
     result = await db.execute(select(Stock).where(Stock.part_id == data.part_id))
     stock = result.scalar_one_or_none()
 
@@ -119,6 +130,7 @@ async def issue_parts(
     current_user: User = Depends(get_current_user),
 ):
     """Write off parts to a work order."""
+    _require_can_issue(current_user)
     part_result = await db.execute(select(Part).where(Part.id == data.part_id))
     part = part_result.scalar_one_or_none()
     if not part:

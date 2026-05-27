@@ -12,6 +12,8 @@ from app.database import Base
 class UserRole(str, enum.Enum):
     admin = "admin"
     warehouse = "warehouse"
+    mechanic = "mechanic"
+    readonly = "readonly"
 
 
 class MovementType(str, enum.Enum):

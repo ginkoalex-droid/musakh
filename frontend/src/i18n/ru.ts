@@ -5,6 +5,7 @@ export const ru = {
   nav_parts: 'Запчасти',
   nav_movements: 'Движения',
   nav_suppliers: 'Поставщики',
+  nav_users: 'Пользователи',
 
   // Auth
   login_title: 'Склад',
@@ -162,6 +163,30 @@ export const ru = {
   sup_added: 'Поставщик добавлен',
   sup_updated: 'Поставщик обновлён',
   sup_deleted: 'Удалено',
+
+  // Users
+  users_title: 'Пользователи',
+  users_new: 'Добавить пользователя',
+  users_edit: 'Редактировать пользователя',
+  users_no_data: 'Нет пользователей',
+  users_active: 'Активен',
+  users_inactive: 'Заблокирован',
+  users_deactivate: 'Заблокировать',
+  users_activate: 'Разблокировать',
+  users_added: 'Пользователь добавлен',
+  users_updated: 'Обновлено',
+  users_role: 'Роль',
+  users_password: 'Пароль',
+  users_new_password: 'Новый пароль',
+  users_current_password: 'Текущий пароль',
+  users_change_password: 'Сменить пароль',
+  users_password_changed: 'Пароль изменён',
+  users_set_password: 'Установить пароль',
+  users_leave_blank: 'Оставьте пустым чтобы не менять',
+  role_admin: 'Администратор',
+  role_warehouse: 'Склад',
+  role_mechanic: 'Механик',
+  role_readonly: 'Только просмотр',
 
   // Errors
   err_no_part: 'Выберите запчасть',

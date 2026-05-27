@@ -23,7 +23,7 @@ class Token(BaseModel):
 class UserCreate(BaseModel):
     name: str
     email: EmailStr
-    password: str
+    password: str = ""
     role: UserRole = UserRole.warehouse
 
 
@@ -32,6 +32,7 @@ class UserOut(BaseModel):
     name: str
     email: str
     role: UserRole
+    is_active: bool
     created_at: datetime
 
     model_config = {"from_attributes": True}
