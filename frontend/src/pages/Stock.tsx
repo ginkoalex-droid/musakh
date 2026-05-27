@@ -7,9 +7,11 @@ import Modal from '../components/Modal'
 import PartSearch from '../components/PartSearch'
 import type { Part, StockRow } from '../types'
 import toast from 'react-hot-toast'
+import { useT } from '../i18n'
 
 export default function Stock() {
   const qc = useQueryClient()
+  const { t } = useT()
   const [lowOnly, setLowOnly] = useState(false)
   const [category, setCategory] = useState('')
   const [adjustModal, setAdjustModal] = useState<StockRow | null>(null)
@@ -32,32 +34,32 @@ export default function Stock() {
   async function handleAdjust() {
     if (!adjustModal) return
     const qty = parseInt(adjustQty)
-    if (isNaN(qty) || qty < 0) { toast.error('Введите корректное количество'); return }
-    if (!adjustNote.trim()) { toast.error('Укажите причину корректировки'); return }
+    if (isNaN(qty) || qty < 0) { toast.error(t('err_invalid_qty')); return }
+    if (!adjustNote.trim()) { toast.error(t('err_no_reason')); return }
     setLoading(true)
     try {
       await adjustStock(adjustModal.part_id, qty, adjustNote)
-      toast.success('Остаток скорректирован')
+      toast.success(t('stock_adjusted'))
       qc.invalidateQueries({ queryKey: ['stock'] })
       qc.invalidateQueries({ queryKey: ['movements'] })
       setAdjustModal(null)
       setAdjustQty('')
       setAdjustNote('')
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Ошибка')
+      toast.error(err.response?.data?.detail || t('err_generic'))
     } finally {
       setLoading(false)
     }
   }
 
   async function handleIssue() {
-    if (!issuePart) { toast.error('Выберите запчасть'); return }
-    if (issueQty <= 0) { toast.error('Укажите количество'); return }
-    if (!issueWO.trim()) { toast.error('Укажите номер заказ-наряда'); return }
+    if (!issuePart) { toast.error(t('err_no_part')); return }
+    if (issueQty <= 0) { toast.error(t('err_no_qty')); return }
+    if (!issueWO.trim()) { toast.error(t('err_no_wo')); return }
     setLoading(true)
     try {
       await issueParts(issuePart.id, issueQty, issueWO, issueNote || undefined)
-      toast.success(`Списано: ${issuePart.name} × ${issueQty}`)
+      toast.success(`${t('stock_issued')}: ${issuePart.name} × ${issueQty}`)
       qc.invalidateQueries({ queryKey: ['stock'] })
       qc.invalidateQueries({ queryKey: ['movements'] })
       setIssueModal(false)
@@ -66,7 +68,7 @@ export default function Stock() {
       setIssueWO('')
       setIssueNote('')
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || 'Ошибка')
+      toast.error(err.response?.data?.detail || t('err_generic'))
     } finally {
       setLoading(false)
     }
@@ -75,53 +77,51 @@ export default function Stock() {
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold text-gray-900">Склад</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('stock_title')}</h1>
         <div className="flex flex-wrap gap-2">
           <button onClick={() => setIssueModal(true)} className="btn-danger">
-            <Minus className="w-4 h-4" /> Списать
+            <Minus className="w-4 h-4" /> {t('stock_issue')}
           </button>
           <button onClick={exportStock} className="btn-secondary">
-            <Download className="w-4 h-4" /> Склад Excel
+            <Download className="w-4 h-4" /> {t('stock_excel')}
           </button>
           <button onClick={exportMovements} className="btn-secondary">
-            <Download className="w-4 h-4" /> Движения Excel
+            <Download className="w-4 h-4" /> {t('stock_movements_excel')}
           </button>
         </div>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap gap-3 items-center">
         <label className="flex items-center gap-2 text-sm cursor-pointer">
           <input type="checkbox" checked={lowOnly} onChange={e => setLowOnly(e.target.checked)} className="rounded" />
           <AlertTriangle className="w-4 h-4 text-red-500" />
-          Только заканчивающиеся
+          {t('stock_low_only')}
         </label>
         <select value={category} onChange={e => setCategory(e.target.value)} className="input w-auto">
-          <option value="">Все категории</option>
+          <option value="">{t('stock_all_categories')}</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
 
-      {/* Table */}
       <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
               <tr>
-                <th className="table-th">Название</th>
-                <th className="table-th hidden sm:table-cell">Бренд</th>
-                <th className="table-th hidden md:table-cell">Категория</th>
-                <th className="table-th hidden lg:table-cell">Место</th>
-                <th className="table-th text-right">Остаток</th>
-                <th className="table-th text-right hidden sm:table-cell">Мин.</th>
-                <th className="table-th text-center">Действие</th>
+                <th className="table-th">{t('lbl_name')}</th>
+                <th className="table-th hidden sm:table-cell">{t('lbl_brand')}</th>
+                <th className="table-th hidden md:table-cell">{t('lbl_category')}</th>
+                <th className="table-th hidden lg:table-cell">{t('lbl_location')}</th>
+                <th className="table-th text-right">{t('parts_stock_qty')}</th>
+                <th className="table-th text-right hidden sm:table-cell">{t('lbl_min_stock')}</th>
+                <th className="table-th text-center">{t('stock_adjust')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={7} className="table-td text-center text-gray-400 py-8">Загрузка...</td></tr>
+                <tr><td colSpan={7} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
               ) : stock.length === 0 ? (
-                <tr><td colSpan={7} className="table-td text-center text-gray-400 py-8">Нет данных</td></tr>
+                <tr><td colSpan={7} className="table-td text-center text-gray-400 py-8">{t('stock_no_data')}</td></tr>
               ) : stock.map(row => (
                 <tr key={row.part_id} className={row.is_low ? 'bg-red-50' : ''}>
                   <td className="table-td font-medium">
@@ -141,7 +141,6 @@ export default function Stock() {
                     <button
                       onClick={() => { setAdjustModal(row); setAdjustQty(String(row.quantity)) }}
                       className="btn-secondary py-1 px-2 text-xs"
-                      title="Скорректировать остаток"
                     >
                       <Settings className="w-3.5 h-3.5" />
                     </button>
@@ -153,60 +152,58 @@ export default function Stock() {
         </div>
       </div>
 
-      {/* Adjust modal */}
       {adjustModal && (
-        <Modal title={`Корректировка: ${adjustModal.part_name}`} onClose={() => setAdjustModal(null)} size="sm">
+        <Modal title={`${t('stock_adjust_title')}: ${adjustModal.part_name}`} onClose={() => setAdjustModal(null)} size="sm">
           <div className="space-y-4">
             <div>
-              <label className="label">Фактический остаток</label>
+              <label className="label">{t('lbl_quantity')}</label>
               <input type="number" min="0" className="input" value={adjustQty} onChange={e => setAdjustQty(e.target.value)} autoFocus />
-              <p className="text-xs text-gray-500 mt-1">Было: {adjustModal.quantity} {adjustModal.unit}</p>
+              <p className="text-xs text-gray-500 mt-1">{t('stock_was')}: {adjustModal.quantity} {adjustModal.unit}</p>
             </div>
             <div>
-              <label className="label">Причина корректировки *</label>
-              <input type="text" className="input" value={adjustNote} onChange={e => setAdjustNote(e.target.value)} placeholder="Инвентаризация, пересчет..." />
+              <label className="label">{t('stock_adjust_reason')}</label>
+              <input type="text" className="input" value={adjustNote} onChange={e => setAdjustNote(e.target.value)} placeholder={t('stock_reason_placeholder')} />
             </div>
             <div className="flex gap-2 justify-end">
-              <button className="btn-secondary" onClick={() => setAdjustModal(null)}>Отмена</button>
-              <button className="btn-primary" onClick={handleAdjust} disabled={loading}>Сохранить</button>
+              <button className="btn-secondary" onClick={() => setAdjustModal(null)}>{t('btn_cancel')}</button>
+              <button className="btn-primary" onClick={handleAdjust} disabled={loading}>{t('btn_save')}</button>
             </div>
           </div>
         </Modal>
       )}
 
-      {/* Issue modal */}
       {issueModal && (
-        <Modal title="Списание на заказ-наряд" onClose={() => { setIssueModal(false); setIssuePart(null) }}>
+        <Modal title={t('stock_issue_title')} onClose={() => { setIssueModal(false); setIssuePart(null) }}>
           <div className="space-y-4">
             <div>
-              <label className="label">Запчасть *</label>
+              <label className="label">{t('stock_issue_part')}</label>
               <PartSearch onSelect={p => { setIssuePart(p); setIssueQty(1) }} />
               {issuePart && (
                 <div className="mt-2 p-3 bg-blue-50 rounded-lg text-sm">
                   <div className="font-medium text-blue-900">{issuePart.name}</div>
-                  <div className="text-blue-700">На складе: {issuePart.stock_qty} {issuePart.unit}</div>
+                  <div className="text-blue-700">{t('stock_on_stock')}: {issuePart.stock_qty} {issuePart.unit}</div>
                 </div>
               )}
             </div>
             <div>
-              <label className="label">Количество *</label>
+              <label className="label">{t('lbl_quantity')} *</label>
               <input type="number" min="1" max={issuePart?.stock_qty} className="input" value={issueQty}
                 onChange={e => setIssueQty(parseInt(e.target.value) || 1)} />
             </div>
             <div>
-              <label className="label">Номер заказ-наряда *</label>
-              <input type="text" className="input font-mono" placeholder="ЗН-12345" value={issueWO}
-                onChange={e => setIssueWO(e.target.value)} autoFocus={!!issuePart} />
+              <label className="label">{t('stock_work_order_required')}</label>
+              <input type="text" className="input font-mono" placeholder={t('stock_work_order_placeholder')} value={issueWO}
+                onChange={e => setIssueWO(e.target.value)} />
             </div>
             <div>
-              <label className="label">Примечание</label>
-              <input type="text" className="input" placeholder="Необязательно" value={issueNote}
+              <label className="label">{t('lbl_notes')}</label>
+              <input type="text" className="input" placeholder={t('rec_optional_note')} value={issueNote}
                 onChange={e => setIssueNote(e.target.value)} />
             </div>
             <div className="flex gap-2 justify-end">
-              <button className="btn-secondary" onClick={() => { setIssueModal(false); setIssuePart(null) }}>Отмена</button>
+              <button className="btn-secondary" onClick={() => { setIssueModal(false); setIssuePart(null) }}>{t('btn_cancel')}</button>
               <button className="btn-danger" onClick={handleIssue} disabled={loading}>
-                <Minus className="w-4 h-4" /> Списать
+                <Minus className="w-4 h-4" /> {t('stock_issue_btn')}
               </button>
             </div>
           </div>

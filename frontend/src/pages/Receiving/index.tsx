@@ -2,8 +2,10 @@ import { useQuery } from '@tanstack/react-query'
 import { fetchReceivingOrders } from '../../api/receiving'
 import { Plus, CheckCircle, Clock } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useT } from '../../i18n'
 
 export default function ReceivingList() {
+  const { t } = useT()
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['receiving'],
     queryFn: fetchReceivingOrders,
@@ -12,9 +14,9 @@ export default function ReceivingList() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Приемка</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('rec_title')}</h1>
         <Link to="/receiving/new" className="btn-primary">
-          <Plus className="w-4 h-4" /> Новая приемка
+          <Plus className="w-4 h-4" /> {t('rec_new')}
         </Link>
       </div>
 
@@ -24,20 +26,20 @@ export default function ReceivingList() {
             <thead>
               <tr>
                 <th className="table-th">№</th>
-                <th className="table-th">Поставщик</th>
-                <th className="table-th hidden sm:table-cell">Дата</th>
-                <th className="table-th hidden md:table-cell">Накладная</th>
-                <th className="table-th hidden sm:table-cell text-right">Поз.</th>
-                <th className="table-th hidden sm:table-cell text-right">Шт.</th>
-                <th className="table-th">Статус</th>
-                <th className="table-th hidden lg:table-cell">Кто создал</th>
+                <th className="table-th">{t('lbl_supplier')}</th>
+                <th className="table-th hidden sm:table-cell">{t('lbl_date')}</th>
+                <th className="table-th hidden md:table-cell">{t('lbl_invoice')}</th>
+                <th className="table-th hidden sm:table-cell text-right">{t('lbl_positions')}</th>
+                <th className="table-th hidden sm:table-cell text-right">{t('lbl_pieces')}</th>
+                <th className="table-th">{t('lbl_status')}</th>
+                <th className="table-th hidden lg:table-cell">{t('rec_by')}</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={8} className="table-td text-center text-gray-400 py-8">Загрузка...</td></tr>
+                <tr><td colSpan={8} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
               ) : orders.length === 0 ? (
-                <tr><td colSpan={8} className="table-td text-center text-gray-400 py-8">Нет приемок</td></tr>
+                <tr><td colSpan={8} className="table-td text-center text-gray-400 py-8">{t('rec_no_data')}</td></tr>
               ) : orders.map(o => (
                 <tr key={o.id} className="hover:bg-gray-50">
                   <td className="table-td font-medium">
@@ -55,11 +57,11 @@ export default function ReceivingList() {
                   <td className="table-td">
                     {o.is_confirmed ? (
                       <span className="badge bg-green-100 text-green-700 flex items-center gap-1 w-fit">
-                        <CheckCircle className="w-3 h-3" /> Проведено
+                        <CheckCircle className="w-3 h-3" /> {t('status_confirmed')}
                       </span>
                     ) : (
                       <span className="badge bg-yellow-100 text-yellow-700 flex items-center gap-1 w-fit">
-                        <Clock className="w-3 h-3" /> Черновик
+                        <Clock className="w-3 h-3" /> {t('status_draft')}
                       </span>
                     )}
                   </td>
