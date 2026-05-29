@@ -312,11 +312,11 @@ export default function WorkOrders() {
               </div>
               <div>
                 <label className="label">{t('lbl_make')}</label>
-                <input className="input" placeholder="BMW" value={form.car_make} onChange={e => setForm(f => ({ ...f, car_make: e.target.value }))} />
+                <input className="input" placeholder="BMW, Yamaha..." value={form.car_make} onChange={e => setForm(f => ({ ...f, car_make: e.target.value }))} />
               </div>
               <div>
                 <label className="label">{t('lbl_model')}</label>
-                <input className="input" placeholder="3 Series" value={form.car_model} onChange={e => setForm(f => ({ ...f, car_model: e.target.value }))} />
+                <input className="input" placeholder="R1200GS, MT-07..." value={form.car_model} onChange={e => setForm(f => ({ ...f, car_model: e.target.value }))} />
               </div>
             </div>
             <div>

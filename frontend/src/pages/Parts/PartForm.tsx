@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
 
 const UNITS = ['шт', 'л', 'кг', 'м', 'компл', 'пара', 'набор']
-const DEFAULT_CATEGORIES = ['Filters', 'Brakes', 'Suspension', 'Engine', 'Transmission', 'Electrical', 'Body', 'Consumables', 'Oils', 'Other']
+const DEFAULT_CATEGORIES = ['Filters', 'Brakes', 'Suspension', 'Engine', 'Transmission', 'Electrical', 'Wheels & Tyres', 'Chain & Sprockets', 'Exhaust', 'Body & Fairings', 'Oils & Fluids', 'Consumables', 'Other']
 
 export default function PartForm() {
   const { id } = useParams()

@@ -361,7 +361,7 @@ export default function IssueForm() {
                         </div>
                         <div className="text-sm text-gray-600 mt-0.5 flex flex-wrap gap-2">
                           <span>👤 {wo.mechanic_name}</span>
-                          {wo.car_plate && <span>🚗 {wo.car_plate}</span>}
+                          {wo.car_plate && <span>{wo.car_plate}</span>}
                           {(wo.car_make || wo.car_model) && <span className="text-gray-400">{wo.car_make} {wo.car_model}</span>}
                         </div>
                       </div>
