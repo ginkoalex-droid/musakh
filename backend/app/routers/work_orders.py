@@ -106,6 +106,7 @@ async def list_work_orders(
     from_date: Optional[str] = Query(None),
     to_date: Optional[str] = Query(None),
     confirmed_only: bool = False,
+    q: Optional[str] = Query(None, description="Search by WO number, plate, make, model"),
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
@@ -122,6 +123,15 @@ async def list_work_orders(
         stmt = stmt.where(WorkOrder.date <= datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59))
     if confirmed_only:
         stmt = stmt.where(WorkOrder.is_confirmed == True)
+    if q:
+        q_like = f"%{q}%"
+        from sqlalchemy import or_
+        stmt = stmt.where(or_(
+            WorkOrder.work_order_number.ilike(q_like),
+            WorkOrder.car_plate.ilike(q_like),
+            WorkOrder.car_make.ilike(q_like),
+            WorkOrder.car_model.ilike(q_like),
+        ))
 
     result = await db.execute(stmt)
     return [_wo_to_out(wo) for wo in result.scalars().all()]
@@ -255,14 +265,18 @@ async def delete_work_order(
     if wo.is_confirmed and current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Только администратор")
 
-    # Detach linked issue orders before deleting
+    # Block deletion if issue orders are linked
     from app.models import IssueOrder
-    from sqlalchemy import update
-    await db.execute(
-        update(IssueOrder)
-        .where(IssueOrder.work_order_id == wo_id)
-        .values(work_order_id=None)
+    from sqlalchemy import func
+    count_result = await db.execute(
+        select(func.count()).where(IssueOrder.work_order_id == wo_id)
     )
+    linked_count = count_result.scalar()
+    if linked_count:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Нельзя удалить ЗН: к нему привязано {linked_count} списаний. Сначала удалите или отвяжите списания."
+        )
 
     await db.delete(wo)
     await db.commit()

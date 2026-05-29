@@ -55,6 +55,7 @@ export interface WOFilters {
   from_date?: string
   to_date?: string
   confirmed_only?: boolean
+  q?: string
 }
 
 export const fetchWorkOrders = async (f: WOFilters = {}): Promise<WorkOrder[]> => {
@@ -63,6 +64,7 @@ export const fetchWorkOrders = async (f: WOFilters = {}): Promise<WorkOrder[]> =
   if (f.from_date) params.from_date = f.from_date
   if (f.to_date) params.to_date = f.to_date
   if (f.confirmed_only) params.confirmed_only = true
+  if (f.q) params.q = f.q
   const res = await api.get('/work-orders', { params })
   return res.data
 }

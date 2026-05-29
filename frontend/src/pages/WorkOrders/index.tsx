@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchWorkOrders, fetchWOSummary, fetchMechanics, confirmWorkOrder, deleteWorkOrder, createWorkOrder } from '../../api/workOrders'
-import { Plus, CheckCircle, Clock, Users, Trash2 } from 'lucide-react'
+import { Plus, CheckCircle, Clock, Users, Trash2, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
@@ -38,6 +38,15 @@ export default function WorkOrders() {
   const [groupBy, setGroupBy] = useState(true)
   const [newModal, setNewModal] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const searchTimer = useState<ReturnType<typeof setTimeout>>()[0]
+
+  function handleSearch(val: string) {
+    setSearch(val)
+    clearTimeout(searchTimer as any)
+    setTimeout(() => setDebouncedSearch(val), 300)
+  }
 
   // New WO form state
   const [form, setForm] = useState({ work_order_number: '', mechanic_id: 0, car_plate: '', car_make: '', car_model: '', notes: '' })
@@ -45,8 +54,13 @@ export default function WorkOrders() {
   const { from, to } = period === 'custom' ? { from: customFrom, to: customTo } : getPeriod(period)
 
   const { data: orders = [] } = useQuery({
-    queryKey: ['work-orders', from, to, mechFilter],
-    queryFn: () => fetchWorkOrders({ from_date: from || undefined, to_date: to || undefined, mechanic_id: mechFilter || undefined }),
+    queryKey: ['work-orders', from, to, mechFilter, debouncedSearch],
+    queryFn: () => fetchWorkOrders({
+      from_date: debouncedSearch ? undefined : (from || undefined),
+      to_date: debouncedSearch ? undefined : (to || undefined),
+      mechanic_id: mechFilter || undefined,
+      q: debouncedSearch || undefined,
+    }),
   })
 
   const { data: summary = [] } = useQuery({
@@ -178,15 +192,31 @@ export default function WorkOrders() {
 
       {/* Filters */}
       <div className="card p-4 space-y-3">
-        <div className="flex flex-wrap gap-2">
-          {periods.map(p => (
-            <button key={p.key} onClick={() => setPeriod(p.key)}
-              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${period === p.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-              {p.label}
-            </button>
-          ))}
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            type="text"
+            className="input pl-9"
+            placeholder="Поиск по номеру ЗН, госномеру, марке, модели..."
+            value={search}
+            onChange={e => handleSearch(e.target.value)}
+          />
         </div>
-        {period === 'custom' && (
+
+        {/* Period buttons — hidden when searching */}
+        {!debouncedSearch && (
+          <div className="flex flex-wrap gap-2">
+            {periods.map(p => (
+              <button key={p.key} onClick={() => setPeriod(p.key)}
+                className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${period === p.key ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                {p.label}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {!debouncedSearch && period === 'custom' && (
           <div className="flex flex-wrap gap-3 items-center">
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-500">{t('mov_from')}</span>

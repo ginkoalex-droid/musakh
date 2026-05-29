@@ -1,6 +1,7 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
-import { Search } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
+import { Search, Plus } from 'lucide-react'
 import { fetchParts, fetchPartByBarcode } from '../api/parts'
+import { useNavigate } from 'react-router-dom'
 import type { Part } from '../types'
 
 interface Props {
@@ -14,9 +15,11 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
   const [results, setResults] = useState<Part[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
+  const [unknownBarcode, setUnknownBarcode] = useState<string | null>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>()
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const navigate = useNavigate()
 
   // Always keep focus on this input so scanner goes here
   useEffect(() => {
@@ -33,8 +36,44 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
     return () => document.removeEventListener('mousedown', onClick)
   }, [])
 
+
+  async function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === 'Enter' && query.trim()) {
+      e.preventDefault()
+      // Try barcode first (scanner fast path)
+      try {
+        const part = await fetchPartByBarcode(query.trim())
+        setUnknownBarcode(null)
+        select(part)
+      } catch {
+        if (results.length === 1) {
+          select(results[0])
+        } else if (results.length === 0) {
+          // Unknown barcode - offer to create new part
+          setUnknownBarcode(query.trim())
+          setOpen(true)
+        }
+      }
+    }
+    if (e.key === 'Escape') {
+      setOpen(false)
+      setQuery('')
+      setUnknownBarcode(null)
+    }
+  }
+
+  function select(part: Part) {
+    onSelect(part)
+    setQuery('')
+    setOpen(false)
+    setResults([])
+    setUnknownBarcode(null)
+    setTimeout(() => inputRef.current?.focus(), 50)
+  }
+
   function handleChange(val: string) {
     setQuery(val)
+    setUnknownBarcode(null)
     clearTimeout(timer.current)
     if (!val.trim()) { setResults([]); setOpen(false); return }
     setLoading(true)
@@ -49,34 +88,6 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
         setLoading(false)
       }
     }, 300)
-  }
-
-  async function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && query.trim()) {
-      e.preventDefault()
-      // Try barcode first (scanner fast path)
-      try {
-        const part = await fetchPartByBarcode(query.trim())
-        select(part)
-      } catch {
-        if (results.length === 1) {
-          select(results[0])
-        }
-      }
-    }
-    if (e.key === 'Escape') {
-      setOpen(false)
-      setQuery('')
-    }
-  }
-
-  function select(part: Part) {
-    onSelect(part)
-    setQuery('')
-    setOpen(false)
-    setResults([])
-    // Refocus so next scan goes here immediately
-    setTimeout(() => inputRef.current?.focus(), 50)
   }
 
   return (
@@ -126,9 +137,32 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
         </div>
       )}
 
-      {open && results.length === 0 && !loading && query.length > 1 && (
+      {open && results.length === 0 && !loading && query.length > 1 && !unknownBarcode && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
           <div className="px-4 py-3 text-sm text-gray-500">Ничего не найдено</div>
+        </div>
+      )}
+
+      {unknownBarcode && (
+        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-orange-200 rounded-lg shadow-lg z-30">
+          <div className="px-4 py-3">
+            <div className="text-sm font-medium text-orange-700 mb-2">
+              Штрихкод <span className="font-mono bg-orange-50 px-1 rounded">{unknownBarcode}</span> не найден
+            </div>
+            <button
+              type="button"
+              onMouseDown={e => {
+                e.preventDefault()
+                navigate(`/parts/new`, { state: { barcode: unknownBarcode } })
+                setQuery('')
+                setUnknownBarcode(null)
+                setOpen(false)
+              }}
+              className="btn-primary text-sm w-full justify-center"
+            >
+              <Plus className="w-4 h-4" /> Создать новую запчасть с этим штрихкодом
+            </button>
+          </div>
         </div>
       )}
     </div>

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories } from '../../api/parts'
 import { ArrowLeft, Plus, Trash2, ScanLine, Car } from 'lucide-react'
@@ -13,8 +13,11 @@ export default function PartForm() {
   const { id } = useParams()
   const isNew = id === 'new'
   const navigate = useNavigate()
+  const location = useLocation()
   const qc = useQueryClient()
   const { t } = useT()
+  // Pre-fill barcode when coming from unknown scan
+  const prefillBarcode = (location.state as any)?.barcode as string | undefined
 
   const { data: existing } = useQuery({
     queryKey: ['part', id],
@@ -34,7 +37,7 @@ export default function PartForm() {
     name: '', brand: '', category: '', unit: 'шт',
     min_stock: 0, location: '', notes: '',
   })
-  const [barcodes, setBarcodes] = useState<string[]>([''])
+  const [barcodes, setBarcodes] = useState<string[]>([prefillBarcode || ''])
   const [oems, setOems] = useState<{ oem_number: string; brand: string }[]>([{ oem_number: '', brand: '' }])
   const [loading, setLoading] = useState(false)
   const [newBc, setNewBc] = useState('')
