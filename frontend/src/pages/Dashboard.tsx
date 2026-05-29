@@ -1,10 +1,12 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchStock } from '../api/stock'
 import { fetchReceivingOrders } from '../api/receiving'
-import { AlertTriangle, Package, Truck, ArrowDown, ArrowUp } from 'lucide-react'
+import { AlertTriangle, Package, Truck } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useT } from '../i18n'
 
 export default function Dashboard() {
+  const { t } = useT()
   const { data: stock = [] } = useQuery({ queryKey: ['stock'], queryFn: () => fetchStock() })
   const { data: orders = [] } = useQuery({ queryKey: ['receiving'], queryFn: fetchReceivingOrders })
 
@@ -19,55 +21,50 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-gray-900">Главная</h1>
+      <h1 className="text-2xl font-bold text-gray-900">{t('dash_title')}</h1>
 
-      {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="card p-4">
           <div className="flex items-center gap-2 text-blue-600 mb-2">
             <Package className="w-5 h-5" />
-            <span className="text-sm font-medium">Позиций</span>
+            <span className="text-sm font-medium">{t('dash_total_parts')}</span>
           </div>
           <div className="text-3xl font-bold text-gray-900">{totalParts}</div>
         </div>
-
         <div className="card p-4">
           <div className="flex items-center gap-2 text-red-500 mb-2">
             <AlertTriangle className="w-5 h-5" />
-            <span className="text-sm font-medium">Мало на складе</span>
+            <span className="text-sm font-medium">{t('dash_low_stock')}</span>
           </div>
           <div className="text-3xl font-bold text-gray-900">{lowStock.length}</div>
         </div>
-
         <div className="card p-4">
           <div className="flex items-center gap-2 text-green-600 mb-2">
             <Truck className="w-5 h-5" />
-            <span className="text-sm font-medium">Приемок сегодня</span>
+            <span className="text-sm font-medium">{t('dash_today_receiving')}</span>
           </div>
           <div className="text-3xl font-bold text-gray-900">{confirmedToday.length}</div>
         </div>
-
         <div className="card p-4">
           <div className="flex items-center gap-2 text-orange-500 mb-2">
             <Truck className="w-5 h-5" />
-            <span className="text-sm font-medium">Ожидают подтверждения</span>
+            <span className="text-sm font-medium">{t('dash_pending')}</span>
           </div>
           <div className="text-3xl font-bold text-gray-900">{orders.filter(o => !o.is_confirmed).length}</div>
         </div>
       </div>
 
       <div className="grid md:grid-cols-2 gap-6">
-        {/* Low stock */}
         <div className="card">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="font-semibold text-gray-900 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-red-500" />
-              Заканчивается на складе
+              {t('dash_low_stock_title')}
             </h2>
-            <Link to="/?low=1" className="text-sm text-blue-600 hover:underline">Все</Link>
+            <Link to="/?low=1" className="text-sm text-blue-600 hover:underline">{t('dash_all')}</Link>
           </div>
           {lowStock.length === 0 ? (
-            <div className="px-6 py-8 text-center text-gray-400 text-sm">Всё в норме</div>
+            <div className="px-6 py-8 text-center text-gray-400 text-sm">{t('dash_no_issues')}</div>
           ) : (
             <div className="divide-y divide-gray-100">
               {lowStock.slice(0, 8).map(row => (
@@ -78,7 +75,7 @@ export default function Dashboard() {
                   </div>
                   <div className="text-right">
                     <span className="badge bg-red-100 text-red-700">{row.quantity} {row.unit}</span>
-                    <div className="text-xs text-gray-400 mt-0.5">мин: {row.min_stock}</div>
+                    <div className="text-xs text-gray-400 mt-0.5">{t('dash_min')}: {row.min_stock}</div>
                   </div>
                 </div>
               ))}
@@ -86,31 +83,30 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Recent receiving */}
         <div className="card">
           <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 className="font-semibold text-gray-900 flex items-center gap-2">
               <Truck className="w-4 h-4 text-blue-500" />
-              Последние приемки
+              {t('dash_recent_receiving')}
             </h2>
-            <Link to="/receiving" className="text-sm text-blue-600 hover:underline">Все</Link>
+            <Link to="/receiving" className="text-sm text-blue-600 hover:underline">{t('dash_all')}</Link>
           </div>
           {recentOrders.length === 0 ? (
-            <div className="px-6 py-8 text-center text-gray-400 text-sm">Нет приемок</div>
+            <div className="px-6 py-8 text-center text-gray-400 text-sm">{t('dash_no_receiving')}</div>
           ) : (
             <div className="divide-y divide-gray-100">
               {recentOrders.map(o => (
                 <Link key={o.id} to={`/receiving/${o.id}`} className="px-6 py-3 flex items-center justify-between hover:bg-gray-50 block">
                   <div>
                     <div className="text-sm font-medium text-gray-900">
-                      #{o.id} {o.supplier_name || 'Без поставщика'}
+                      #{o.id} {o.supplier_name || t('rec_no_supplier')}
                     </div>
                     <div className="text-xs text-gray-500">
-                      {new Date(o.date).toLocaleDateString('ru-RU')} · {o.item_count} поз. · {o.total_qty} шт
+                      {new Date(o.date).toLocaleDateString('ru-RU')} · {o.item_count} {t('lbl_positions')} · {o.total_qty} {t('lbl_pieces')}
                     </div>
                   </div>
                   <span className={`badge ${o.is_confirmed ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700'}`}>
-                    {o.is_confirmed ? 'Проведено' : 'Черновик'}
+                    {o.is_confirmed ? t('status_confirmed') : t('status_draft')}
                   </span>
                 </Link>
               ))}
