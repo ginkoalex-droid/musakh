@@ -59,6 +59,8 @@ export interface ReceivingItem {
   part_name: string
   quantity: number
   notes?: string
+  barcode?: string
+  oem_number?: string
 }
 
 export interface ReceivingOrder {

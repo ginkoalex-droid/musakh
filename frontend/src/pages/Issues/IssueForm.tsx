@@ -220,7 +220,21 @@ export default function IssueForm() {
             <tbody className="divide-y divide-gray-100">
               {existing.items.map(item => (
                 <tr key={item.id}>
-                  <td className="table-td font-medium">{item.part_name}</td>
+                  <td className="table-td">
+                    <div className="font-medium">{item.part_name}</div>
+                    <div className="flex flex-wrap gap-2 mt-0.5">
+                      {item.oem_number && (
+                        <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
+                          {item.oem_number}
+                        </span>
+                      )}
+                      {item.barcode && (
+                        <span className="text-xs font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
+                          ▌{item.barcode}
+                        </span>
+                      )}
+                    </div>
+                  </td>
                   <td className="table-td text-right font-semibold text-red-700">-{item.quantity}</td>
                   <td className="table-td hidden sm:table-cell text-gray-500">{item.notes || '—'}</td>
                 </tr>

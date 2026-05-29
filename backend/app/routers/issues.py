@@ -6,7 +6,8 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models import (
-    IssueOrder, IssueItem, Part, User, Stock, StockMovement, MovementType, UserRole
+    IssueOrder, IssueItem, Part, User, Stock, StockMovement, MovementType, UserRole,
+    Barcode, OemNumber
 )
 from app.schemas import (
     IssueOrderCreate, IssueOrderOut, IssueOrderList, IssueItemOut, IssueItemCreate
@@ -19,7 +20,8 @@ router = APIRouter(prefix="/api/issues", tags=["issues"])
 def _load_opts():
     return [
         selectinload(IssueOrder.created_by_user),
-        selectinload(IssueOrder.items).selectinload(IssueItem.part),
+        selectinload(IssueOrder.items).selectinload(IssueItem.part).selectinload(Part.barcodes),
+        selectinload(IssueOrder.items).selectinload(IssueItem.part).selectinload(Part.oem_numbers),
     ]
 
 
@@ -57,6 +59,8 @@ def _to_out(order: IssueOrder, cancelled_by_name: str | None = None) -> IssueOrd
                 part_name=i.part.name if i.part else str(i.part_id),
                 quantity=i.quantity,
                 notes=i.notes,
+                barcode=i.part.barcodes[0].barcode if i.part and i.part.barcodes else None,
+                oem_number=i.part.oem_numbers[0].oem_number if i.part and i.part.oem_numbers else None,
             )
             for i in order.items
         ],

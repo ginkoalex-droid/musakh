@@ -6,7 +6,8 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models import (
-    ReceivingOrder, ReceivingItem, Part, Supplier, User, Stock, StockMovement, MovementType, UserRole
+    ReceivingOrder, ReceivingItem, Part, Supplier, User, Stock, StockMovement, MovementType, UserRole,
+    Barcode, OemNumber
 )
 from app.schemas import (
     ReceivingOrderCreate, ReceivingOrderOut, ReceivingOrderList, ReceivingItemOut, ReceivingItemCreate
@@ -40,6 +41,8 @@ def _order_to_out(order: ReceivingOrder) -> ReceivingOrderOut:
             part_name=i.part.name if i.part else str(i.part_id),
             quantity=i.quantity,
             notes=i.notes,
+            barcode=i.part.barcodes[0].barcode if i.part and i.part.barcodes else None,
+            oem_number=i.part.oem_numbers[0].oem_number if i.part and i.part.oem_numbers else None,
         )
         for i in order.items
     ]
@@ -93,7 +96,7 @@ async def get_order(
         .options(
             selectinload(ReceivingOrder.supplier),
             selectinload(ReceivingOrder.created_by_user),
-            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part),
+            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.barcodes), selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.oem_numbers),
         )
         .where(ReceivingOrder.id == order_id)
     )
@@ -140,7 +143,7 @@ async def create_order(
         .options(
             selectinload(ReceivingOrder.supplier),
             selectinload(ReceivingOrder.created_by_user),
-            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part),
+            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.barcodes), selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.oem_numbers),
         )
         .where(ReceivingOrder.id == order.id)
     )
@@ -160,7 +163,7 @@ async def confirm_order(
         .options(
             selectinload(ReceivingOrder.supplier),
             selectinload(ReceivingOrder.created_by_user),
-            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part),
+            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.barcodes), selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.oem_numbers),
         )
         .where(ReceivingOrder.id == order_id)
     )
@@ -203,7 +206,7 @@ async def confirm_order(
         .options(
             selectinload(ReceivingOrder.supplier),
             selectinload(ReceivingOrder.created_by_user),
-            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part),
+            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.barcodes), selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.oem_numbers),
         )
         .where(ReceivingOrder.id == order.id)
     )
@@ -226,7 +229,7 @@ async def cancel_order(
         .options(
             selectinload(ReceivingOrder.supplier),
             selectinload(ReceivingOrder.created_by_user),
-            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part),
+            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.barcodes), selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.oem_numbers),
         )
         .where(ReceivingOrder.id == order_id)
     )
@@ -269,7 +272,7 @@ async def cancel_order(
         .options(
             selectinload(ReceivingOrder.supplier),
             selectinload(ReceivingOrder.created_by_user),
-            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part),
+            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.barcodes), selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.oem_numbers),
         )
         .where(ReceivingOrder.id == order.id)
     )
@@ -293,7 +296,7 @@ async def reopen_order(
         .options(
             selectinload(ReceivingOrder.supplier),
             selectinload(ReceivingOrder.created_by_user),
-            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part),
+            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.barcodes), selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.oem_numbers),
         )
         .where(ReceivingOrder.id == order_id)
     )
@@ -313,7 +316,7 @@ async def reopen_order(
         .options(
             selectinload(ReceivingOrder.supplier),
             selectinload(ReceivingOrder.created_by_user),
-            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part),
+            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.barcodes), selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.oem_numbers),
         )
         .where(ReceivingOrder.id == order.id)
     )
@@ -337,7 +340,7 @@ async def update_order_items(
         .options(
             selectinload(ReceivingOrder.supplier),
             selectinload(ReceivingOrder.created_by_user),
-            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part),
+            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.barcodes), selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.oem_numbers),
         )
         .where(ReceivingOrder.id == order_id)
     )
@@ -368,7 +371,7 @@ async def update_order_items(
         .options(
             selectinload(ReceivingOrder.supplier),
             selectinload(ReceivingOrder.created_by_user),
-            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part),
+            selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.barcodes), selectinload(ReceivingOrder.items).selectinload(ReceivingItem.part).selectinload(Part.oem_numbers),
         )
         .where(ReceivingOrder.id == order.id)
     )

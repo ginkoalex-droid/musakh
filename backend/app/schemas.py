@@ -141,6 +141,8 @@ class ReceivingItemOut(BaseModel):
     part_name: str
     quantity: int
     notes: Optional[str] = None
+    barcode: Optional[str] = None
+    oem_number: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
@@ -200,6 +202,8 @@ class IssueItemOut(BaseModel):
     part_name: str
     quantity: int
     notes: Optional[str] = None
+    barcode: Optional[str] = None
+    oem_number: Optional[str] = None
 
     model_config = {"from_attributes": True}
 
