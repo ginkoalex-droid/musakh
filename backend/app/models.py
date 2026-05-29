@@ -142,6 +142,38 @@ class ReceivingItem(Base):
     part: Mapped["Part"] = relationship(back_populates="receiving_items")
 
 
+class Mechanic(Base):
+    __tablename__ = "mechanics"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    name: Mapped[str] = mapped_column(String(100), index=True)
+    phone: Mapped[str | None] = mapped_column(String(50))
+    notes: Mapped[str | None] = mapped_column(Text)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    work_orders: Mapped[list["WorkOrder"]] = relationship(back_populates="mechanic")
+
+
+class WorkOrder(Base):
+    __tablename__ = "work_orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    work_order_number: Mapped[str] = mapped_column(String(100), index=True)
+    mechanic_id: Mapped[int] = mapped_column(ForeignKey("mechanics.id"), index=True)
+    date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
+    car_plate: Mapped[str | None] = mapped_column(String(20))
+    car_make: Mapped[str | None] = mapped_column(String(100))
+    car_model: Mapped[str | None] = mapped_column(String(100))
+    notes: Mapped[str | None] = mapped_column(Text)
+    is_confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    mechanic: Mapped["Mechanic"] = relationship(back_populates="work_orders")
+    created_by_user: Mapped["User"] = relationship("User", foreign_keys=[created_by])
+
+
 class IssueOrder(Base):
     __tablename__ = "issue_orders"
 

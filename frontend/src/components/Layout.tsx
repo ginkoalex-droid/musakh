@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, Truck, Package, ArrowLeftRight, Users, LogOut, Menu, X, Wrench, Key, Minus } from 'lucide-react'
+import { BarChart3, Truck, Package, ArrowLeftRight, Users, LogOut, Menu, X, Wrench, Key, Minus, ClipboardList } from 'lucide-react'
 import { useState } from 'react'
 import { logout, getUser } from '../store/auth'
 import { useT, langNames, type Lang } from '../i18n'
@@ -27,6 +27,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { to: '/', label: t('nav_stock'), icon: BarChart3, show: true },
     { to: '/receiving', label: t('nav_receiving'), icon: Truck, show: isWarehouse },
     { to: '/issues', label: t('nav_issues'), icon: Minus, show: true },
+    { to: '/work-orders', label: t('nav_workorders'), icon: ClipboardList, show: true },
+    { to: '/mechanics', label: t('mech_title'), icon: Users, show: isWarehouse },
     { to: '/parts', label: t('nav_parts'), icon: Package, show: isWarehouse },
     { to: '/movements', label: t('nav_movements'), icon: ArrowLeftRight, show: true },
     { to: '/suppliers', label: t('nav_suppliers'), icon: Users, show: isWarehouse },

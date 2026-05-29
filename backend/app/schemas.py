@@ -188,6 +188,58 @@ class ReceivingOrderList(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── Mechanics ─────────────────────────────────────────────────────────────────
+
+class MechanicCreate(BaseModel):
+    name: str
+    phone: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class MechanicOut(MechanicCreate):
+    id: int
+    is_active: bool
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+# ── Work Orders ────────────────────────────────────────────────────────────────
+
+class WorkOrderCreate(BaseModel):
+    work_order_number: str
+    mechanic_id: int
+    date: Optional[datetime] = None
+    car_plate: Optional[str] = None
+    car_make: Optional[str] = None
+    car_model: Optional[str] = None
+    notes: Optional[str] = None
+
+
+class WorkOrderOut(BaseModel):
+    id: int
+    work_order_number: str
+    mechanic_id: int
+    mechanic_name: str
+    date: datetime
+    car_plate: Optional[str] = None
+    car_make: Optional[str] = None
+    car_model: Optional[str] = None
+    notes: Optional[str] = None
+    is_confirmed: bool
+    created_by_name: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
+class MechanicSummary(BaseModel):
+    mechanic_id: int
+    mechanic_name: str
+    total: int
+    confirmed: int
+
+
 # ── Issue Orders ──────────────────────────────────────────────────────────────
 
 class IssueItemCreate(BaseModel):
