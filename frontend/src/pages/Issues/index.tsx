@@ -10,7 +10,7 @@ export default function IssueList() {
   const navigate = useNavigate()
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['issues'],
-    queryFn: fetchIssueOrders,
+    queryFn: () => fetchIssueOrders(),
   })
 
   useKeyboardShortcuts({ insert: () => navigate('/issues/new') })

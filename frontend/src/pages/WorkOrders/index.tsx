@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchWorkOrders, fetchWOSummary, fetchMechanics, confirmWorkOrder, deleteWorkOrder, createWorkOrder } from '../../api/workOrders'
-import { Plus, CheckCircle, Clock, Users, Trash2, Edit2 } from 'lucide-react'
+import { Plus, CheckCircle, Clock, Users, Trash2 } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
 import { canAdmin, canWarehouse } from '../../store/permissions'
@@ -120,7 +121,11 @@ export default function WorkOrders() {
 
   const WORow = ({ o }: { o: typeof orders[0] }) => (
     <tr className="hover:bg-gray-50">
-      <td className="table-td font-mono font-semibold text-blue-800">{o.work_order_number}</td>
+      <td className="table-td">
+        <Link to={`/work-orders/${o.id}`} className="font-mono font-semibold text-blue-700 hover:underline">
+          {o.work_order_number}
+        </Link>
+      </td>
       {!groupBy && <td className="table-td font-medium">{o.mechanic_name}</td>}
       <td className="table-td text-gray-500 text-sm">{new Date(o.date).toLocaleDateString('ru-RU')}</td>
       <td className="table-td hidden sm:table-cell text-gray-500 text-sm">

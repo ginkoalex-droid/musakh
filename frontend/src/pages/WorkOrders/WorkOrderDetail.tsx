@@ -1,0 +1,218 @@
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { fetchWorkOrders, confirmWorkOrder, deleteWorkOrder } from '../../api/workOrders'
+import { fetchIssueOrders } from '../../api/issues'
+import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus } from 'lucide-react'
+import { useT } from '../../i18n'
+import { getUser } from '../../store/auth'
+import { canAdmin, canWarehouse } from '../../store/permissions'
+import toast from 'react-hot-toast'
+
+export default function WorkOrderDetail() {
+  const { id } = useParams()
+  const navigate = useNavigate()
+  const { t } = useT()
+  const qc = useQueryClient()
+  const me = getUser()
+  const isAdmin = me ? canAdmin(me.role) : false
+  const isWarehouse = me ? canWarehouse(me.role) : false
+
+  const { data: allWOs = [] } = useQuery({
+    queryKey: ['work-orders-all'],
+    queryFn: () => fetchWorkOrders({}),
+  })
+  const wo = allWOs.find(w => w.id === parseInt(id!))
+
+  const { data: issues = [] } = useQuery({
+    queryKey: ['issues-for-wo', id],
+    queryFn: () => fetchIssueOrders(parseInt(id!)),
+    enabled: !!id,
+  })
+
+  async function handleConfirm() {
+    if (!wo || !confirm(t('wo_confirm_title'))) return
+    try {
+      await confirmWorkOrder(wo.id)
+      toast.success(t('wo_confirmed_toast'))
+      qc.invalidateQueries({ queryKey: ['work-orders-all'] })
+      qc.invalidateQueries({ queryKey: ['wo-summary'] })
+    } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
+  }
+
+  async function handleDelete() {
+    if (!wo || !confirm(t('wo_delete_confirm'))) return
+    try {
+      await deleteWorkOrder(wo.id)
+      navigate('/work-orders')
+    } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
+  }
+
+  if (!wo) return <div className="text-center py-16 text-gray-400">{t('rec_loading')}</div>
+
+  const totalParts = issues.reduce((s, i) => s + i.total_qty, 0)
+  const totalPositions = issues.reduce((s, i) => s + i.item_count, 0)
+
+  return (
+    <div className="max-w-3xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-start gap-3 flex-wrap">
+        <button onClick={() => navigate('/work-orders')} className="btn-secondary py-1.5 px-2 mt-1">
+          <ArrowLeft className="w-4 h-4" />
+        </button>
+        <div className="flex-1">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-bold text-gray-900 font-mono">{wo.work_order_number}</h1>
+            {wo.is_confirmed ? (
+              <span className="badge bg-green-100 text-green-700 flex items-center gap-1">
+                <CheckCircle className="w-4 h-4" /> {t('wo_confirmed')}
+              </span>
+            ) : (
+              <span className="badge bg-blue-100 text-blue-700 flex items-center gap-1">
+                <Clock className="w-4 h-4" /> {t('wo_open')}
+              </span>
+            )}
+          </div>
+          <div className="text-sm text-gray-500 mt-1">
+            {new Date(wo.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+            {' · '}{wo.created_by_name}
+          </div>
+        </div>
+      </div>
+
+      {/* WO info card */}
+      <div className="card p-5 grid sm:grid-cols-2 gap-3 text-sm">
+        <div>
+          <span className="text-gray-500">{t('wo_mechanic')}:</span>
+          <span className="font-semibold text-gray-900 ml-2 text-base">{wo.mechanic_name}</span>
+        </div>
+        {wo.car_plate && (
+          <div>
+            <span className="text-gray-500">{t('wo_car_plate')}:</span>
+            <span className="font-mono font-semibold ml-2">{wo.car_plate}</span>
+          </div>
+        )}
+        {(wo.car_make || wo.car_model) && (
+          <div>
+            <span className="text-gray-500">{t('wo_car')}:</span>
+            <span className="ml-2">{wo.car_make} {wo.car_model}</span>
+          </div>
+        )}
+        {wo.notes && (
+          <div className="sm:col-span-2">
+            <span className="text-gray-500">{t('lbl_notes')}:</span>
+            <span className="ml-2">{wo.notes}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Parts summary */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-semibold text-gray-700 flex items-center gap-2">
+            <Package className="w-4 h-4 text-red-500" />
+            {t('nav_issues')}
+            {issues.length > 0 && (
+              <span className="text-xs text-gray-400 font-normal">
+                — {issues.length} {t('issue_title').toLowerCase()}, {totalPositions} {t('lbl_positions')}, {totalParts} {t('lbl_pieces')}
+              </span>
+            )}
+          </h2>
+          <Link to={`/issues/new`} className="btn-danger py-1.5 text-sm">
+            <Plus className="w-3.5 h-3.5" /> {t('issue_new')}
+          </Link>
+        </div>
+
+        {issues.length === 0 ? (
+          <div className="card p-8 text-center text-gray-400 text-sm">
+            {t('issue_no_data')}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {issues.map(issue => (
+              <div key={issue.id} className="card overflow-hidden">
+                <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <Link to={`/issues/${issue.id}`} className="font-semibold text-blue-700 hover:underline">
+                      {t('issue_title')} #{issue.id}
+                    </Link>
+                    <span className="text-xs text-gray-500">
+                      {new Date(issue.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
+                      {' · '}{issue.created_by_name}
+                    </span>
+                  </div>
+                  {issue.is_confirmed ? (
+                    <span className="badge bg-green-100 text-green-700 text-xs flex items-center gap-1">
+                      <CheckCircle className="w-3 h-3" /> {t('status_confirmed')}
+                    </span>
+                  ) : (
+                    <span className="badge bg-yellow-100 text-yellow-700 text-xs">{t('status_draft')}</span>
+                  )}
+                </div>
+
+                {/* Fetch full issue to show items - use IssueOrderOut */}
+                <IssueItemsPreview issueId={issue.id} />
+
+                <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 text-right text-sm font-semibold text-red-700">
+                  -{issue.total_qty} {t('lbl_pieces')} ({issue.item_count} {t('lbl_positions')})
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3 justify-end">
+        {!wo.is_confirmed && isWarehouse && (
+          <>
+            <button onClick={handleDelete} className="btn-secondary text-red-500">
+              <Trash2 className="w-4 h-4" /> {t('wo_delete_confirm').replace('?', '')}
+            </button>
+            <button onClick={handleConfirm} className="btn-success">
+              <CheckCircle className="w-4 h-4" /> {t('wo_confirm_btn')}
+            </button>
+          </>
+        )}
+        {wo.is_confirmed && isAdmin && (
+          <button onClick={handleDelete} className="btn-secondary text-red-500">
+            <Trash2 className="w-4 h-4" /> {t('btn_delete')}
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Sub-component to show items of a specific issue
+function IssueItemsPreview({ issueId }: { issueId: number }) {
+  const { data: issue } = useQuery({
+    queryKey: ['issue-order', String(issueId)],
+    queryFn: async () => {
+      const { fetchIssueOrder } = await import('../../api/issues')
+      return fetchIssueOrder(issueId)
+    },
+  })
+
+  if (!issue) return <div className="px-4 py-3 text-sm text-gray-400">...</div>
+
+  return (
+    <div className="divide-y divide-gray-50">
+      {issue.items.map(item => (
+        <div key={item.id} className="px-4 py-2 flex items-center justify-between">
+          <div>
+            <span className="text-sm font-medium text-gray-900">{item.part_name}</span>
+            <div className="flex gap-2 mt-0.5">
+              {item.oem_number && (
+                <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1 rounded">{item.oem_number}</span>
+              )}
+              {item.barcode && (
+                <span className="text-xs font-mono bg-blue-50 text-blue-700 px-1 rounded">▌{item.barcode}</span>
+              )}
+            </div>
+          </div>
+          <span className="text-sm font-semibold text-red-700">-{item.quantity}</span>
+        </div>
+      ))}
+    </div>
+  )
+}

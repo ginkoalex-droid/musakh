@@ -18,6 +18,7 @@ import Users from './pages/Users'
 import IssueList from './pages/Issues'
 import IssueForm from './pages/Issues/IssueForm'
 import WorkOrders from './pages/WorkOrders'
+import WorkOrderDetail from './pages/WorkOrders/WorkOrderDetail'
 import Mechanics from './pages/WorkOrders/Mechanics'
 
 initAuth()
@@ -71,6 +72,7 @@ export default function App() {
                   <Route path="/issues" element={<IssueList />} />
                   <Route path="/issues/:id" element={<IssueForm />} />
                   <Route path="/work-orders" element={<WorkOrders />} />
+                  <Route path="/work-orders/:id" element={<WorkOrderDetail />} />
                   <Route path="/mechanics" element={<RequireWarehouse><Mechanics /></RequireWarehouse>} />
                   <Route path="/users" element={<RequireAdmin><Users /></RequireAdmin>} />
                 </Routes>

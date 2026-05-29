@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -81,12 +82,14 @@ def _to_out(order: IssueOrder, cancelled_by_name: str | None = None) -> IssueOrd
 
 @router.get("", response_model=list[IssueOrderList])
 async def list_orders(
+    work_order_id: Optional[int] = None,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(IssueOrder).options(*_load_opts()).order_by(IssueOrder.created_at.desc())
-    )
+    stmt = select(IssueOrder).options(*_load_opts()).order_by(IssueOrder.created_at.desc())
+    if work_order_id:
+        stmt = stmt.where(IssueOrder.work_order_id == work_order_id)
+    result = await db.execute(stmt)
     return [_to_list(o) for o in result.scalars().all()]
 
 
