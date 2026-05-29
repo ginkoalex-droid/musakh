@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication } from '../../api/parts'
+import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories } from '../../api/parts'
 import { ArrowLeft, Plus, Trash2, ScanLine, Car } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
 
 const UNITS = ['шт', 'л', 'кг', 'м', 'компл', 'пара', 'набор']
-const CATEGORIES = ['Filters', 'Brakes', 'Suspension', 'Engine', 'Transmission', 'Electrical', 'Body', 'Consumables', 'Oils', 'Other']
+const DEFAULT_CATEGORIES = ['Filters', 'Brakes', 'Suspension', 'Engine', 'Transmission', 'Electrical', 'Body', 'Consumables', 'Oils', 'Other']
 
 export default function PartForm() {
   const { id } = useParams()
@@ -21,6 +21,14 @@ export default function PartForm() {
     queryFn: () => fetchPart(Number(id)),
     enabled: !isNew,
   })
+
+  const { data: existingCategories = [] } = useQuery({
+    queryKey: ['categories'],
+    queryFn: fetchCategories,
+  })
+
+  // Merge hardcoded defaults with existing DB categories, deduplicated
+  const allCategories = Array.from(new Set([...DEFAULT_CATEGORIES, ...existingCategories]))
 
   const [form, setForm] = useState({
     name: '', brand: '', category: '', unit: 'шт',
@@ -174,8 +182,29 @@ export default function PartForm() {
           </div>
           <div>
             <label className="label">{t('lbl_category')}</label>
-            <input list="cats" className="input" value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} />
-            <datalist id="cats">{CATEGORIES.map(c => <option key={c} value={c} />)}</datalist>
+            <select
+              className="input"
+              value={allCategories.includes(form.category) ? form.category : '__custom__'}
+              onChange={e => {
+                if (e.target.value !== '__custom__') setForm(f => ({ ...f, category: e.target.value }))
+              }}
+            >
+              <option value="">—</option>
+              {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
+              {form.category && !allCategories.includes(form.category) && (
+                <option value="__custom__">{form.category}</option>
+              )}
+              <option value="__custom__">+ {t('btn_add')} свою...</option>
+            </select>
+            {/* Custom category input */}
+            {(!form.category || !allCategories.includes(form.category)) && (
+              <input
+                className="input mt-1"
+                placeholder="Введите категорию..."
+                value={form.category}
+                onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+              />
+            )}
           </div>
           <div>
             <label className="label">{t('lbl_unit')}</label>
