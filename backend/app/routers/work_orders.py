@@ -254,6 +254,16 @@ async def delete_work_order(
         raise HTTPException(status_code=404, detail="ЗН не найден")
     if wo.is_confirmed and current_user.role != UserRole.admin:
         raise HTTPException(status_code=403, detail="Только администратор")
+
+    # Detach linked issue orders before deleting
+    from app.models import IssueOrder
+    from sqlalchemy import update
+    await db.execute(
+        update(IssueOrder)
+        .where(IssueOrder.work_order_id == wo_id)
+        .values(work_order_id=None)
+    )
+
     await db.delete(wo)
     await db.commit()
     return {"ok": True}
