@@ -13,6 +13,7 @@ import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
 import { canAdmin, canWarehouse } from '../../store/permissions'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
+import { useAutoSave } from '../../hooks/useAutoSave'
 import KeyHints from '../../components/KeyHints'
 import { fetchWorkOrders } from '../../api/workOrders'
 
@@ -100,6 +101,13 @@ export default function IssueForm() {
       setLoading(false)
     }
   }
+
+  const autoSaveTrigger = JSON.stringify({ items: items.map(i => i.part.id + ':' + i.quantity), selectedWOId, manualWO })
+  const autoSaveStatus = useAutoSave(
+    autoSaveTrigger,
+    async () => { if (effectiveWONumber.trim() && items.length > 0) await handleSave() },
+    isNew && items.length > 0 && !!effectiveWONumber.trim(),
+  )
 
   useKeyboardShortcuts({
     insert: () => document.querySelector<HTMLInputElement>('.part-search-wrapper input')?.focus(),
@@ -469,7 +477,12 @@ export default function IssueForm() {
         )}
       </div>
 
-      <div className="flex justify-end gap-3">
+      <div className="flex justify-end gap-3 items-center">
+        {autoSaveStatus === 'pending' && items.length > 0 && effectiveWONumber && (
+          <span className="text-xs text-gray-400">Автосохранение через 10с...</span>
+        )}
+        {autoSaveStatus === 'saving' && <span className="text-xs text-blue-500">Сохраняю...</span>}
+        {autoSaveStatus === 'saved' && <span className="text-xs text-green-600">✓ Сохранено</span>}
         <button className="btn-secondary" onClick={() => navigate('/issues')}>{t('btn_cancel')}</button>
         <button
           className="btn-danger"

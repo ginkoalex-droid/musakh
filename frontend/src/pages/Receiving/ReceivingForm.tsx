@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchReceivingOrder, createReceivingOrder, confirmReceivingOrder, deleteReceivingOrder, cancelReceivingOrder, reopenReceivingOrder, updateReceivingItems } from '../../api/receiving'
@@ -11,6 +11,7 @@ import { useT } from '../../i18n'
 import { canAdmin, canWarehouse } from '../../store/permissions'
 import { getUser } from '../../store/auth'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
+import { useAutoSave } from '../../hooks/useAutoSave'
 import KeyHints from '../../components/KeyHints'
 
 interface LineItem { part: Part; quantity: number; notes: string }
@@ -100,6 +101,14 @@ export default function ReceivingForm() {
       setLoading(false)
     }
   }
+
+  // Auto-save trigger: changes to items or form fields
+  const autoSaveTrigger = JSON.stringify({ items: items.map(i => i.part.id + ':' + i.quantity), supplierId, invoiceNum })
+  const autoSaveStatus = useAutoSave(
+    autoSaveTrigger,
+    async () => { if (items.length > 0) await handleSave() },
+    isNew && items.length > 0,
+  )
 
   async function handleSave() {
     if (items.length === 0) { toast.error(t('err_no_items')); return }
@@ -429,7 +438,16 @@ export default function ReceivingForm() {
         )}
       </div>
 
-      <div className="flex justify-end gap-3">
+      <div className="flex justify-end gap-3 items-center">
+        {autoSaveStatus === 'pending' && items.length > 0 && (
+          <span className="text-xs text-gray-400">Автосохранение через 10с...</span>
+        )}
+        {autoSaveStatus === 'saving' && (
+          <span className="text-xs text-blue-500">Сохраняю...</span>
+        )}
+        {autoSaveStatus === 'saved' && (
+          <span className="text-xs text-green-600">✓ Сохранено</span>
+        )}
         <button className="btn-secondary" onClick={() => navigate('/receiving')}>{t('btn_cancel')}</button>
         <button className="btn-primary" onClick={handleSave} disabled={loading || items.length === 0}>
           {t('rec_create_draft')}

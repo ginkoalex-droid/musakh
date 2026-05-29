@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchWorkOrders, fetchWOSummary, fetchMechanics, confirmWorkOrder, deleteWorkOrder, createWorkOrder } from '../../api/workOrders'
 import { Plus, CheckCircle, Clock, Users, Trash2, Search } from 'lucide-react'
@@ -48,8 +48,21 @@ export default function WorkOrders() {
     setTimeout(() => setDebouncedSearch(val), 300)
   }
 
+  const [woExists, setWoExists] = useState(false)
+  const woCheckTimer = useRef<ReturnType<typeof setTimeout>>()
+
   // New WO form state
   const [form, setForm] = useState({ work_order_number: '', mechanic_id: 0, car_plate: '', car_make: '', car_model: '', notes: '' })
+
+  function handleWONumber(val: string) {
+    setForm(f => ({ ...f, work_order_number: val }))
+    clearTimeout(woCheckTimer.current)
+    if (!val.trim()) { setWoExists(false); return }
+    woCheckTimer.current = setTimeout(async () => {
+      const results = await fetchWorkOrders({ q: val })
+      setWoExists(results.some(wo => wo.work_order_number.toLowerCase() === val.toLowerCase()))
+    }, 400)
+  }
 
   const { from, to } = period === 'custom' ? { from: customFrom, to: customTo } : getPeriod(period)
 
@@ -95,6 +108,7 @@ export default function WorkOrders() {
   async function handleCreate() {
     if (!form.work_order_number.trim()) { toast.error(t('err_no_name')); return }
     if (!form.mechanic_id) { toast.error(t('wo_mechanic') + ' required'); return }
+    if (woExists) { toast.error(`ЗН ${form.work_order_number} уже существует`); return }
     setLoading(true)
     try {
       await createWorkOrder({
@@ -321,11 +335,17 @@ export default function WorkOrders() {
           <div className="space-y-3">
             <div>
               <label className="label">{t('wo_number')} *</label>
-              <input className="input font-mono text-lg" placeholder="12345" autoFocus
+              <input className={`input font-mono text-lg ${woExists ? 'border-orange-400 bg-orange-50' : ''}`}
+                placeholder="12345" autoFocus
                 value={form.work_order_number}
-                onChange={e => setForm(f => ({ ...f, work_order_number: e.target.value }))}
+                onChange={e => handleWONumber(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') handleCreate() }}
               />
+              {woExists && (
+                <p className="text-xs text-orange-600 mt-1 font-medium">
+                  ⚠ ЗН с номером «{form.work_order_number}» уже существует
+                </p>
+              )}
             </div>
             <div>
               <label className="label">{t('wo_mechanic')} *</label>
