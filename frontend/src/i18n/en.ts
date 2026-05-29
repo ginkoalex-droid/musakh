@@ -37,7 +37,7 @@ export const en: Record<TranslationKey, string> = {
   issue_new: 'New Issue',
   issue_no_data: 'No issues',
   issue_wo_label: 'Work Order Number *',
-  issue_wo_placeholder: 'WO-12345',
+  issue_wo_placeholder: 'Select work order',
   issue_data_title: 'Document Info',
   issue_items_title: 'Items',
   issue_create_draft: 'Create Draft',

@@ -37,7 +37,7 @@ export const he: Record<TranslationKey, string> = {
   issue_new: 'הוצאה חדשה',
   issue_no_data: 'אין הוצאות',
   issue_wo_label: 'מספר הזמנת עבודה *',
-  issue_wo_placeholder: 'HZ-12345',
+  issue_wo_placeholder: 'בחר כרטיס עבודה',
   issue_data_title: 'פרטי מסמך',
   issue_items_title: 'פריטים',
   issue_create_draft: 'צור טיוטה',

@@ -36,7 +36,7 @@ export const ru = {
   issue_new: 'Новое списание',
   issue_no_data: 'Нет списаний',
   issue_wo_label: 'Номер заказ-наряда *',
-  issue_wo_placeholder: 'ЗН-12345',
+  issue_wo_placeholder: 'Выберите заказ-наряд',
   issue_data_title: 'Данные документа',
   issue_items_title: 'Позиции',
   issue_create_draft: 'Создать черновик',

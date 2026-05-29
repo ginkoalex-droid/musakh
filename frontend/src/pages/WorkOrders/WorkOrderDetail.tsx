@@ -1,7 +1,7 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchWorkOrders, confirmWorkOrder, deleteWorkOrder } from '../../api/workOrders'
-import { fetchIssueOrders } from '../../api/issues'
+import { fetchWorkOrder, confirmWorkOrder, deleteWorkOrder } from '../../api/workOrders'
+import { fetchIssueOrders, fetchIssueOrder } from '../../api/issues'
 import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus } from 'lucide-react'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
@@ -17,11 +17,11 @@ export default function WorkOrderDetail() {
   const isAdmin = me ? canAdmin(me.role) : false
   const isWarehouse = me ? canWarehouse(me.role) : false
 
-  const { data: allWOs = [] } = useQuery({
-    queryKey: ['work-orders-all'],
-    queryFn: () => fetchWorkOrders({}),
+  const { data: wo } = useQuery({
+    queryKey: ['work-order', id],
+    queryFn: () => fetchWorkOrder(parseInt(id!)),
+    enabled: !!id,
   })
-  const wo = allWOs.find(w => w.id === parseInt(id!))
 
   const { data: issues = [] } = useQuery({
     queryKey: ['issues-for-wo', id],
@@ -187,10 +187,7 @@ export default function WorkOrderDetail() {
 function IssueItemsPreview({ issueId }: { issueId: number }) {
   const { data: issue } = useQuery({
     queryKey: ['issue-order', String(issueId)],
-    queryFn: async () => {
-      const { fetchIssueOrder } = await import('../../api/issues')
-      return fetchIssueOrder(issueId)
-    },
+    queryFn: () => fetchIssueOrder(issueId),
   })
 
   if (!issue) return <div className="px-4 py-3 text-sm text-gray-400">...</div>

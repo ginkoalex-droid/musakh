@@ -376,16 +376,23 @@ export default function IssueForm() {
                   value={manualWO} onChange={e => setManualWO(e.target.value)} />
               )}
 
-              {/* Selected WO confirmation chip */}
+              {/* Selected WO — bold prominent display */}
               {selectedWO && (
-                <div className="flex items-center gap-3 p-2.5 bg-blue-50 border border-blue-100 rounded-lg text-sm">
-                  <span className="font-mono font-bold text-blue-800">{selectedWO.work_order_number}</span>
-                  <span className="text-blue-700">{selectedWO.mechanic_name}</span>
-                  {selectedWO.car_plate && <span className="text-gray-600">{selectedWO.car_plate}</span>}
-                  {(selectedWO.car_make || selectedWO.car_model) && (
-                    <span className="text-gray-500">{selectedWO.car_make} {selectedWO.car_model}</span>
-                  )}
-                  <button type="button" onClick={() => setSelectedWOId('')} className="ml-auto text-gray-400 hover:text-gray-600 text-xs">✕</button>
+                <div className="p-3 bg-blue-600 text-white rounded-lg flex items-center justify-between gap-3">
+                  <div>
+                    <div className="font-mono font-bold text-xl leading-tight">{selectedWO.work_order_number}</div>
+                    <div className="text-blue-100 text-sm mt-0.5 flex flex-wrap gap-3">
+                      <span className="font-semibold text-white">{selectedWO.mechanic_name}</span>
+                      {selectedWO.car_plate && <span>{selectedWO.car_plate}</span>}
+                      {(selectedWO.car_make || selectedWO.car_model) && (
+                        <span>{selectedWO.car_make} {selectedWO.car_model}</span>
+                      )}
+                    </div>
+                  </div>
+                  <button type="button" onClick={() => setSelectedWOId('')}
+                    className="text-blue-200 hover:text-white text-sm px-2 py-1 rounded hover:bg-blue-700 shrink-0">
+                    ✕
+                  </button>
                 </div>
               )}
             </div>

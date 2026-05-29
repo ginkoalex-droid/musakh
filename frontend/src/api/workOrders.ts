@@ -58,6 +58,11 @@ export interface WOFilters {
   q?: string
 }
 
+export const fetchWorkOrder = async (id: number): Promise<WorkOrder> => {
+  const res = await api.get(`/work-orders/${id}`)
+  return res.data
+}
+
 export const fetchWorkOrders = async (f: WOFilters = {}): Promise<WorkOrder[]> => {
   const params: Record<string, string | number | boolean> = {}
   if (f.mechanic_id) params.mechanic_id = f.mechanic_id
