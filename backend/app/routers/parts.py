@@ -5,7 +5,7 @@ from sqlalchemy import select, or_, func
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
-from app.models import Part, Barcode, OemNumber, Stock, User
+from app.models import Part, Barcode, OemNumber, CarApplication, Stock, User
 from app.schemas import PartCreate, PartUpdate, PartOut, PartListItem
 from app.auth import get_current_user
 
@@ -25,13 +25,16 @@ def _build_part_list_item(part: Part) -> PartListItem:
         stock_qty=qty,
         barcodes=part.barcodes,
         oem_numbers=part.oem_numbers,
+        car_applications=part.car_applications,
     )
 
 
 @router.get("", response_model=list[PartListItem])
 async def list_parts(
-    q: Optional[str] = Query(None, description="Search by name, brand, OEM, barcode"),
+    q: Optional[str] = Query(None),
     category: Optional[str] = None,
+    make: Optional[str] = None,
+    model: Optional[str] = None,
     low_stock: bool = False,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
@@ -41,6 +44,7 @@ async def list_parts(
         .options(
             selectinload(Part.barcodes),
             selectinload(Part.oem_numbers),
+            selectinload(Part.car_applications),
             selectinload(Part.stock),
         )
         .order_by(Part.name)
@@ -60,6 +64,12 @@ async def list_parts(
     if category:
         stmt = stmt.where(Part.category == category)
 
+    if make:
+        stmt = stmt.where(Part.car_applications.any(CarApplication.make.ilike(make)))
+
+    if model:
+        stmt = stmt.where(Part.car_applications.any(CarApplication.model.ilike(model)))
+
     result = await db.execute(stmt)
     parts = result.scalars().all()
 
@@ -69,6 +79,32 @@ async def list_parts(
         items = [i for i in items if i.stock_qty <= i.min_stock]
 
     return items
+
+
+@router.get("/makes", response_model=list[str])
+async def list_makes(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(CarApplication.make).distinct().order_by(CarApplication.make)
+    )
+    return [row[0] for row in result.all()]
+
+
+@router.get("/makes/{make}/models", response_model=list[str])
+async def list_models_for_make(
+    make: str,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(CarApplication.model)
+        .where(CarApplication.make.ilike(make), CarApplication.model.isnot(None))
+        .distinct()
+        .order_by(CarApplication.model)
+    )
+    return [row[0] for row in result.all()]
 
 
 @router.get("/categories", response_model=list[str])
@@ -113,7 +149,12 @@ async def get_part(
 ):
     result = await db.execute(
         select(Part)
-        .options(selectinload(Part.barcodes), selectinload(Part.oem_numbers), selectinload(Part.stock))
+        .options(
+            selectinload(Part.barcodes),
+            selectinload(Part.oem_numbers),
+            selectinload(Part.car_applications),
+            selectinload(Part.stock),
+        )
         .where(Part.id == part_id)
     )
     part = result.scalar_one_or_none()
@@ -158,7 +199,12 @@ async def create_part(
 
     result = await db.execute(
         select(Part)
-        .options(selectinload(Part.barcodes), selectinload(Part.oem_numbers), selectinload(Part.stock))
+        .options(
+            selectinload(Part.barcodes),
+            selectinload(Part.oem_numbers),
+            selectinload(Part.car_applications),
+            selectinload(Part.stock),
+        )
         .where(Part.id == part.id)
     )
     part = result.scalar_one()
@@ -188,7 +234,12 @@ async def update_part(
 
     result = await db.execute(
         select(Part)
-        .options(selectinload(Part.barcodes), selectinload(Part.oem_numbers), selectinload(Part.stock))
+        .options(
+            selectinload(Part.barcodes),
+            selectinload(Part.oem_numbers),
+            selectinload(Part.car_applications),
+            selectinload(Part.stock),
+        )
         .where(Part.id == part.id)
     )
     part = result.scalar_one()
@@ -258,5 +309,37 @@ async def delete_oem(
     if not oem:
         raise HTTPException(status_code=404, detail="OEM номер не найден")
     await db.delete(oem)
+    await db.commit()
+    return {"ok": True}
+
+
+@router.post("/{part_id}/cars", response_model=list)
+async def add_car_application(
+    part_id: int,
+    make: str,
+    model: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    db.add(CarApplication(part_id=part_id, make=make.strip(), model=model.strip() if model else None))
+    await db.commit()
+    result = await db.execute(select(CarApplication).where(CarApplication.part_id == part_id))
+    return result.scalars().all()
+
+
+@router.delete("/{part_id}/cars/{car_id}")
+async def delete_car_application(
+    part_id: int,
+    car_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(CarApplication).where(CarApplication.id == car_id, CarApplication.part_id == part_id)
+    )
+    car = result.scalar_one_or_none()
+    if not car:
+        raise HTTPException(status_code=404, detail="Применимость не найдена")
+    await db.delete(car)
     await db.commit()
     return {"ok": True}

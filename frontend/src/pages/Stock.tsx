@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchStock, adjustStock, issueParts, exportStock, exportMovements } from '../api/stock'
-import { fetchCategories } from '../api/parts'
+import { fetchCategories, fetchMakes, fetchModelsForMake } from '../api/parts'
 import { AlertTriangle, Download, Settings, Minus } from 'lucide-react'
 import Modal from '../components/Modal'
 import PartSearch from '../components/PartSearch'
@@ -14,6 +14,8 @@ export default function Stock() {
   const { t } = useT()
   const [lowOnly, setLowOnly] = useState(false)
   const [category, setCategory] = useState('')
+  const [make, setMake] = useState('')
+  const [model, setModel] = useState('')
   const [adjustModal, setAdjustModal] = useState<StockRow | null>(null)
   const [issueModal, setIssueModal] = useState(false)
   const [issuePart, setIssuePart] = useState<Part | null>(null)
@@ -25,11 +27,27 @@ export default function Stock() {
   const [loading, setLoading] = useState(false)
 
   const { data: stock = [], isLoading } = useQuery({
-    queryKey: ['stock', lowOnly, category],
-    queryFn: () => fetchStock(lowOnly, category || undefined),
+    queryKey: ['stock', lowOnly, category, make, model],
+    queryFn: async () => {
+      // If filtering by car make/model, get part IDs first then filter stock
+      if (make || model) {
+        const { fetchParts } = await import('../api/parts')
+        const parts = await fetchParts(undefined, category || undefined, false, make || undefined, model || undefined)
+        const partIds = new Set(parts.map(p => p.id))
+        const allStock = await fetchStock(lowOnly, category || undefined)
+        return allStock.filter(s => partIds.has(s.part_id))
+      }
+      return fetchStock(lowOnly, category || undefined)
+    },
   })
 
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
+  const { data: makes = [] } = useQuery({ queryKey: ['makes'], queryFn: fetchMakes })
+  const { data: models = [] } = useQuery({
+    queryKey: ['models', make],
+    queryFn: () => fetchModelsForMake(make),
+    enabled: !!make,
+  })
 
   async function handleAdjust() {
     if (!adjustModal) return
@@ -101,6 +119,16 @@ export default function Stock() {
           <option value="">{t('stock_all_categories')}</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
+        <select value={make} onChange={e => { setMake(e.target.value); setModel('') }} className="input w-auto">
+          <option value="">{t('filter_all_makes')}</option>
+          {makes.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+        {make && (
+          <select value={model} onChange={e => setModel(e.target.value)} className="input w-auto">
+            <option value="">{t('filter_all_models')}</option>
+            {models.map(m => <option key={m} value={m}>{m}</option>)}
+          </select>
+        )}
       </div>
 
       <div className="card overflow-hidden">

@@ -15,6 +15,12 @@ export interface Barcode {
   is_primary: boolean
 }
 
+export interface CarApplication {
+  id: number
+  make: string
+  model?: string
+}
+
 export interface OemNumber {
   id: number
   oem_number: string
@@ -33,6 +39,7 @@ export interface Part {
   stock_qty: number
   barcodes: Barcode[]
   oem_numbers: OemNumber[]
+  car_applications: CarApplication[]
   created_at: string
 }
 

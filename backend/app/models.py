@@ -54,9 +54,21 @@ class Part(Base):
 
     barcodes: Mapped[list["Barcode"]] = relationship(back_populates="part", cascade="all, delete-orphan")
     oem_numbers: Mapped[list["OemNumber"]] = relationship(back_populates="part", cascade="all, delete-orphan")
+    car_applications: Mapped[list["CarApplication"]] = relationship(back_populates="part", cascade="all, delete-orphan")
     stock: Mapped["Stock | None"] = relationship(back_populates="part", uselist=False)
     receiving_items: Mapped[list["ReceivingItem"]] = relationship(back_populates="part")
     movements: Mapped[list["StockMovement"]] = relationship(back_populates="part")
+
+
+class CarApplication(Base):
+    __tablename__ = "car_applications"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    part_id: Mapped[int] = mapped_column(ForeignKey("parts.id"), index=True)
+    make: Mapped[str] = mapped_column(String(100), index=True)
+    model: Mapped[str | None] = mapped_column(String(100), index=True)
+
+    part: Mapped["Part"] = relationship(back_populates="car_applications")
 
 
 class Barcode(Base):

@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem } from '../../api/parts'
-import { ArrowLeft, Plus, Trash2, ScanLine } from 'lucide-react'
+import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication } from '../../api/parts'
+import { ArrowLeft, Plus, Trash2, ScanLine, Car } from 'lucide-react'
 import toast from 'react-hot-toast'
 
 const UNITS = ['шт', 'л', 'кг', 'м', 'компл', 'пара', 'набор']
@@ -113,9 +113,32 @@ export default function PartForm() {
     }
   }
 
+  async function handleAddCar(make: string, model: string) {
+    if (!make.trim() || !existing) return
+    try {
+      await addCarApplication(existing.id, make.trim(), model.trim() || undefined)
+      toast.success('Добавлено')
+      qc.invalidateQueries({ queryKey: ['part', id] })
+      qc.invalidateQueries({ queryKey: ['makes'] })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Ошибка')
+    }
+  }
+
+  async function handleDelCar(partId: number, carId: number) {
+    try {
+      await deleteCarApplication(partId, carId)
+      qc.invalidateQueries({ queryKey: ['part', id] })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Ошибка')
+    }
+  }
+
   const [newBc, setNewBc] = useState('')
   const [newOemNum, setNewOemNum] = useState('')
   const [newOemBrand, setNewOemBrand] = useState('')
+  const [newCarMake, setNewCarMake] = useState('')
+  const [newCarModel, setNewCarModel] = useState('')
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -269,6 +292,35 @@ export default function PartForm() {
               <input className="input font-mono" placeholder="OEM номер" value={newOemNum} onChange={e => setNewOemNum(e.target.value)} />
               <input className="input w-32" placeholder="Бренд" value={newOemBrand} onChange={e => setNewOemBrand(e.target.value)} />
               <button className="btn-secondary" onClick={() => { handleAddOem(newOemNum, newOemBrand); setNewOemNum(''); setNewOemBrand('') }}>
+                <Plus className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          <div className="card p-6 space-y-3">
+            <h2 className="font-semibold text-gray-700 flex items-center gap-2">
+              <Car className="w-4 h-4 text-blue-600" /> Применимость (марка / модель)
+            </h2>
+            {existing.car_applications.map(car => (
+              <div key={car.id} className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
+                <span className="text-sm font-medium text-blue-800">
+                  {car.make}{car.model ? ` — ${car.model}` : ''}
+                </span>
+                <button onClick={() => handleDelCar(existing.id, car.id)} className="p-1 hover:text-red-600">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-2">
+              <input className="input" placeholder="BMW, Honda..." value={newCarMake}
+                onChange={e => setNewCarMake(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { handleAddCar(newCarMake, newCarModel); setNewCarMake(''); setNewCarModel('') } }}
+              />
+              <input className="input" placeholder="3 Series, Civic... (необязательно)" value={newCarModel}
+                onChange={e => setNewCarModel(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') { handleAddCar(newCarMake, newCarModel); setNewCarMake(''); setNewCarModel('') } }}
+              />
+              <button className="btn-secondary" onClick={() => { handleAddCar(newCarMake, newCarModel); setNewCarMake(''); setNewCarModel('') }}>
                 <Plus className="w-4 h-4" />
               </button>
             </div>

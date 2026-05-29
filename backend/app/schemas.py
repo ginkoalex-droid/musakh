@@ -56,6 +56,14 @@ class OemOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class CarApplicationOut(BaseModel):
+    id: int
+    make: str
+    model: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
 class PartBase(BaseModel):
     name: str
     brand: Optional[str] = None
@@ -79,6 +87,7 @@ class PartOut(PartBase):
     id: int
     barcodes: list[BarcodeOut] = []
     oem_numbers: list[OemOut] = []
+    car_applications: list[CarApplicationOut] = []
     stock_qty: Optional[int] = None
     created_at: datetime
 
@@ -96,6 +105,7 @@ class PartListItem(BaseModel):
     stock_qty: int = 0
     barcodes: list[BarcodeOut] = []
     oem_numbers: list[OemOut] = []
+    car_applications: list[CarApplicationOut] = []
 
     model_config = {"from_attributes": True}
 
