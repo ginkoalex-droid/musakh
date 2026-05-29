@@ -35,7 +35,7 @@ class User(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    receiving_orders: Mapped[list["ReceivingOrder"]] = relationship(back_populates="created_by_user")
+    receiving_orders: Mapped[list["ReceivingOrder"]] = relationship(back_populates="created_by_user", foreign_keys="ReceivingOrder.created_by")
     movements: Mapped[list["StockMovement"]] = relationship(back_populates="created_by_user")
 
 
@@ -124,7 +124,7 @@ class ReceivingOrder(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     supplier: Mapped["Supplier | None"] = relationship(back_populates="receiving_orders")
-    created_by_user: Mapped["User"] = relationship(back_populates="receiving_orders")
+    created_by_user: Mapped["User"] = relationship(back_populates="receiving_orders", foreign_keys=[created_by])
     items: Mapped[list["ReceivingItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
 
 
