@@ -6,7 +6,7 @@ from sqlalchemy.orm import selectinload
 
 from app.database import get_db
 from app.models import (
-    ReceivingOrder, ReceivingItem, Part, Supplier, User, Stock, StockMovement, MovementType
+    ReceivingOrder, ReceivingItem, Part, Supplier, User, Stock, StockMovement, MovementType, UserRole
 )
 from app.schemas import (
     ReceivingOrderCreate, ReceivingOrderOut, ReceivingOrderList, ReceivingItemOut
@@ -207,14 +207,32 @@ async def confirm_order(
 async def delete_order(
     order_id: int,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
+    from app.models import UserRole
     result = await db.execute(select(ReceivingOrder).where(ReceivingOrder.id == order_id))
     order = result.scalar_one_or_none()
     if not order:
         raise HTTPException(status_code=404, detail="Приемка не найдена")
+    if current_user.role not in (UserRole.admin, UserRole.warehouse):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
     if order.is_confirmed:
-        raise HTTPException(status_code=400, detail="Нельзя удалить подтверждённую приемку")
+        if current_user.role != UserRole.admin:
+            raise HTTPException(status_code=403, detail="Только администратор может удалить проведённую приемку")
+        # Admin reverses stock movements
+        movements_result = await db.execute(
+            select(StockMovement).where(
+                StockMovement.reference_type == "receiving_order",
+                StockMovement.reference_id == order_id
+            )
+        )
+        movements = movements_result.scalars().all()
+        for mv in movements:
+            stock_result = await db.execute(select(Stock).where(Stock.part_id == mv.part_id))
+            stock = stock_result.scalar_one_or_none()
+            if stock:
+                stock.quantity = max(0, stock.quantity - mv.quantity)
+            await db.delete(mv)
     await db.delete(order)
     await db.commit()
     return {"ok": True}

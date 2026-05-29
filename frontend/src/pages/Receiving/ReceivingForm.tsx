@@ -8,6 +8,8 @@ import PartSearch from '../../components/PartSearch'
 import type { Part } from '../../types'
 import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
+import { canAdmin, canWarehouse } from '../../store/permissions'
+import { getUser } from '../../store/auth'
 
 interface LineItem { part: Part; quantity: number; notes: string }
 
@@ -26,6 +28,10 @@ export default function ReceivingForm() {
 
   const { data: suppliers = [] } = useQuery({ queryKey: ['suppliers'], queryFn: fetchSuppliers })
 
+  const me = getUser()
+  const isAdmin = me ? canAdmin(me.role) : false
+  const isWarehouse = me ? canWarehouse(me.role) : false
+
   const [supplierId, setSupplierId] = useState<string>('')
   const [invoiceNum, setInvoiceNum] = useState('')
   const [notes, setNotes] = useState('')
@@ -33,11 +39,16 @@ export default function ReceivingForm() {
   const [loading, setLoading] = useState(false)
 
   function addPart(part: Part) {
-    if (items.find(i => i.part.id === part.id)) {
-      toast(t('rec_already_added'), { icon: 'ℹ️' })
+    const existing = items.find(i => i.part.id === part.id)
+    if (existing) {
+      setItems(prev => prev.map(i =>
+        i.part.id === part.id ? { ...i, quantity: i.quantity + 1 } : i
+      ))
+      toast.success(`${part.name}: ${existing.quantity + 1}`, { duration: 1200, icon: '📦' })
       return
     }
     setItems(prev => [...prev, { part, quantity: 1, notes: '' }])
+    toast.success(`+ ${part.name}`, { duration: 1200 })
   }
 
   async function handleSave() {
@@ -145,7 +156,7 @@ export default function ReceivingForm() {
           </table>
         </div>
 
-        {!existing.is_confirmed && (
+        {!existing.is_confirmed && isWarehouse && (
           <div className="flex gap-3 justify-end">
             <button className="btn-danger" onClick={handleDelete}>{t('rec_delete_draft')}</button>
             <button className="btn-success" onClick={handleConfirm} disabled={loading}>

@@ -1,6 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { Toaster } from 'react-hot-toast'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 
 import { initAuth, getUser, subscribeAuth } from './store/auth'
 import { canAdmin, canWarehouse } from './store/permissions'
@@ -18,10 +18,29 @@ import Users from './pages/Users'
 
 initAuth()
 
-function RequireAuth({ children }: { children: React.ReactNode }) {
+function useAuth() {
   const [, forceUpdate] = useState(0)
   useEffect(() => subscribeAuth(() => forceUpdate(n => n + 1)), [])
-  if (!getUser()) return <Navigate to="/login" replace />
+  return getUser()
+}
+
+function RequireAuth({ children }: { children: ReactNode }) {
+  const user = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  return <>{children}</>
+}
+
+function RequireWarehouse({ children }: { children: ReactNode }) {
+  const user = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (!canWarehouse(user.role)) return <Navigate to="/" replace />
+  return <>{children}</>
+}
+
+function RequireAdmin({ children }: { children: ReactNode }) {
+  const user = useAuth()
+  if (!user) return <Navigate to="/login" replace />
+  if (!canAdmin(user.role)) return <Navigate to="/" replace />
   return <>{children}</>
 }
 
@@ -40,24 +59,12 @@ export default function App() {
                   <Route path="/" element={<Stock />} />
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/movements" element={<Movements />} />
-                  <Route path="/parts" element={
-                    getUser() && canWarehouse(getUser()!.role) ? <Parts /> : <Navigate to="/" />
-                  } />
-                  <Route path="/parts/:id" element={
-                    getUser() && canWarehouse(getUser()!.role) ? <PartForm /> : <Navigate to="/" />
-                  } />
-                  <Route path="/receiving" element={
-                    getUser() && canWarehouse(getUser()!.role) ? <ReceivingList /> : <Navigate to="/" />
-                  } />
-                  <Route path="/receiving/:id" element={
-                    getUser() && canWarehouse(getUser()!.role) ? <ReceivingForm /> : <Navigate to="/" />
-                  } />
-                  <Route path="/suppliers" element={
-                    getUser() && canWarehouse(getUser()!.role) ? <Suppliers /> : <Navigate to="/" />
-                  } />
-                  <Route path="/users" element={
-                    getUser() && canAdmin(getUser()!.role) ? <Users /> : <Navigate to="/" />
-                  } />
+                  <Route path="/parts" element={<RequireWarehouse><Parts /></RequireWarehouse>} />
+                  <Route path="/parts/:id" element={<RequireWarehouse><PartForm /></RequireWarehouse>} />
+                  <Route path="/receiving" element={<RequireWarehouse><ReceivingList /></RequireWarehouse>} />
+                  <Route path="/receiving/:id" element={<RequireWarehouse><ReceivingForm /></RequireWarehouse>} />
+                  <Route path="/suppliers" element={<RequireWarehouse><Suppliers /></RequireWarehouse>} />
+                  <Route path="/users" element={<RequireAdmin><Users /></RequireAdmin>} />
                 </Routes>
               </Layout>
             </RequireAuth>

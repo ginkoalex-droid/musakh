@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback } from 'react'
 import { Search } from 'lucide-react'
 import { fetchParts, fetchPartByBarcode } from '../api/parts'
 import type { Part } from '../types'
@@ -6,15 +6,24 @@ import type { Part } from '../types'
 interface Props {
   onSelect: (part: Part) => void
   placeholder?: string
+  autoFocus?: boolean
 }
 
-export default function PartSearch({ onSelect, placeholder = 'Поиск по названию, артикулу или штрихкоду...' }: Props) {
+export default function PartSearch({ onSelect, placeholder = 'Поиск...', autoFocus }: Props) {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Part[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const timer = useRef<ReturnType<typeof setTimeout>>()
   const containerRef = useRef<HTMLDivElement>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Always keep focus on this input so scanner goes here
+  useEffect(() => {
+    if (autoFocus !== false) {
+      inputRef.current?.focus()
+    }
+  }, [autoFocus])
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -45,20 +54,19 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск по н
   async function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter' && query.trim()) {
       e.preventDefault()
-      // Try barcode lookup first (fast path for scanners)
+      // Try barcode first (scanner fast path)
       try {
         const part = await fetchPartByBarcode(query.trim())
-        onSelect(part)
-        setQuery('')
-        setOpen(false)
+        select(part)
       } catch {
-        // Not a barcode, show search results
         if (results.length === 1) {
-          onSelect(results[0])
-          setQuery('')
-          setOpen(false)
+          select(results[0])
         }
       }
+    }
+    if (e.key === 'Escape') {
+      setOpen(false)
+      setQuery('')
     }
   }
 
@@ -67,6 +75,8 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск по н
     setQuery('')
     setOpen(false)
     setResults([])
+    // Refocus so next scan goes here immediately
+    setTimeout(() => inputRef.current?.focus(), 50)
   }
 
   return (
@@ -74,6 +84,7 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск по н
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
         <input
+          ref={inputRef}
           type="text"
           value={query}
           onChange={e => handleChange(e.target.value)}
@@ -92,7 +103,7 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск по н
             <button
               key={p.id}
               type="button"
-              onClick={() => select(p)}
+              onMouseDown={e => { e.preventDefault(); select(p) }}
               className="w-full px-4 py-3 text-left hover:bg-blue-50 border-b border-gray-100 last:border-0"
             >
               <div className="font-medium text-sm text-gray-900">{p.name}</div>
