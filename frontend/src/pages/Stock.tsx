@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchStock, adjustStock, issueParts, exportStock, exportMovements } from '../api/stock'
 import { fetchCategories, fetchMakes, fetchModelsForMake } from '../api/parts'
-import { AlertTriangle, Download, Settings, Minus } from 'lucide-react'
+import { AlertTriangle, Download, Settings, Minus, Search } from 'lucide-react'
 import Modal from '../components/Modal'
 import PartSearch from '../components/PartSearch'
 import type { Part, StockRow } from '../types'
@@ -26,15 +26,30 @@ export default function Stock() {
   const [adjustNote, setAdjustNote] = useState('')
   const [loading, setLoading] = useState(false)
 
+  const [search, setSearch] = useState('')
+  const [debouncedSearch, setDebouncedSearch] = useState('')
+  const searchTimer = useState<ReturnType<typeof setTimeout>>()[0]
+
+  function handleSearch(val: string) {
+    setSearch(val)
+    clearTimeout(searchTimer as any)
+    setTimeout(() => setDebouncedSearch(val), 300)
+  }
+
   const { data: stock = [], isLoading } = useQuery({
-    queryKey: ['stock', lowOnly, category, make, model],
+    queryKey: ['stock', lowOnly, category, make, model, debouncedSearch],
     queryFn: async () => {
-      // If filtering by car make/model, get part IDs first then filter stock
-      if (make || model) {
+      if (debouncedSearch || make || model) {
         const { fetchParts } = await import('../api/parts')
-        const parts = await fetchParts(undefined, category || undefined, false, make || undefined, model || undefined)
+        const parts = await fetchParts(
+          debouncedSearch || undefined,
+          category || undefined,
+          false,
+          make || undefined,
+          model || undefined
+        )
         const partIds = new Set(parts.map(p => p.id))
-        const allStock = await fetchStock(lowOnly, category || undefined)
+        const allStock = await fetchStock(lowOnly)
         return allStock.filter(s => partIds.has(s.part_id))
       }
       return fetchStock(lowOnly, category || undefined)
@@ -107,6 +122,18 @@ export default function Stock() {
             <Download className="w-4 h-4" /> {t('stock_movements_excel')}
           </button>
         </div>
+      </div>
+
+      {/* Search by OEM / barcode / name */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          className="input pl-9"
+          placeholder="Поиск по названию, OEM, штрихкоду..."
+          value={search}
+          onChange={e => handleSearch(e.target.value)}
+        />
       </div>
 
       <div className="flex flex-wrap gap-3 items-center">
