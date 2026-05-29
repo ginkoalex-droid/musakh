@@ -9,7 +9,7 @@ from app.models import (
     ReceivingOrder, ReceivingItem, Part, Supplier, User, Stock, StockMovement, MovementType, UserRole
 )
 from app.schemas import (
-    ReceivingOrderCreate, ReceivingOrderOut, ReceivingOrderList, ReceivingItemOut
+    ReceivingOrderCreate, ReceivingOrderOut, ReceivingOrderList, ReceivingItemOut, ReceivingItemCreate
 )
 from app.auth import get_current_user
 
