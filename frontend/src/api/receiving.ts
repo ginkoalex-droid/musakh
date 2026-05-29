@@ -32,3 +32,21 @@ export const confirmReceivingOrder = async (id: number): Promise<ReceivingOrder>
 export const deleteReceivingOrder = async (id: number): Promise<void> => {
   await api.delete(`/receiving/${id}`)
 }
+
+export const cancelReceivingOrder = async (id: number): Promise<ReceivingOrder> => {
+  const res = await api.post(`/receiving/${id}/cancel`)
+  return res.data
+}
+
+export const reopenReceivingOrder = async (id: number): Promise<ReceivingOrder> => {
+  const res = await api.post(`/receiving/${id}/reopen`)
+  return res.data
+}
+
+export const updateReceivingItems = async (
+  id: number,
+  items: { part_id: number; quantity: number; notes?: string }[]
+): Promise<ReceivingOrder> => {
+  const res = await api.put(`/receiving/${id}/items`, items)
+  return res.data
+}

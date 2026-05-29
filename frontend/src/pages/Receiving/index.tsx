@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchReceivingOrders } from '../../api/receiving'
-import { Plus, CheckCircle, Clock } from 'lucide-react'
+import { Plus, CheckCircle, Clock, XCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useT } from '../../i18n'
 
@@ -55,7 +55,11 @@ export default function ReceivingList() {
                   <td className="table-td hidden sm:table-cell text-right">{o.item_count}</td>
                   <td className="table-td hidden sm:table-cell text-right font-medium">{o.total_qty}</td>
                   <td className="table-td">
-                    {o.is_confirmed ? (
+                    {o.is_cancelled ? (
+                      <span className="badge bg-gray-100 text-gray-500 flex items-center gap-1 w-fit">
+                        <XCircle className="w-3 h-3" /> {t('rec_status_cancelled')}
+                      </span>
+                    ) : o.is_confirmed ? (
                       <span className="badge bg-green-100 text-green-700 flex items-center gap-1 w-fit">
                         <CheckCircle className="w-3 h-3" /> {t('status_confirmed')}
                       </span>

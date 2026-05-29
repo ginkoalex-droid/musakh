@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchReceivingOrder, createReceivingOrder, confirmReceivingOrder, deleteReceivingOrder } from '../../api/receiving'
+import { fetchReceivingOrder, createReceivingOrder, confirmReceivingOrder, deleteReceivingOrder, cancelReceivingOrder, reopenReceivingOrder, updateReceivingItems } from '../../api/receiving'
 import { fetchSuppliers } from '../../api/suppliers'
-import { ArrowLeft, Plus, Trash2, CheckCircle } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle, RotateCcw, Edit2 } from 'lucide-react'
 import PartSearch from '../../components/PartSearch'
 import type { Part } from '../../types'
 import toast from 'react-hot-toast'
@@ -31,6 +31,8 @@ export default function ReceivingForm() {
   const me = getUser()
   const isAdmin = me ? canAdmin(me.role) : false
   const isWarehouse = me ? canWarehouse(me.role) : false
+  const [editMode, setEditMode] = useState(false)
+  const [editItems, setEditItems] = useState<LineItem[]>([])
 
   const [supplierId, setSupplierId] = useState<string>('')
   const [invoiceNum, setInvoiceNum] = useState('')
@@ -98,6 +100,53 @@ export default function ReceivingForm() {
     }
   }
 
+  async function handleCancel() {
+    if (!existing || !confirm(t('rec_cancel_confirm'))) return
+    setLoading(true)
+    try {
+      await cancelReceivingOrder(existing.id)
+      toast.success(t('rec_cancelled_toast'))
+      qc.invalidateQueries({ queryKey: ['receiving'] })
+      qc.invalidateQueries({ queryKey: ['receiving-order', id] })
+      qc.invalidateQueries({ queryKey: ['stock'] })
+      qc.invalidateQueries({ queryKey: ['movements'] })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleReopen() {
+    if (!existing || !confirm(t('rec_reopen_confirm'))) return
+    setLoading(true)
+    try {
+      await reopenReceivingOrder(existing.id)
+      toast.success(t('rec_reopened_toast'))
+      qc.invalidateQueries({ queryKey: ['receiving'] })
+      qc.invalidateQueries({ queryKey: ['receiving-order', id] })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleSaveEdit() {
+    if (!existing || editItems.length === 0) { toast.error(t('err_no_items')); return }
+    setLoading(true)
+    try {
+      await updateReceivingItems(existing.id, editItems.map(i => ({ part_id: i.part.id, quantity: i.quantity, notes: i.notes || undefined })))
+      toast.success(t('parts_saved'))
+      setEditMode(false)
+      qc.invalidateQueries({ queryKey: ['receiving-order', id] })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   if (!isNew && !existing) return <div className="text-center py-16 text-gray-400">{t('rec_loading')}</div>
 
   // View existing order
@@ -113,10 +162,17 @@ export default function ReceivingForm() {
             </div>
           </div>
           <div className="ml-auto">
-            {existing.is_confirmed
-              ? <span className="badge bg-green-100 text-green-700 flex items-center gap-1"><CheckCircle className="w-4 h-4" /> {t('status_confirmed')}</span>
-              : <span className="badge bg-yellow-100 text-yellow-700">{t('status_draft')}</span>
-            }
+            {existing.is_cancelled ? (
+              <span className="badge bg-gray-100 text-gray-500 flex items-center gap-1">
+                <XCircle className="w-4 h-4" /> {t('rec_status_cancelled')}
+              </span>
+            ) : existing.is_confirmed ? (
+              <span className="badge bg-green-100 text-green-700 flex items-center gap-1">
+                <CheckCircle className="w-4 h-4" /> {t('status_confirmed')}
+              </span>
+            ) : (
+              <span className="badge bg-yellow-100 text-yellow-700">{t('status_draft')}</span>
+            )}
           </div>
         </div>
 
@@ -156,12 +212,70 @@ export default function ReceivingForm() {
           </table>
         </div>
 
-        {!existing.is_confirmed && isWarehouse && (
-          <div className="flex gap-3 justify-end">
+        {/* Draft actions */}
+        {!existing.is_confirmed && !existing.is_cancelled && isWarehouse && (
+          <div className="flex gap-3 justify-end flex-wrap">
+            {isAdmin && (
+              <button className="btn-secondary" onClick={() => { setEditMode(true); setEditItems(existing.items.map(i => ({ part: { id: i.part_id, name: i.part_name, stock_qty: 0, unit: 'шт', min_stock: 0, barcodes: [], oem_numbers: [], car_applications: [], created_at: '' }, quantity: i.quantity, notes: i.notes || '' }))) }}>
+                <Edit2 className="w-4 h-4" /> {t('btn_edit')}
+              </button>
+            )}
             <button className="btn-danger" onClick={handleDelete}>{t('rec_delete_draft')}</button>
             <button className="btn-success" onClick={handleConfirm} disabled={loading}>
               <CheckCircle className="w-4 h-4" /> {t('rec_confirm_btn')}
             </button>
+          </div>
+        )}
+
+        {/* Confirmed — admin can cancel */}
+        {existing.is_confirmed && isAdmin && (
+          <div className="flex gap-3 justify-end">
+            <button className="btn-danger" onClick={handleCancel} disabled={loading}>
+              <XCircle className="w-4 h-4" /> {t('rec_cancel_btn')}
+            </button>
+          </div>
+        )}
+
+        {/* Cancelled — admin can reopen for editing */}
+        {existing.is_cancelled && isAdmin && (
+          <div className="space-y-4">
+            {existing.cancelled_by_name && (
+              <p className="text-sm text-gray-500 text-right">
+                {t('rec_cancelled_by')}: <strong>{existing.cancelled_by_name}</strong>
+                {existing.cancelled_at && ` · ${new Date(existing.cancelled_at).toLocaleString('ru-RU', { day:'2-digit', month:'2-digit', year:'2-digit', hour:'2-digit', minute:'2-digit' })}`}
+              </p>
+            )}
+            <div className="flex gap-3 justify-end">
+              <button className="btn-secondary" onClick={handleReopen} disabled={loading}>
+                <RotateCcw className="w-4 h-4" /> {t('rec_reopen_btn')}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Edit mode (for draft after reopen) */}
+        {editMode && !existing.is_confirmed && !existing.is_cancelled && (
+          <div className="card p-6 space-y-4 border-2 border-blue-200">
+            <h2 className="font-semibold text-blue-700 flex items-center gap-2"><Edit2 className="w-4 h-4" /> {t('rec_items_title')}</h2>
+            <PartSearch onSelect={p => {
+              const ex = editItems.find(i => i.part.id === p.id)
+              if (ex) setEditItems(prev => prev.map(i => i.part.id === p.id ? { ...i, quantity: i.quantity + 1 } : i))
+              else setEditItems(prev => [...prev, { part: p, quantity: 1, notes: '' }])
+            }} />
+            {editItems.map((item, idx) => (
+              <div key={idx} className="flex gap-2 items-center">
+                <span className="flex-1 text-sm font-medium">{item.part.name}</span>
+                <input type="number" min="1" className="input w-24 text-right" value={item.quantity}
+                  onChange={e => setEditItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: parseInt(e.target.value) || 1 } : it))} />
+                <button onClick={() => setEditItems(prev => prev.filter((_, i) => i !== idx))} className="p-1 hover:text-red-600">
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+            <div className="flex gap-3 justify-end">
+              <button className="btn-secondary" onClick={() => setEditMode(false)}>{t('btn_cancel')}</button>
+              <button className="btn-primary" onClick={handleSaveEdit} disabled={loading}>{t('btn_save')}</button>
+            </div>
           </div>
         )}
       </div>

@@ -161,6 +161,9 @@ class ReceivingOrderOut(BaseModel):
     invoice_number: Optional[str] = None
     notes: Optional[str] = None
     is_confirmed: bool
+    is_cancelled: bool = False
+    cancelled_by_name: Optional[str] = None
+    cancelled_at: Optional[datetime] = None
     created_by_name: str
     created_at: datetime
     items: list[ReceivingItemOut] = []
@@ -174,6 +177,7 @@ class ReceivingOrderList(BaseModel):
     date: datetime
     invoice_number: Optional[str] = None
     is_confirmed: bool
+    is_cancelled: bool = False
     item_count: int = 0
     total_qty: int = 0
     created_by_name: str

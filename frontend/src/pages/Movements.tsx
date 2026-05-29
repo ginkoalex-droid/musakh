@@ -52,10 +52,11 @@ export default function Movements() {
   })
 
   const typeConfig: Record<MovementType, { label: string; color: string; Icon: any }> = {
-    receiving:  { label: t('mov_type_receiving'),  color: 'bg-green-100 text-green-700',   Icon: ArrowDown },
-    issue:      { label: t('mov_type_issue'),       color: 'bg-red-100 text-red-700',       Icon: ArrowUp },
-    adjustment: { label: t('mov_type_adjustment'),  color: 'bg-yellow-100 text-yellow-700', Icon: Settings },
-    return:     { label: t('mov_type_return'),      color: 'bg-blue-100 text-blue-700',     Icon: RotateCcw },
+    receiving:    { label: t('mov_type_receiving'),    color: 'bg-green-100 text-green-700',   Icon: ArrowDown },
+    issue:        { label: t('mov_type_issue'),         color: 'bg-red-100 text-red-700',       Icon: ArrowUp },
+    adjustment:   { label: t('mov_type_adjustment'),   color: 'bg-yellow-100 text-yellow-700', Icon: Settings },
+    return:       { label: t('mov_type_return'),       color: 'bg-blue-100 text-blue-700',     Icon: RotateCcw },
+    cancellation: { label: t('mov_type_cancellation'), color: 'bg-gray-200 text-gray-600',     Icon: RotateCcw },
   }
 
   const periods: { key: Period; label: string }[] = [
@@ -73,6 +74,14 @@ export default function Movements() {
     const issued = movements.filter(m => m.movement_type === 'issue').reduce((s, m) => s + Math.abs(m.quantity), 0)
     return { total: movements.length, incoming, issued }
   }, [movements])
+
+  function refLabel(mv: (typeof movements)[0]): string {
+    if (mv.reference_type === 'receiving_order' && mv.reference_id) {
+      return `${t('rec_title')} #${mv.reference_id}`
+    }
+    if (mv.reference_type === 'work_order') return ''
+    return ''
+  }
 
   function exportExcel() {
     const params = new URLSearchParams()
@@ -137,6 +146,7 @@ export default function Movements() {
             <option value="issue">{t('mov_type_issue')}</option>
             <option value="adjustment">{t('mov_type_adjustment')}</option>
             <option value="return">{t('mov_type_return')}</option>
+            <option value="cancellation">{t('mov_type_cancellation')}</option>
           </select>
         </div>
 
@@ -204,7 +214,10 @@ export default function Movements() {
                         : '—'}
                     </td>
                     <td className="table-td text-gray-500 hidden lg:table-cell max-w-[180px]">
-                      <span className="line-clamp-1">{mv.notes || '—'}</span>
+                      <span className="line-clamp-1">
+                        {refLabel(mv) && <span className="text-gray-400 mr-1">{refLabel(mv)}</span>}
+                        {mv.notes || (!refLabel(mv) ? '—' : '')}
+                      </span>
                     </td>
                   </tr>
                 )

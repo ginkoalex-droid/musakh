@@ -117,6 +117,15 @@ export const ru = {
   mov_type_issue: 'Списание',
   mov_type_adjustment: 'Корректировка',
   mov_type_return: 'Возврат',
+  mov_type_cancellation: 'Отмена',
+  rec_status_cancelled: 'Отменено',
+  rec_cancel_btn: 'Отменить проводку',
+  rec_cancel_confirm: 'Отменить проведённую приёмку? Остатки будут уменьшены обратно.',
+  rec_cancelled_toast: 'Приёмка отменена. Остатки скорректированы.',
+  rec_reopen_btn: 'Вернуть в черновик',
+  rec_reopen_confirm: 'Вернуть документ в черновик для редактирования?',
+  rec_reopened_toast: 'Документ возвращён в черновик.',
+  rec_cancelled_by: 'Отменено',
   mov_no_data: 'Нет движений',
 
   // Parts

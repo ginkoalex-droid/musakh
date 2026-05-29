@@ -69,6 +69,9 @@ export interface ReceivingOrder {
   invoice_number?: string
   notes?: string
   is_confirmed: boolean
+  is_cancelled: boolean
+  cancelled_by_name?: string
+  cancelled_at?: string
   created_by_name: string
   created_at: string
   items: ReceivingItem[]
@@ -80,13 +83,14 @@ export interface ReceivingOrderList {
   date: string
   invoice_number?: string
   is_confirmed: boolean
+  is_cancelled: boolean
   item_count: number
   total_qty: number
   created_by_name: string
   created_at: string
 }
 
-export type MovementType = 'receiving' | 'issue' | 'adjustment' | 'return'
+export type MovementType = 'receiving' | 'issue' | 'adjustment' | 'return' | 'cancellation'
 
 export interface Movement {
   id: number
