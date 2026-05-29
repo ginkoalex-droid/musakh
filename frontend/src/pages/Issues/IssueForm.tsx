@@ -40,12 +40,27 @@ export default function IssueForm() {
   const [items, setItems] = useState<LineItem[]>([])
   const [loading, setLoading] = useState(false)
 
-  // Load open (unconfirmed) work orders for selection
+  const [woPeriod, setWoPeriod] = useState<'today' | 'week' | 'month'>('week')
+  const [woSearch, setWoSearch] = useState('')
+
+  function getWOFrom(p: 'today' | 'week' | 'month') {
+    const now = new Date()
+    if (p === 'today') return now.toISOString().slice(0, 10)
+    if (p === 'week') return new Date(Date.now() - 6 * 86400000).toISOString().slice(0, 10)
+    return new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10)
+  }
+
   const { data: openWorkOrders = [] } = useQuery({
-    queryKey: ['work-orders-open'],
-    queryFn: () => fetchWorkOrders({ confirmed_only: false }),
+    queryKey: ['work-orders-open', woPeriod],
+    queryFn: () => fetchWorkOrders({ from_date: getWOFrom(woPeriod) }),
     enabled: isNew,
   })
+
+  const filteredWOs = openWorkOrders.filter(wo =>
+    !woSearch || wo.work_order_number.toLowerCase().includes(woSearch.toLowerCase()) ||
+    wo.mechanic_name?.toLowerCase().includes(woSearch.toLowerCase()) ||
+    wo.car_plate?.toLowerCase().includes(woSearch.toLowerCase())
+  )
 
   const selectedWO = openWorkOrders.find(wo => wo.id === selectedWOId)
   const effectiveWONumber = selectedWO ? selectedWO.work_order_number : manualWO
@@ -313,54 +328,72 @@ export default function IssueForm() {
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
             <label className="label">{t('issue_wo_label')}</label>
-            {/* Select from open work orders */}
-            {openWorkOrders.length > 0 ? (
-              <div className="space-y-2">
-                <select
-                  className="input"
-                  value={selectedWOId}
-                  onChange={e => setSelectedWOId(e.target.value ? parseInt(e.target.value) : '')}
-                  autoFocus
-                >
-                  <option value="">— {t('issue_wo_placeholder')} —</option>
-                  {openWorkOrders.map(wo => (
-                    <option key={wo.id} value={wo.id}>
-                      {wo.work_order_number} · {wo.mechanic_name}
-                      {wo.car_plate ? ` · ${wo.car_plate}` : ''}
-                      {wo.car_make ? ` ${wo.car_make}` : ''}
-                      {wo.car_model ? ` ${wo.car_model}` : ''}
-                    </option>
-                  ))}
-                </select>
-                {selectedWO && (
-                  <div className="p-3 bg-blue-50 rounded-lg text-sm flex flex-wrap gap-4">
-                    <span className="font-mono font-bold text-blue-800 text-base">{selectedWO.work_order_number}</span>
-                    <span className="text-blue-700">👤 {selectedWO.mechanic_name}</span>
-                    {selectedWO.car_plate && <span className="text-blue-600">🚗 {selectedWO.car_plate}</span>}
-                    {(selectedWO.car_make || selectedWO.car_model) && (
-                      <span className="text-gray-600">{selectedWO.car_make} {selectedWO.car_model}</span>
-                    )}
-                  </div>
-                )}
-                {/* Fallback manual input */}
-                {!selectedWOId && (
-                  <input
-                    className="input font-mono"
-                    placeholder={`${t('issue_wo_placeholder')} (вручную)`}
-                    value={manualWO}
-                    onChange={e => setManualWO(e.target.value)}
-                  />
-                )}
+            <div className="space-y-2">
+              {/* Period filter + search */}
+              <div className="flex gap-2 items-center flex-wrap">
+                {(['today', 'week', 'month'] as const).map(p => (
+                  <button key={p} type="button"
+                    onClick={() => { setWoPeriod(p); setSelectedWOId('') }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-colors ${woPeriod === p ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+                    {p === 'today' ? t('mov_period_today') : p === 'week' ? t('mov_period_week') : t('mov_period_month')}
+                    <span className="ml-1 opacity-70">({openWorkOrders.filter(wo => !woSearch || wo.work_order_number.includes(woSearch) || wo.mechanic_name?.includes(woSearch)).length})</span>
+                  </button>
+                ))}
+                <input className="input flex-1 min-w-[120px] text-sm py-1"
+                  placeholder="Поиск по номеру, механику..."
+                  value={woSearch} onChange={e => { setWoSearch(e.target.value); setSelectedWOId('') }} />
               </div>
-            ) : (
-              <input
-                className="input font-mono text-lg"
-                placeholder={t('issue_wo_placeholder')}
-                value={manualWO}
-                onChange={e => setManualWO(e.target.value)}
-                autoFocus
-              />
-            )}
+
+              {/* WO list as clickable cards */}
+              {filteredWOs.length > 0 ? (
+                <div className="border border-gray-200 rounded-lg overflow-hidden max-h-52 overflow-y-auto">
+                  {filteredWOs.map(wo => (
+                    <button key={wo.id} type="button"
+                      onClick={() => setSelectedWOId(selectedWOId === wo.id ? '' : wo.id)}
+                      className={`w-full px-3 py-2.5 text-left border-b border-gray-100 last:border-0 transition-colors flex items-center justify-between gap-2 ${selectedWOId === wo.id ? 'bg-blue-50 border-blue-200' : 'hover:bg-gray-50'}`}>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-blue-800">{wo.work_order_number}</span>
+                          <span className="text-xs text-gray-500">
+                            {new Date(wo.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
+                          </span>
+                          {wo.is_confirmed && <span className="badge bg-green-100 text-green-700 text-xs">✓</span>}
+                        </div>
+                        <div className="text-sm text-gray-600 mt-0.5 flex flex-wrap gap-2">
+                          <span>👤 {wo.mechanic_name}</span>
+                          {wo.car_plate && <span>🚗 {wo.car_plate}</span>}
+                          {(wo.car_make || wo.car_model) && <span className="text-gray-400">{wo.car_make} {wo.car_model}</span>}
+                        </div>
+                      </div>
+                      {selectedWOId === wo.id && <span className="text-blue-600 text-lg">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-sm text-gray-400 py-2 text-center border border-dashed border-gray-200 rounded-lg">
+                  Нет ЗН за выбранный период
+                </div>
+              )}
+
+              {/* Manual fallback */}
+              {!selectedWOId && (
+                <input className="input font-mono text-sm" autoFocus
+                  placeholder={`${t('issue_wo_placeholder')} — или введи вручную`}
+                  value={manualWO} onChange={e => setManualWO(e.target.value)} />
+              )}
+
+              {/* Selected WO info */}
+              {selectedWO && (
+                <div className="p-3 bg-blue-50 rounded-lg text-sm flex flex-wrap gap-3 items-center">
+                  <span className="font-mono font-bold text-blue-800 text-base">{selectedWO.work_order_number}</span>
+                  <span className="text-blue-700 font-medium">{selectedWO.mechanic_name}</span>
+                  {selectedWO.car_plate && <span className="text-blue-600">{selectedWO.car_plate}</span>}
+                  {(selectedWO.car_make || selectedWO.car_model) && (
+                    <span className="text-gray-500">{selectedWO.car_make} {selectedWO.car_model}</span>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
           <div className="sm:col-span-2">
             <label className="label">{t('lbl_notes')}</label>
