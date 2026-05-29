@@ -48,7 +48,10 @@ export default function IssueList() {
                   <td className="table-td font-medium">
                     <Link to={`/issues/${o.id}`} className="text-blue-700 hover:underline">#{o.id}</Link>
                   </td>
-                  <td className="table-td font-mono font-semibold text-blue-800">{o.work_order_number}</td>
+                  <td className="table-td">
+                    <div className="font-mono font-semibold text-blue-800">{o.work_order_number}</div>
+                    {o.mechanic_name && <div className="text-xs text-gray-500 mt-0.5">👤 {o.mechanic_name}</div>}
+                  </td>
                   <td className="table-td hidden sm:table-cell text-gray-500">
                     {new Date(o.date).toLocaleDateString('ru-RU')}
                   </td>

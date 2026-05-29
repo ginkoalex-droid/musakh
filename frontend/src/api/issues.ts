@@ -12,7 +12,9 @@ export interface IssueItem {
 
 export interface IssueOrder {
   id: number
+  work_order_id?: number
   work_order_number: string
+  mechanic_name?: string
   date: string
   notes?: string
   is_confirmed: boolean
@@ -26,7 +28,9 @@ export interface IssueOrder {
 
 export interface IssueOrderList {
   id: number
+  work_order_id?: number
   work_order_number: string
+  mechanic_name?: string
   date: string
   notes?: string
   is_confirmed: boolean
@@ -48,6 +52,7 @@ export const fetchIssueOrder = async (id: number): Promise<IssueOrder> => {
 }
 
 export const createIssueOrder = async (data: {
+  work_order_id?: number
   work_order_number: string
   notes?: string
   items: { part_id: number; quantity: number; notes?: string }[]

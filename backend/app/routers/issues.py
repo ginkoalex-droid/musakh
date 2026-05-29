@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models import (
     IssueOrder, IssueItem, Part, User, Stock, StockMovement, MovementType, UserRole,
-    Barcode, OemNumber
+    Barcode, OemNumber, WorkOrder
 )
 from app.schemas import (
     IssueOrderCreate, IssueOrderOut, IssueOrderList, IssueItemOut, IssueItemCreate
@@ -18,17 +18,27 @@ router = APIRouter(prefix="/api/issues", tags=["issues"])
 
 
 def _load_opts():
+    from app.models import Mechanic
     return [
         selectinload(IssueOrder.created_by_user),
+        selectinload(IssueOrder.work_order).selectinload(WorkOrder.mechanic),
         selectinload(IssueOrder.items).selectinload(IssueItem.part).selectinload(Part.barcodes),
         selectinload(IssueOrder.items).selectinload(IssueItem.part).selectinload(Part.oem_numbers),
     ]
 
 
+def _mechanic_name(order: IssueOrder) -> str | None:
+    if order.work_order and order.work_order.mechanic:
+        return order.work_order.mechanic.name
+    return None
+
+
 def _to_list(order: IssueOrder) -> IssueOrderList:
     return IssueOrderList(
         id=order.id,
+        work_order_id=order.work_order_id,
         work_order_number=order.work_order_number,
+        mechanic_name=_mechanic_name(order),
         date=order.date,
         notes=order.notes,
         is_confirmed=order.is_confirmed,
@@ -43,7 +53,9 @@ def _to_list(order: IssueOrder) -> IssueOrderList:
 def _to_out(order: IssueOrder, cancelled_by_name: str | None = None) -> IssueOrderOut:
     return IssueOrderOut(
         id=order.id,
+        work_order_id=order.work_order_id,
         work_order_number=order.work_order_number,
+        mechanic_name=_mechanic_name(order),
         date=order.date,
         notes=order.notes,
         is_confirmed=order.is_confirmed,
@@ -99,8 +111,16 @@ async def create_order(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    wo_number = data.work_order_number
+    if data.work_order_id:
+        wo_result = await db.execute(select(WorkOrder).where(WorkOrder.id == data.work_order_id))
+        linked_wo = wo_result.scalar_one_or_none()
+        if linked_wo:
+            wo_number = linked_wo.work_order_number
+
     order = IssueOrder(
-        work_order_number=data.work_order_number,
+        work_order_id=data.work_order_id,
+        work_order_number=wo_number,
         date=data.date or datetime.utcnow(),
         notes=data.notes,
         created_by=current_user.id,

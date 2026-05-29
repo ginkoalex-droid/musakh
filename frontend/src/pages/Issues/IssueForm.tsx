@@ -14,6 +14,7 @@ import { getUser } from '../../store/auth'
 import { canAdmin, canWarehouse } from '../../store/permissions'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import KeyHints from '../../components/KeyHints'
+import { fetchWorkOrders } from '../../api/workOrders'
 
 interface LineItem { part: Part; quantity: number; notes: string }
 
@@ -33,10 +34,21 @@ export default function IssueForm() {
     enabled: !isNew,
   })
 
-  const [workOrder, setWorkOrder] = useState('')
+  const [selectedWOId, setSelectedWOId] = useState<number | ''>('')
+  const [manualWO, setManualWO] = useState('')
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<LineItem[]>([])
   const [loading, setLoading] = useState(false)
+
+  // Load open (unconfirmed) work orders for selection
+  const { data: openWorkOrders = [] } = useQuery({
+    queryKey: ['work-orders-open'],
+    queryFn: () => fetchWorkOrders({ confirmed_only: false }),
+    enabled: isNew,
+  })
+
+  const selectedWO = openWorkOrders.find(wo => wo.id === selectedWOId)
+  const effectiveWONumber = selectedWO ? selectedWO.work_order_number : manualWO
 
   async function handleConfirmDirect() {
     if (!existing || existing.is_confirmed || existing.is_cancelled) return
@@ -95,12 +107,13 @@ export default function IssueForm() {
   }
 
   async function handleSave() {
-    if (!workOrder.trim()) { toast.error(t('issue_wo_label')); return }
+    if (!effectiveWONumber.trim()) { toast.error(t('issue_wo_label')); return }
     if (items.length === 0) { toast.error(t('err_no_items')); return }
     setLoading(true)
     try {
       const order = await createIssueOrder({
-        work_order_number: workOrder,
+        work_order_id: selectedWOId || undefined,
+        work_order_number: effectiveWONumber,
         notes: notes || undefined,
         items: items.map(i => ({ part_id: i.part.id, quantity: i.quantity, notes: i.notes || undefined })),
       })
@@ -197,6 +210,12 @@ export default function IssueForm() {
             <span className="text-gray-500">{t('lbl_work_order')}:</span>
             <span className="font-mono font-bold text-blue-800 ml-2 text-base">{existing.work_order_number}</span>
           </div>
+          {existing.mechanic_name && (
+            <div>
+              <span className="text-gray-500">{t('wo_mechanic')}:</span>
+              <span className="font-semibold ml-2">{existing.mechanic_name}</span>
+            </div>
+          )}
           {existing.notes && (
             <div><span className="text-gray-500">{t('lbl_notes')}:</span> {existing.notes}</div>
           )}
@@ -294,13 +313,54 @@ export default function IssueForm() {
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="sm:col-span-2">
             <label className="label">{t('issue_wo_label')}</label>
-            <input
-              className="input font-mono text-lg"
-              placeholder={t('issue_wo_placeholder')}
-              value={workOrder}
-              onChange={e => setWorkOrder(e.target.value)}
-              autoFocus
-            />
+            {/* Select from open work orders */}
+            {openWorkOrders.length > 0 ? (
+              <div className="space-y-2">
+                <select
+                  className="input"
+                  value={selectedWOId}
+                  onChange={e => setSelectedWOId(e.target.value ? parseInt(e.target.value) : '')}
+                  autoFocus
+                >
+                  <option value="">— {t('issue_wo_placeholder')} —</option>
+                  {openWorkOrders.map(wo => (
+                    <option key={wo.id} value={wo.id}>
+                      {wo.work_order_number} · {wo.mechanic_name}
+                      {wo.car_plate ? ` · ${wo.car_plate}` : ''}
+                      {wo.car_make ? ` ${wo.car_make}` : ''}
+                      {wo.car_model ? ` ${wo.car_model}` : ''}
+                    </option>
+                  ))}
+                </select>
+                {selectedWO && (
+                  <div className="p-3 bg-blue-50 rounded-lg text-sm flex flex-wrap gap-4">
+                    <span className="font-mono font-bold text-blue-800 text-base">{selectedWO.work_order_number}</span>
+                    <span className="text-blue-700">👤 {selectedWO.mechanic_name}</span>
+                    {selectedWO.car_plate && <span className="text-blue-600">🚗 {selectedWO.car_plate}</span>}
+                    {(selectedWO.car_make || selectedWO.car_model) && (
+                      <span className="text-gray-600">{selectedWO.car_make} {selectedWO.car_model}</span>
+                    )}
+                  </div>
+                )}
+                {/* Fallback manual input */}
+                {!selectedWOId && (
+                  <input
+                    className="input font-mono"
+                    placeholder={`${t('issue_wo_placeholder')} (вручную)`}
+                    value={manualWO}
+                    onChange={e => setManualWO(e.target.value)}
+                  />
+                )}
+              </div>
+            ) : (
+              <input
+                className="input font-mono text-lg"
+                placeholder={t('issue_wo_placeholder')}
+                value={manualWO}
+                onChange={e => setManualWO(e.target.value)}
+                autoFocus
+              />
+            )}
           </div>
           <div className="sm:col-span-2">
             <label className="label">{t('lbl_notes')}</label>
@@ -379,7 +439,7 @@ export default function IssueForm() {
         <button
           className="btn-danger"
           onClick={handleSave}
-          disabled={loading || items.length === 0 || !workOrder.trim()}
+          disabled={loading || items.length === 0 || !effectiveWONumber.trim()}
         >
           {t('issue_create_draft')}
         </button>

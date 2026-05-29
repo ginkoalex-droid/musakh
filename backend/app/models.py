@@ -178,6 +178,7 @@ class IssueOrder(Base):
     __tablename__ = "issue_orders"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    work_order_id: Mapped[int | None] = mapped_column(ForeignKey("work_orders.id"), nullable=True, index=True)
     work_order_number: Mapped[str] = mapped_column(String(100), index=True)
     date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     notes: Mapped[str | None] = mapped_column(Text)
@@ -188,6 +189,7 @@ class IssueOrder(Base):
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
+    work_order: Mapped["WorkOrder | None"] = relationship("WorkOrder", foreign_keys=[work_order_id])
     created_by_user: Mapped["User"] = relationship("User", back_populates="issue_orders", foreign_keys=[created_by])
     items: Mapped[list["IssueItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
 

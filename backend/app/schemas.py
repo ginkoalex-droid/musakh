@@ -261,6 +261,7 @@ class IssueItemOut(BaseModel):
 
 
 class IssueOrderCreate(BaseModel):
+    work_order_id: Optional[int] = None
     work_order_number: str
     date: Optional[datetime] = None
     notes: Optional[str] = None
@@ -269,7 +270,9 @@ class IssueOrderCreate(BaseModel):
 
 class IssueOrderOut(BaseModel):
     id: int
+    work_order_id: Optional[int] = None
     work_order_number: str
+    mechanic_name: Optional[str] = None
     date: datetime
     notes: Optional[str] = None
     is_confirmed: bool
@@ -285,7 +288,9 @@ class IssueOrderOut(BaseModel):
 
 class IssueOrderList(BaseModel):
     id: int
+    work_order_id: Optional[int] = None
     work_order_number: str
+    mechanic_name: Optional[str] = None
     date: datetime
     notes: Optional[str] = None
     is_confirmed: bool
