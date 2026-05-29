@@ -36,6 +36,7 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     receiving_orders: Mapped[list["ReceivingOrder"]] = relationship(back_populates="created_by_user", foreign_keys="ReceivingOrder.created_by")
+    issue_orders: Mapped[list["IssueOrder"]] = relationship(back_populates="created_by_user", foreign_keys="IssueOrder.created_by")
     movements: Mapped[list["StockMovement"]] = relationship(back_populates="created_by_user")
 
 
@@ -139,6 +140,37 @@ class ReceivingItem(Base):
 
     order: Mapped["ReceivingOrder"] = relationship(back_populates="items")
     part: Mapped["Part"] = relationship(back_populates="receiving_items")
+
+
+class IssueOrder(Base):
+    __tablename__ = "issue_orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    work_order_number: Mapped[str] = mapped_column(String(100), index=True)
+    date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    notes: Mapped[str | None] = mapped_column(Text)
+    is_confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_cancelled: Mapped[bool] = mapped_column(Boolean, default=False)
+    cancelled_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    created_by_user: Mapped["User"] = relationship("User", back_populates="issue_orders", foreign_keys=[created_by])
+    items: Mapped[list["IssueItem"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+
+
+class IssueItem(Base):
+    __tablename__ = "issue_items"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    order_id: Mapped[int] = mapped_column(ForeignKey("issue_orders.id"))
+    part_id: Mapped[int] = mapped_column(ForeignKey("parts.id"))
+    quantity: Mapped[int] = mapped_column(Integer)
+    notes: Mapped[str | None] = mapped_column(String(300))
+
+    order: Mapped["IssueOrder"] = relationship(back_populates="items")
+    part: Mapped["Part"] = relationship()
 
 
 class Stock(Base):

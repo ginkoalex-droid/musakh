@@ -186,6 +186,62 @@ class ReceivingOrderList(BaseModel):
     model_config = {"from_attributes": True}
 
 
+# ── Issue Orders ──────────────────────────────────────────────────────────────
+
+class IssueItemCreate(BaseModel):
+    part_id: int
+    quantity: int
+    notes: Optional[str] = None
+
+
+class IssueItemOut(BaseModel):
+    id: int
+    part_id: int
+    part_name: str
+    quantity: int
+    notes: Optional[str] = None
+
+    model_config = {"from_attributes": True}
+
+
+class IssueOrderCreate(BaseModel):
+    work_order_number: str
+    date: Optional[datetime] = None
+    notes: Optional[str] = None
+    items: list[IssueItemCreate] = []
+
+
+class IssueOrderOut(BaseModel):
+    id: int
+    work_order_number: str
+    date: datetime
+    notes: Optional[str] = None
+    is_confirmed: bool
+    is_cancelled: bool = False
+    cancelled_by_name: Optional[str] = None
+    cancelled_at: Optional[datetime] = None
+    created_by_name: str
+    created_at: datetime
+    items: list[IssueItemOut] = []
+
+    model_config = {"from_attributes": True}
+
+
+class IssueOrderList(BaseModel):
+    id: int
+    work_order_number: str
+    date: datetime
+    notes: Optional[str] = None
+    is_confirmed: bool
+    is_cancelled: bool = False
+    item_count: int = 0
+    total_qty: int = 0
+    created_by_name: str
+    created_at: datetime
+
+    model_config = {"from_attributes": True}
+
+
 # ── Stock ─────────────────────────────────────────────────────────────────────
 
 class StockRow(BaseModel):

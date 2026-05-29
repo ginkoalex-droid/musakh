@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import engine, Base
-from app.routers import auth, parts, suppliers, receiving, stock, export
+from app.routers import auth, parts, suppliers, receiving, issues, stock, export
 
 app = FastAPI(title="Garage Inventory", version="1.0.0")
 
@@ -18,6 +18,7 @@ app.include_router(auth.router)
 app.include_router(parts.router)
 app.include_router(suppliers.router)
 app.include_router(receiving.router)
+app.include_router(issues.router)
 app.include_router(stock.router)
 app.include_router(export.router)
 

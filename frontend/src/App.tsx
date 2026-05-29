@@ -15,6 +15,8 @@ import ReceivingList from './pages/Receiving'
 import ReceivingForm from './pages/Receiving/ReceivingForm'
 import Suppliers from './pages/Suppliers'
 import Users from './pages/Users'
+import IssueList from './pages/Issues'
+import IssueForm from './pages/Issues/IssueForm'
 
 initAuth()
 
@@ -64,6 +66,8 @@ export default function App() {
                   <Route path="/receiving" element={<RequireWarehouse><ReceivingList /></RequireWarehouse>} />
                   <Route path="/receiving/:id" element={<RequireWarehouse><ReceivingForm /></RequireWarehouse>} />
                   <Route path="/suppliers" element={<RequireWarehouse><Suppliers /></RequireWarehouse>} />
+                  <Route path="/issues" element={<IssueList />} />
+                  <Route path="/issues/:id" element={<IssueForm />} />
                   <Route path="/users" element={<RequireAdmin><Users /></RequireAdmin>} />
                 </Routes>
               </Layout>
