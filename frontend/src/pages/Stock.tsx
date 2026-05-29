@@ -13,6 +13,7 @@ export default function Stock() {
   const qc = useQueryClient()
   const { t } = useT()
   const [lowOnly, setLowOnly] = useState(false)
+  const [needOrder, setNeedOrder] = useState(false)
   const [category, setCategory] = useState('')
   const [make, setMake] = useState('')
   const [model, setModel] = useState('')
@@ -138,9 +139,14 @@ export default function Stock() {
 
       <div className="flex flex-wrap gap-3 items-center">
         <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" checked={lowOnly} onChange={e => setLowOnly(e.target.checked)} className="rounded" />
+          <input type="checkbox" checked={lowOnly} onChange={e => { setLowOnly(e.target.checked); if (e.target.checked) setNeedOrder(false) }} className="rounded" />
           <AlertTriangle className="w-4 h-4 text-red-500" />
           {t('stock_low_only')}
+        </label>
+        <label className="flex items-center gap-2 text-sm cursor-pointer">
+          <input type="checkbox" checked={needOrder} onChange={e => { setNeedOrder(e.target.checked); if (e.target.checked) setLowOnly(false) }} className="rounded" />
+          <span className="text-orange-500">🛒</span>
+          {t('stock_need_order')}
         </label>
         <select value={category} onChange={e => setCategory(e.target.value)} className="input w-auto">
           <option value="">{t('stock_all_categories')}</option>
@@ -177,31 +183,41 @@ export default function Stock() {
                 <tr><td colSpan={7} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
               ) : stock.length === 0 ? (
                 <tr><td colSpan={7} className="table-td text-center text-gray-400 py-8">{t('stock_no_data')}</td></tr>
-              ) : stock.map(row => (
-                <tr key={row.part_id} className={row.is_low ? 'bg-red-50' : ''}>
-                  <td className="table-td font-medium">
-                    {row.part_name}
-                    {row.is_low && <AlertTriangle className="inline w-3.5 h-3.5 text-red-500 ml-1.5" />}
-                  </td>
-                  <td className="table-td hidden sm:table-cell text-gray-500">{row.brand || '—'}</td>
-                  <td className="table-td hidden md:table-cell text-gray-500">{row.category || '—'}</td>
-                  <td className="table-td hidden lg:table-cell text-gray-500">{row.location || '—'}</td>
-                  <td className="table-td text-right font-semibold">
-                    <span className={row.is_low ? 'text-red-600' : 'text-gray-900'}>
-                      {row.quantity} {row.unit}
-                    </span>
-                  </td>
-                  <td className="table-td text-right hidden sm:table-cell text-gray-400">{row.min_stock}</td>
-                  <td className="table-td text-center">
-                    <button
-                      onClick={() => { setAdjustModal(row); setAdjustQty(String(row.quantity)) }}
-                      className="btn-secondary py-1 px-2 text-xs"
-                    >
-                      <Settings className="w-3.5 h-3.5" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              ) : stock
+                  .filter(row => {
+                    if (needOrder) return row.quantity <= row.min_stock
+                    return true
+                  })
+                  .map(row => {
+                    const isZero = row.quantity === 0
+                    const isLow = !isZero && row.quantity <= row.min_stock
+                    const rowClass = isZero ? 'bg-red-50' : isLow ? 'bg-yellow-50' : ''
+                    const qtyClass = isZero ? 'text-red-600' : isLow ? 'text-yellow-700' : 'text-gray-900'
+                    return (
+                      <tr key={row.part_id} className={rowClass}>
+                        <td className="table-td font-medium">
+                          {row.part_name}
+                          {isZero && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-red-500 align-middle" title="Нет на складе" />}
+                          {isLow && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-yellow-400 align-middle" title="Мало" />}
+                        </td>
+                        <td className="table-td hidden sm:table-cell text-gray-500">{row.brand || '—'}</td>
+                        <td className="table-td hidden md:table-cell text-gray-500">{row.category || '—'}</td>
+                        <td className="table-td hidden lg:table-cell text-gray-500">{row.location || '—'}</td>
+                        <td className="table-td text-right font-semibold">
+                          <span className={qtyClass}>{row.quantity} {row.unit}</span>
+                        </td>
+                        <td className="table-td text-right hidden sm:table-cell text-gray-400">{row.min_stock}</td>
+                        <td className="table-td text-center">
+                          <button
+                            onClick={() => { setAdjustModal(row); setAdjustQty(String(row.quantity)) }}
+                            className="btn-secondary py-1 px-2 text-xs"
+                          >
+                            <Settings className="w-3.5 h-3.5" />
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })}
             </tbody>
           </table>
         </div>

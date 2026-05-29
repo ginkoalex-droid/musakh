@@ -126,6 +126,7 @@ export const he: Record<TranslationKey, string> = {
   stock_excel: 'מחסן Excel',
   stock_movements_excel: 'תנועות Excel',
   stock_low_only: 'מלאי נמוך בלבד',
+  stock_need_order: 'נדרש הזמנה',
   stock_all_categories: 'כל הקטגוריות',
   stock_adjust: 'תקן מלאי',
   stock_adjust_title: 'תיקון מלאי',
