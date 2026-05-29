@@ -102,6 +102,17 @@ export const ru = {
 
   // Movements
   mov_title: 'История движений',
+  mov_period_today: 'Сегодня',
+  mov_period_3days: '3 дня',
+  mov_period_week: 'Неделя',
+  mov_period_month: 'Месяц',
+  mov_period_year: 'Год',
+  mov_period_custom: 'Период',
+  mov_all_employees: 'Все сотрудники',
+  mov_all_types: 'Все типы',
+  mov_from: 'С',
+  mov_to: 'По',
+  mov_total: 'Итого',
   mov_type_receiving: 'Приход',
   mov_type_issue: 'Списание',
   mov_type_adjustment: 'Корректировка',

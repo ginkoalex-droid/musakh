@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -187,7 +187,11 @@ async def issue_parts(
 @router.get("/movements", response_model=list[MovementOut])
 async def list_movements(
     part_id: Optional[int] = None,
-    limit: int = Query(100, le=500),
+    user_id: Optional[int] = None,
+    from_date: Optional[str] = Query(None, description="ISO date YYYY-MM-DD"),
+    to_date: Optional[str] = Query(None, description="ISO date YYYY-MM-DD"),
+    movement_type: Optional[str] = None,
+    limit: int = Query(200, le=1000),
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
@@ -202,6 +206,15 @@ async def list_movements(
     )
     if part_id:
         stmt = stmt.where(StockMovement.part_id == part_id)
+    if user_id:
+        stmt = stmt.where(StockMovement.created_by == user_id)
+    if movement_type:
+        stmt = stmt.where(StockMovement.movement_type == movement_type)
+    if from_date:
+        from datetime import date as ddate
+        stmt = stmt.where(StockMovement.created_at >= datetime.strptime(from_date, "%Y-%m-%d"))
+    if to_date:
+        stmt = stmt.where(StockMovement.created_at < datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59))
 
     result = await db.execute(stmt)
     rows = result.all()

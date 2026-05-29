@@ -9,9 +9,22 @@ export const fetchStock = async (lowOnly?: boolean, category?: string): Promise<
   return res.data
 }
 
-export const fetchMovements = async (partId?: number, limit = 100): Promise<Movement[]> => {
-  const params: Record<string, number> = { limit }
-  if (partId) params.part_id = partId
+export interface MovementFilters {
+  partId?: number
+  userId?: number
+  fromDate?: string
+  toDate?: string
+  movementType?: string
+  limit?: number
+}
+
+export const fetchMovements = async (filters: MovementFilters = {}): Promise<Movement[]> => {
+  const params: Record<string, string | number> = { limit: filters.limit || 500 }
+  if (filters.partId) params.part_id = filters.partId
+  if (filters.userId) params.user_id = filters.userId
+  if (filters.fromDate) params.from_date = filters.fromDate
+  if (filters.toDate) params.to_date = filters.toDate
+  if (filters.movementType) params.movement_type = filters.movementType
   const res = await api.get('/stock/movements', { params })
   return res.data
 }
