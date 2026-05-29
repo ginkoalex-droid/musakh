@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchReceivingOrder, createReceivingOrder, confirmReceivingOrder, deleteReceivingOrder, cancelReceivingOrder, reopenReceivingOrder, updateReceivingItems } from '../../api/receiving'
@@ -10,6 +10,8 @@ import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
 import { canAdmin, canWarehouse } from '../../store/permissions'
 import { getUser } from '../../store/auth'
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
+import KeyHints from '../../components/KeyHints'
 
 interface LineItem { part: Part; quantity: number; notes: string }
 
@@ -39,6 +41,7 @@ export default function ReceivingForm() {
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<LineItem[]>([])
   const [loading, setLoading] = useState(false)
+  const searchRef = useRef<HTMLInputElement | null>(null)
 
   function addPart(part: Part) {
     const existing = items.find(i => i.part.id === part.id)
@@ -51,6 +54,51 @@ export default function ReceivingForm() {
     }
     setItems(prev => [...prev, { part, quantity: 1, notes: '' }])
     toast.success(`+ ${part.name}`, { duration: 1200 })
+  }
+
+  async function handleCopy() {
+    if (!existing || existing.items.length === 0) return
+    setLoading(true)
+    try {
+      const copy = await createReceivingOrder({
+        supplier_id: existing.supplier_id || undefined,
+        invoice_number: existing.invoice_number ? `${existing.invoice_number}-copy` : undefined,
+        notes: existing.notes || undefined,
+        items: existing.items.map(i => ({ part_id: i.part_id, quantity: i.quantity })),
+      })
+      toast.success('Копия создана')
+      qc.invalidateQueries({ queryKey: ['receiving'] })
+      navigate(`/receiving/${copy.id}`)
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useKeyboardShortcuts({
+    insert: () => document.querySelector<HTMLInputElement>('.part-search-input')?.focus(),
+    ctrlEnter: () => {
+      if (isNew) { handleSave(); return }
+      if (existing && !existing.is_confirmed && !existing.is_cancelled && isWarehouse) handleConfirmDirect()
+    },
+    f9: () => { if (!isNew && existing) handleCopy() },
+  })
+
+  async function handleConfirmDirect() {
+    if (!existing) return
+    setLoading(true)
+    try {
+      await confirmReceivingOrder(existing.id)
+      toast.success(t('rec_confirmed_toast'))
+      qc.invalidateQueries({ queryKey: ['receiving'] })
+      qc.invalidateQueries({ queryKey: ['receiving-order', id] })
+      qc.invalidateQueries({ queryKey: ['stock'] })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
+    } finally {
+      setLoading(false)
+    }
   }
 
   async function handleSave() {
@@ -313,7 +361,9 @@ export default function ReceivingForm() {
 
       <div className="card p-6 space-y-4">
         <h2 className="font-semibold text-gray-700">{t('rec_items_title')}</h2>
-        <PartSearch onSelect={addPart} placeholder={t('rec_add_part_placeholder')} />
+        <div className="part-search-wrapper">
+          <PartSearch onSelect={addPart} placeholder={t('rec_add_part_placeholder')} />
+        </div>
 
         {items.length > 0 ? (
           <div className="overflow-x-auto">
@@ -371,6 +421,10 @@ export default function ReceivingForm() {
           {t('rec_create_draft')}
         </button>
       </div>
+      <KeyHints hints={[
+        { key: 'Insert', label: t('rec_add_part_placeholder').slice(0, 20) + '...' },
+        { key: 'Ctrl+Enter', label: t('rec_create_draft') },
+      ]} />
     </div>
   )
 }

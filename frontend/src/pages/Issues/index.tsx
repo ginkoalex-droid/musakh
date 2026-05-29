@@ -1,15 +1,19 @@
 import { useQuery } from '@tanstack/react-query'
 import { fetchIssueOrders } from '../../api/issues'
 import { Plus, CheckCircle, Clock, XCircle } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 
 export default function IssueList() {
   const { t } = useT()
+  const navigate = useNavigate()
   const { data: orders = [], isLoading } = useQuery({
     queryKey: ['issues'],
     queryFn: fetchIssueOrders,
   })
+
+  useKeyboardShortcuts({ insert: () => navigate('/issues/new') })
 
   return (
     <div className="space-y-4">

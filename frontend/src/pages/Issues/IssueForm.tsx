@@ -12,6 +12,8 @@ import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
 import { canAdmin, canWarehouse } from '../../store/permissions'
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
+import KeyHints from '../../components/KeyHints'
 
 interface LineItem { part: Part; quantity: number; notes: string }
 
@@ -35,6 +37,51 @@ export default function IssueForm() {
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<LineItem[]>([])
   const [loading, setLoading] = useState(false)
+
+  async function handleConfirmDirect() {
+    if (!existing || existing.is_confirmed || existing.is_cancelled) return
+    setLoading(true)
+    try {
+      await confirmIssueOrder(existing.id)
+      toast.success(t('issue_confirmed_toast'))
+      qc.invalidateQueries({ queryKey: ['issues'] })
+      qc.invalidateQueries({ queryKey: ['issue-order', id] })
+      qc.invalidateQueries({ queryKey: ['stock'] })
+      qc.invalidateQueries({ queryKey: ['movements'] })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleCopy() {
+    if (!existing || existing.items.length === 0) return
+    setLoading(true)
+    try {
+      const copy = await createIssueOrder({
+        work_order_number: `${existing.work_order_number}-copy`,
+        notes: existing.notes || undefined,
+        items: existing.items.map(i => ({ part_id: i.part_id, quantity: i.quantity })),
+      })
+      toast.success('Копия создана')
+      qc.invalidateQueries({ queryKey: ['issues'] })
+      navigate(`/issues/${copy.id}`)
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useKeyboardShortcuts({
+    insert: () => document.querySelector<HTMLInputElement>('.part-search-wrapper input')?.focus(),
+    ctrlEnter: () => {
+      if (isNew) { handleSave(); return }
+      if (existing && !existing.is_confirmed && !existing.is_cancelled) handleConfirmDirect()
+    },
+    f9: () => { if (!isNew && existing) handleCopy() },
+  })
 
   function addPart(part: Part) {
     const ex = items.find(i => i.part.id === part.id)
@@ -209,6 +256,11 @@ export default function IssueForm() {
             </button>
           </div>
         )}
+
+        <KeyHints hints={[
+          ...(!existing.is_confirmed && !existing.is_cancelled ? [{ key: 'Ctrl+Enter', label: t('issue_confirm_btn') }] : []),
+          { key: 'F9', label: 'Копировать' },
+        ]} />
       </div>
     )
   }
@@ -245,7 +297,9 @@ export default function IssueForm() {
 
       <div className="card p-6 space-y-4">
         <h2 className="font-semibold text-gray-700">{t('issue_items_title')}</h2>
-        <PartSearch onSelect={addPart} placeholder={t('issue_add_placeholder')} />
+        <div className="part-search-wrapper">
+          <PartSearch onSelect={addPart} placeholder={t('issue_add_placeholder')} />
+        </div>
 
         {items.length > 0 ? (
           <div className="overflow-x-auto">
@@ -316,6 +370,10 @@ export default function IssueForm() {
           {t('issue_create_draft')}
         </button>
       </div>
+      <KeyHints hints={[
+        { key: 'Insert', label: 'Поиск запчасти' },
+        { key: 'Ctrl+Enter', label: t('issue_create_draft') },
+      ]} />
     </div>
   )
 }
