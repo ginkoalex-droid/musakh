@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchIssueOrder, createIssueOrder, confirmIssueOrder,
-  cancelIssueOrder, deleteIssueOrder
+  cancelIssueOrder, deleteIssueOrder, addIssueItem, removeIssueItem
 } from '../../api/issues'
 import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import PartSearch from '../../components/PartSearch'
 import type { Part } from '../../types'
 import toast from 'react-hot-toast'
@@ -14,6 +15,7 @@ import { getUser } from '../../store/auth'
 import { canAdmin, canWarehouse } from '../../store/permissions'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useAutoSave } from '../../hooks/useAutoSave'
+import { qtyStep, qtyMin, fmtQty } from '../../utils/format'
 import KeyHints from '../../components/KeyHints'
 import { fetchWorkOrders } from '../../api/workOrders'
 
@@ -231,7 +233,13 @@ export default function IssueForm() {
         <div className="card p-6 grid sm:grid-cols-2 gap-4 text-sm">
           <div>
             <span className="text-gray-500">{t('lbl_work_order')}:</span>
-            <span className="font-mono font-bold text-blue-800 ml-2 text-base">{existing.work_order_number}</span>
+            {existing.work_order_id ? (
+              <Link to={`/work-orders/${existing.work_order_id}`} className="font-mono font-bold text-blue-700 hover:underline ml-2 text-base">
+                {existing.work_order_number}
+              </Link>
+            ) : (
+              <span className="font-mono font-bold text-blue-800 ml-2 text-base">{existing.work_order_number}</span>
+            )}
           </div>
           {existing.mechanic_name && (
             <div>
@@ -266,19 +274,25 @@ export default function IssueForm() {
                     <div className="font-medium">{item.part_name}</div>
                     <div className="flex flex-wrap gap-2 mt-0.5">
                       {item.oem_number && (
-                        <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">
-                          {item.oem_number}
-                        </span>
+                        <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{item.oem_number}</span>
                       )}
                       {item.barcode && (
-                        <span className="text-xs font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">
-                          ▌{item.barcode}
-                        </span>
+                        <span className="text-xs font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">▌{item.barcode}</span>
                       )}
                     </div>
                   </td>
-                  <td className="table-td text-right font-semibold text-red-700">-{item.quantity}</td>
+                  <td className="table-td text-right font-semibold text-red-700">-{fmtQty(item.quantity)}</td>
                   <td className="table-td hidden sm:table-cell text-gray-500">{item.notes || '—'}</td>
+                  {!existing.is_confirmed && !existing.is_cancelled && (
+                    <td className="table-td w-8">
+                      <button onClick={async () => {
+                        const updated = await removeIssueItem(existing.id, item.id)
+                        qc.setQueryData(['issue-order', id], updated)
+                      }} className="p-1 hover:text-red-600">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -293,6 +307,22 @@ export default function IssueForm() {
             </tfoot>
           </table>
         </div>
+
+        {/* Add item to draft */}
+        {!existing.is_confirmed && !existing.is_cancelled && (
+          <div className="card p-4 border-dashed border-2 border-gray-200 space-y-2">
+            <div className="text-sm font-medium text-gray-600 flex items-center gap-2">
+              <Plus className="w-4 h-4" /> Добавить запчасть
+            </div>
+            <PartSearch
+              onSelect={async (part) => {
+                const updated = await addIssueItem(existing.id, part.id, 1)
+                qc.setQueryData(['issue-order', id], updated)
+              }}
+              placeholder={t('issue_add_placeholder')}
+            />
+          </div>
+        )}
 
         {/* Draft actions */}
         {!existing.is_confirmed && !existing.is_cancelled && isWarehouse && (
@@ -440,7 +470,10 @@ export default function IssueForm() {
                     </td>
                     <td className="table-td">
                       <input
-                        type="number" min="0.001" step="0.001" max={item.part.stock_qty}
+                        type="number"
+                        min={qtyMin(item.part.unit)}
+                        step={qtyStep(item.part.unit)}
+                        max={item.part.stock_qty}
                         className={`input text-right w-24 ${item.quantity > item.part.stock_qty ? 'border-red-400' : ''}`}
                         value={item.quantity}
                         onChange={e => setItems(prev => prev.map((it, i) =>
