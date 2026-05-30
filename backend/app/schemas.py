@@ -183,7 +183,7 @@ class ReceivingOrderList(BaseModel):
     is_confirmed: bool
     is_cancelled: bool = False
     item_count: int = 0
-    total_qty: int = 0
+    total_qty: float = 0
     created_by_name: str
     created_at: datetime
 
@@ -298,7 +298,7 @@ class IssueOrderList(BaseModel):
     is_confirmed: bool
     is_cancelled: bool = False
     item_count: int = 0
-    total_qty: int = 0
+    total_qty: float = 0
     created_by_name: str
     created_at: datetime
 

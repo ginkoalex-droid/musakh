@@ -68,10 +68,10 @@ export default function Movements() {
     { key: 'custom', label: t('mov_period_custom') },
   ]
 
-  // Summary stats
+  // Summary stats — count only, no quantity sum (mixed units)
   const stats = useMemo(() => {
-    const incoming = movements.filter(m => m.movement_type === 'receiving').reduce((s, m) => s + m.quantity, 0)
-    const issued = movements.filter(m => m.movement_type === 'issue').reduce((s, m) => s + Math.abs(m.quantity), 0)
+    const incoming = movements.filter(m => m.movement_type === 'receiving').length
+    const issued = movements.filter(m => m.movement_type === 'issue').length
     return { total: movements.length, incoming, issued }
   }, [movements])
 
@@ -154,8 +154,8 @@ export default function Movements() {
         {!isLoading && movements.length > 0 && (
           <div className="flex flex-wrap gap-4 pt-1 text-sm">
             <span className="text-gray-500">{t('mov_total')}: <strong>{stats.total}</strong></span>
-            <span className="text-green-600">{t('mov_type_receiving')}: <strong>+{stats.incoming}</strong></span>
-            <span className="text-red-600">{t('mov_type_issue')}: <strong>-{stats.issued}</strong></span>
+            <span className="text-green-600">{t('mov_type_receiving')}: <strong>{stats.incoming}</strong></span>
+            <span className="text-red-600">{t('mov_type_issue')}: <strong>{stats.issued}</strong></span>
           </div>
         )}
       </div>
