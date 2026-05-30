@@ -1,8 +1,10 @@
+import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchWorkOrder, confirmWorkOrder, deleteWorkOrder } from '../../api/workOrders'
+import { fetchWorkOrder, confirmWorkOrder, deleteWorkOrder, updateWorkOrder, fetchMechanics } from '../../api/workOrders'
 import { fetchIssueOrders, fetchIssueOrder, confirmIssueOrder, deleteIssueOrder } from '../../api/issues'
-import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus, Edit2 } from 'lucide-react'
+import { WORK_TYPES } from '../../api/workOrders'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
 import { canAdmin, canWarehouse } from '../../store/permissions'
@@ -16,6 +18,29 @@ export default function WorkOrderDetail() {
   const me = getUser()
   const isAdmin = me ? canAdmin(me.role) : false
   const isWarehouse = me ? canWarehouse(me.role) : false
+
+  const [editMechanics, setEditMechanics] = useState(false)
+  const [mechForm, setMechForm] = useState({ mechanic_id_2: 0, mechanic_share: 50, work_type: '' })
+
+  const { data: mechanics = [] } = useQuery({ queryKey: ['mechanics'], queryFn: fetchMechanics })
+  const activeMechanics = mechanics.filter(m => m.is_active)
+
+  async function handleUpdateMechanics() {
+    if (!wo) return
+    try {
+      await updateWorkOrder(wo.id, {
+        work_order_number: wo.work_order_number,
+        mechanic_id: wo.mechanic_id,
+        mechanic_id_2: mechForm.mechanic_id_2 || undefined,
+        mechanic_share: mechForm.mechanic_id_2 ? mechForm.mechanic_share : 100,
+        work_type: mechForm.work_type || wo.work_type || undefined,
+      })
+      toast.success('Обновлено')
+      setEditMechanics(false)
+      qc.invalidateQueries({ queryKey: ['work-order', id] })
+      qc.invalidateQueries({ queryKey: ['wo-summary'] })
+    } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
+  }
 
   const { data: wo } = useQuery({
     queryKey: ['work-order', id],
@@ -99,9 +124,33 @@ export default function WorkOrderDetail() {
 
       {/* WO info card */}
       <div className="card p-5 grid sm:grid-cols-2 gap-3 text-sm">
-        <div>
-          <span className="text-gray-500">{t('wo_mechanic')}:</span>
-          <span className="font-semibold text-gray-900 ml-2 text-base">{wo.mechanic_name}</span>
+        <div className="flex items-center justify-between sm:col-span-2">
+          <div className="flex items-center gap-3 flex-wrap">
+            <div>
+              <span className="text-gray-500">{t('wo_mechanic')}:</span>
+              <span className="font-semibold text-gray-900 ml-2 text-base">{wo.mechanic_name}</span>
+              {wo.mechanic2_name && (
+                <span className="text-gray-500 ml-2">
+                  {wo.mechanic_share}% + <span className="font-semibold text-gray-900">{wo.mechanic2_name}</span> {100 - wo.mechanic_share}%
+                </span>
+              )}
+            </div>
+            {wo.work_type && (
+              <span className="badge bg-purple-100 text-purple-700">{wo.work_type}</span>
+            )}
+          </div>
+          {isWarehouse && (
+            <button onClick={() => {
+              setMechForm({
+                mechanic_id_2: wo.mechanic_id_2 || 0,
+                mechanic_share: wo.mechanic_share || 50,
+                work_type: wo.work_type || '',
+              })
+              setEditMechanics(true)
+            }} className="btn-secondary py-1.5 px-2">
+              <Edit2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
         {wo.car_plate && (
           <div>
@@ -218,6 +267,46 @@ export default function WorkOrderDetail() {
             <Trash2 className="w-4 h-4" /> {t('btn_delete')}
           </button>
         )}
+      {/* Edit mechanics modal */}
+      {editMechanics && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="card w-full max-w-sm p-6 space-y-4">
+            <h2 className="font-semibold text-gray-900">Изменить механиков</h2>
+            <div>
+              <label className="label">Тип работы</label>
+              <select className="input" value={mechForm.work_type}
+                onChange={e => setMechForm(f => ({ ...f, work_type: e.target.value }))}>
+                <option value="">—</option>
+                {WORK_TYPES.map(wt => <option key={wt} value={wt}>{wt}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="label">Второй механик</label>
+              <select className="input" value={mechForm.mechanic_id_2}
+                onChange={e => setMechForm(f => ({ ...f, mechanic_id_2: parseInt(e.target.value) || 0 }))}>
+                <option value={0}>— нет —</option>
+                {activeMechanics.filter(m => m.id !== wo.mechanic_id).map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+            {mechForm.mechanic_id_2 > 0 && (
+              <div>
+                <label className="label">
+                  Доля {wo.mechanic_name}: {mechForm.mechanic_share}% / {mechanics.find(m => m.id === mechForm.mechanic_id_2)?.name}: {100 - mechForm.mechanic_share}%
+                </label>
+                <input type="range" min="10" max="90" step="10" className="w-full"
+                  value={mechForm.mechanic_share}
+                  onChange={e => setMechForm(f => ({ ...f, mechanic_share: parseInt(e.target.value) }))} />
+              </div>
+            )}
+            <div className="flex gap-2 justify-end">
+              <button className="btn-secondary" onClick={() => setEditMechanics(false)}>{t('btn_cancel')}</button>
+              <button className="btn-primary" onClick={handleUpdateMechanics}>{t('btn_save')}</button>
+            </div>
+          </div>
+        </div>
+      )}
       </div>
     </div>
   )

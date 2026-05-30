@@ -9,7 +9,7 @@ export interface Mechanic {
   created_at: string
 }
 
-export const WORK_TYPES = ['טיפול', 'שיפוץ', 'פרואקט', 'תעונה', 'חשמל', 'ריקולת'] as const
+export const WORK_TYPES = ['טיפול – Service', 'שיפוץ – Repair', 'פרואקט – Project', 'תעונה – Accident', 'חשמל – Electrical', 'ריקולת – Recall'] as const
 
 export interface WorkOrder {
   id: number
