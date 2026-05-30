@@ -22,7 +22,7 @@ class Token(BaseModel):
 
 class UserCreate(BaseModel):
     name: str
-    email: EmailStr
+    email: str
     password: str = ""
     role: UserRole = UserRole.warehouse
 
