@@ -37,8 +37,12 @@ export default function IssueForm() {
     enabled: !isNew,
   })
 
+  type IssueType = 'wo' | 'sale' | 'other'
+  const [issueType, setIssueType] = useState<IssueType>('wo')
   const [selectedWOId, setSelectedWOId] = useState<number | ''>('')
   const [manualWO, setManualWO] = useState('')
+  const [customer, setCustomer] = useState('')
+  const [reason, setReason] = useState('')
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<LineItem[]>([])
   const [loading, setLoading] = useState(false)
@@ -66,7 +70,10 @@ export default function IssueForm() {
   )
 
   const selectedWO = openWorkOrders.find(wo => wo.id === selectedWOId)
-  const effectiveWONumber = selectedWO ? selectedWO.work_order_number : manualWO
+  const effectiveWONumber =
+    issueType === 'wo' ? (selectedWO ? selectedWO.work_order_number : manualWO) :
+    issueType === 'sale' ? t('issue_type_sale') :
+    reason ? `${t('issue_type_other')}: ${reason}` : ''
 
   async function handleConfirmDirect() {
     if (!existing || existing.is_confirmed || existing.is_cancelled) return
@@ -383,7 +390,26 @@ export default function IssueForm() {
       <div className="card p-6 space-y-4">
         <h2 className="font-semibold text-gray-700">{t('issue_data_title')}</h2>
         <div className="grid sm:grid-cols-2 gap-4">
+          {/* Issue type selector */}
           <div className="sm:col-span-2">
+            <label className="label">{t('issue_type')}</label>
+            <div className="flex gap-2">
+              {(['wo', 'sale', 'other'] as IssueType[]).map(type => (
+                <button key={type} type="button"
+                  onClick={() => setIssueType(type)}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                    issueType === type
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                  }`}>
+                  {type === 'wo' ? t('issue_type_wo') : type === 'sale' ? t('issue_type_sale') : t('issue_type_other')}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* WO selector */}
+          {issueType === 'wo' && <div className="sm:col-span-2">
             <label className="label">{t('issue_wo_label')}</label>
             <div className="space-y-2">
               {/* Period + search filters above the select */}
@@ -453,7 +479,25 @@ export default function IssueForm() {
                 </div>
               )}
             </div>
-          </div>
+          </div>}
+
+          {/* Sale — no extra fields needed */}
+          {issueType === 'sale' && (
+            <div className="sm:col-span-2 p-3 bg-blue-50 rounded-lg text-sm text-blue-700 font-medium">
+              ✓ {t('issue_type_sale')}
+            </div>
+          )}
+
+          {/* Other reason */}
+          {issueType === 'other' && (
+            <div className="sm:col-span-2">
+              <label className="label">{t('issue_reason')}</label>
+              <input className="input" autoFocus
+                placeholder={t('issue_reason_placeholder')}
+                value={reason} onChange={e => setReason(e.target.value)} />
+            </div>
+          )}
+
           <div className="sm:col-span-2">
             <label className="label">{t('lbl_notes')}</label>
             <input className="input" value={notes} onChange={e => setNotes(e.target.value)} />
