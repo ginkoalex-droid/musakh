@@ -1,7 +1,7 @@
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchWorkOrder, confirmWorkOrder, deleteWorkOrder } from '../../api/workOrders'
-import { fetchIssueOrders, fetchIssueOrder } from '../../api/issues'
+import { fetchIssueOrders, fetchIssueOrder, confirmIssueOrder, deleteIssueOrder } from '../../api/issues'
 import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus } from 'lucide-react'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
@@ -28,6 +28,24 @@ export default function WorkOrderDetail() {
     queryFn: () => fetchIssueOrders(parseInt(id!)),
     enabled: !!id,
   })
+
+  async function handleConfirmIssue(issueId: number) {
+    if (!confirm(t('issue_confirm_title'))) return
+    try {
+      await confirmIssueOrder(issueId)
+      toast.success(t('issue_confirmed_toast'))
+      qc.invalidateQueries({ queryKey: ['issues-for-wo', id] })
+      qc.invalidateQueries({ queryKey: ['stock'] })
+    } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
+  }
+
+  async function handleDeleteIssue(issueId: number) {
+    if (!confirm(t('issue_delete_confirm'))) return
+    try {
+      await deleteIssueOrder(issueId)
+      qc.invalidateQueries({ queryKey: ['issues-for-wo', id] })
+    } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
+  }
 
   async function handleConfirm() {
     if (!wo || !confirm(t('wo_confirm_title'))) return
@@ -130,8 +148,8 @@ export default function WorkOrderDetail() {
           <div className="space-y-3">
             {issues.map(issue => (
               <div key={issue.id} className="card overflow-hidden">
-                <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                  <div className="flex items-center gap-3">
+                <div className="px-4 py-3 bg-gray-50 border-b border-gray-100 flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <Link to={`/issues/${issue.id}`} className="font-semibold text-blue-700 hover:underline">
                       {t('issue_title')} #{issue.id}
                     </Link>
@@ -139,13 +157,27 @@ export default function WorkOrderDetail() {
                       {new Date(issue.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' })}
                       {' · '}{issue.created_by_name}
                     </span>
+                    {issue.is_cancelled ? (
+                      <span className="badge bg-gray-100 text-gray-500 text-xs">{t('issue_status_cancelled')}</span>
+                    ) : issue.is_confirmed ? (
+                      <span className="badge bg-green-100 text-green-700 text-xs flex items-center gap-1">
+                        <CheckCircle className="w-3 h-3" /> {t('status_confirmed')}
+                      </span>
+                    ) : (
+                      <span className="badge bg-yellow-100 text-yellow-700 text-xs">{t('status_draft')}</span>
+                    )}
                   </div>
-                  {issue.is_confirmed ? (
-                    <span className="badge bg-green-100 text-green-700 text-xs flex items-center gap-1">
-                      <CheckCircle className="w-3 h-3" /> {t('status_confirmed')}
-                    </span>
-                  ) : (
-                    <span className="badge bg-yellow-100 text-yellow-700 text-xs">{t('status_draft')}</span>
+                  {!issue.is_confirmed && !issue.is_cancelled && (
+                    <div className="flex gap-2">
+                      <button onClick={() => handleDeleteIssue(issue.id)}
+                        className="btn-secondary py-1 px-2 text-xs text-red-500">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => handleConfirmIssue(issue.id)}
+                        className="btn-success py-1 px-2 text-xs">
+                        <CheckCircle className="w-3.5 h-3.5" /> {t('issue_confirm_btn')}
+                      </button>
+                    </div>
                   )}
                 </div>
 
