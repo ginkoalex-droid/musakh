@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories } from '../../api/parts'
+import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories, fetchParts } from '../../api/parts'
 import { ArrowLeft, Plus, Trash2, ScanLine, Car } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
@@ -45,6 +45,34 @@ export default function PartForm() {
   const [newOemBrand, setNewOemBrand] = useState('')
   const [newCarMake, setNewCarMake] = useState('')
   const [newCarModel, setNewCarModel] = useState('')
+
+  // Autocomplete for name field
+  const [nameSuggestions, setNameSuggestions] = useState<typeof fetchParts extends (...args: any[]) => Promise<infer R> ? R : never>([])
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const nameTimer = useRef<ReturnType<typeof setTimeout>>()
+
+  function handleNameChange(val: string) {
+    setForm(f => ({ ...f, name: val }))
+    clearTimeout(nameTimer.current)
+    if (val.length < 2) { setNameSuggestions([]); setShowSuggestions(false); return }
+    nameTimer.current = setTimeout(async () => {
+      const parts = await fetchParts(val)
+      setNameSuggestions(parts.slice(0, 8))
+      setShowSuggestions(parts.length > 0)
+    }, 300)
+  }
+
+  function applyNameSuggestion(part: (typeof nameSuggestions)[0]) {
+    setForm(f => ({
+      ...f,
+      name: part.name,
+      brand: part.brand || f.brand,
+      category: part.category || f.category,
+      unit: part.unit || f.unit,
+    }))
+    setShowSuggestions(false)
+    setNameSuggestions([])
+  }
 
   useEffect(() => {
     if (existing) {
@@ -177,9 +205,38 @@ export default function PartForm() {
       <div className="card p-6 space-y-4">
         <h2 className="font-semibold text-gray-700">{t('parts_basic_data')}</h2>
         <div className="grid sm:grid-cols-2 gap-4">
-          <div className="sm:col-span-2">
+          <div className="sm:col-span-2 relative">
             <label className="label">{t('lbl_name')} *</label>
-            <input className="input" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} autoFocus />
+            <input
+              className="input"
+              value={form.name}
+              onChange={e => handleNameChange(e.target.value)}
+              onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+              onFocus={() => nameSuggestions.length > 0 && setShowSuggestions(true)}
+              autoFocus
+            />
+            {showSuggestions && nameSuggestions.length > 0 && (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 max-h-48 overflow-y-auto">
+                {nameSuggestions.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onMouseDown={() => applyNameSuggestion(p)}
+                    className="w-full px-4 py-2.5 text-left hover:bg-blue-50 border-b border-gray-100 last:border-0"
+                  >
+                    <div className="font-medium text-sm text-gray-900">{p.name}</div>
+                    <div className="text-xs text-gray-400 flex gap-2 mt-0.5">
+                      {p.brand && <span>{p.brand}</span>}
+                      {p.category && <span>{p.category}</span>}
+                      <span>{p.unit}</span>
+                    </div>
+                  </button>
+                ))}
+                <div className="px-4 py-2 text-xs text-gray-400 bg-gray-50 border-t">
+                  Выбери похожую запчасть — поля заполнятся автоматически
+                </div>
+              </div>
+            )}
           </div>
           <div>
             <label className="label">{t('lbl_brand')}</label>
