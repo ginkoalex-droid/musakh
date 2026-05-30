@@ -287,7 +287,7 @@ export default function ReceivingForm() {
         {!existing.is_confirmed && !existing.is_cancelled && isWarehouse && (
           <div className="flex gap-3 justify-end flex-wrap">
             {isAdmin && (
-              <button className="btn-secondary" onClick={() => { setEditMode(true); setEditItems(existing.items.map(i => ({ part: { id: i.part_id, name: i.part_name, stock_qty: 0, unit: 'шт', min_stock: 0, barcodes: [], oem_numbers: [], car_applications: [], created_at: '' }, quantity: i.quantity, notes: i.notes || '' }))) }}>
+              <button className="btn-secondary" onClick={() => { setEditMode(true); setEditItems(existing.items.map(i => ({ part: { id: i.part_id, name: i.part_name, stock_qty: 0, unit: 'шт', min_stock: 0, track_min_stock: false, barcodes: [], oem_numbers: [], car_applications: [], created_at: '' }, quantity: i.quantity, notes: i.notes || '' }))) }}>
                 <Edit2 className="w-4 h-4" /> {t('btn_edit')}
               </button>
             )}

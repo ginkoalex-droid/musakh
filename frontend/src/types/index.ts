@@ -34,6 +34,7 @@ export interface Part {
   category?: string
   unit: string
   min_stock: number
+  track_min_stock: boolean
   location?: string
   notes?: string
   stock_qty: number
@@ -119,5 +120,9 @@ export interface StockRow {
   location?: string
   quantity: number
   min_stock: number
+  track_min_stock: boolean
   is_low: boolean
+  first_oem?: string
+  first_barcode?: string
+  car_labels: string[]
 }

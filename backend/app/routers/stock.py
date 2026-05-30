@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc
 from sqlalchemy.orm import selectinload
 
+from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models import Stock, Part, StockMovement, MovementType, User, UserRole
 from app.schemas import StockRow, StockAdjustment, IssueRequest, MovementOut
@@ -31,30 +32,47 @@ async def list_stock(
     _: User = Depends(get_current_user),
 ):
     stmt = (
-        select(Stock, Part)
-        .join(Part, Stock.part_id == Part.id)
+        select(Part)
+        .options(
+            selectinload(Part.stock),
+            selectinload(Part.barcodes),
+            selectinload(Part.oem_numbers),
+            selectinload(Part.car_applications),
+        )
+        .join(Stock, Part.id == Stock.part_id)
         .order_by(Part.name)
     )
     if category:
         stmt = stmt.where(Part.category == category)
 
     result = await db.execute(stmt)
-    rows = result.all()
+    parts = result.scalars().all()
 
-    items = [
-        StockRow(
-            part_id=stock.part_id,
+    items = []
+    for part in parts:
+        stock = part.stock
+        if not stock:
+            continue
+        qty = stock.quantity
+        is_low = part.track_min_stock and qty <= part.min_stock
+        items.append(StockRow(
+            part_id=part.id,
             part_name=part.name,
             brand=part.brand,
             category=part.category,
             unit=part.unit,
             location=part.location,
-            quantity=stock.quantity,
+            quantity=qty,
             min_stock=part.min_stock,
-            is_low=(stock.quantity <= part.min_stock),
-        )
-        for stock, part in rows
-    ]
+            track_min_stock=part.track_min_stock,
+            is_low=is_low,
+            first_oem=part.oem_numbers[0].oem_number if part.oem_numbers else None,
+            first_barcode=part.barcodes[0].barcode if part.barcodes else None,
+            car_labels=[
+                f"{c.make}{' ' + c.model if c.model else ''}"
+                for c in part.car_applications
+            ],
+        ))
 
     if low_only:
         items = [i for i in items if i.is_low]

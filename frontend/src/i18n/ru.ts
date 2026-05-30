@@ -132,6 +132,7 @@ export const ru = {
   stock_movements_excel: 'Движения Excel',
   stock_low_only: 'Только заканчивающиеся',
   stock_need_order: 'Требуется к заказу',
+  parts_track_min_stock: 'Контролировать минимальный остаток',
   stock_all_categories: 'Все категории',
   stock_adjust: 'Скорректировать остаток',
   stock_adjust_title: 'Корректировка',

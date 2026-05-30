@@ -170,8 +170,8 @@ export default function Stock() {
             <thead>
               <tr>
                 <th className="table-th">{t('lbl_name')}</th>
-                <th className="table-th hidden sm:table-cell">{t('lbl_brand')}</th>
-                <th className="table-th hidden md:table-cell">{t('lbl_category')}</th>
+                <th className="table-th hidden md:table-cell">{t('parts_oem_barcodes')} / {t('lbl_cars')}</th>
+                <th className="table-th hidden lg:table-cell">{t('lbl_category')}</th>
                 <th className="table-th hidden lg:table-cell">{t('lbl_location')}</th>
                 <th className="table-th text-right">{t('parts_stock_qty')}</th>
                 <th className="table-th text-right hidden sm:table-cell">{t('lbl_min_stock')}</th>
@@ -189,19 +189,38 @@ export default function Stock() {
                     return true
                   })
                   .map(row => {
-                    const isZero = row.quantity === 0
-                    const isLow = !isZero && row.quantity <= row.min_stock
+                    const tracked = row.track_min_stock
+                    const isZero = tracked && row.quantity === 0
+                    const isLow = tracked && !isZero && row.quantity <= row.min_stock
                     const rowClass = isZero ? 'bg-red-50' : isLow ? 'bg-yellow-50' : ''
                     const qtyClass = isZero ? 'text-red-600' : isLow ? 'text-yellow-700' : 'text-gray-900'
                     return (
                       <tr key={row.part_id} className={rowClass}>
-                        <td className="table-td font-medium">
-                          {row.part_name}
-                          {isZero && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-red-500 align-middle" title="Нет на складе" />}
-                          {isLow && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-yellow-400 align-middle" title="Мало" />}
+                        <td className="table-td">
+                          <div className="font-medium">
+                            {row.part_name}
+                            {isZero && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-red-500 align-middle" />}
+                            {isLow && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-yellow-400 align-middle" />}
+                          </div>
+                          {row.brand && <div className="text-xs text-gray-400 mt-0.5">{row.brand}</div>}
                         </td>
-                        <td className="table-td hidden sm:table-cell text-gray-500">{row.brand || '—'}</td>
-                        <td className="table-td hidden md:table-cell text-gray-500">{row.category || '—'}</td>
+                        <td className="table-td hidden md:table-cell">
+                          <div className="flex flex-wrap gap-1">
+                            {row.first_oem && (
+                              <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{row.first_oem}</span>
+                            )}
+                            {row.first_barcode && (
+                              <span className="text-xs font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">▌{row.first_barcode}</span>
+                            )}
+                            {row.car_labels.slice(0, 2).map((c, i) => (
+                              <span key={i} className="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">{c}</span>
+                            ))}
+                            {row.car_labels.length > 2 && (
+                              <span className="text-xs text-gray-400">+{row.car_labels.length - 2}</span>
+                            )}
+                          </div>
+                        </td>
+                        <td className="table-td hidden lg:table-cell text-gray-500">{row.category || '—'}</td>
                         <td className="table-td hidden lg:table-cell text-gray-500">{row.location || '—'}</td>
                         <td className="table-td text-right font-semibold">
                           <span className={qtyClass}>{row.quantity} {row.unit}</span>

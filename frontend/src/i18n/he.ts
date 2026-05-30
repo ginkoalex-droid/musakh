@@ -127,6 +127,7 @@ export const he: Record<TranslationKey, string> = {
   stock_movements_excel: 'תנועות Excel',
   stock_low_only: 'מלאי נמוך בלבד',
   stock_need_order: 'נדרש הזמנה',
+  parts_track_min_stock: 'עקוב אחר מלאי מינימום',
   stock_all_categories: 'כל הקטגוריות',
   stock_adjust: 'תקן מלאי',
   stock_adjust_title: 'תיקון מלאי',

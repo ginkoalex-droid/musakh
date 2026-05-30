@@ -35,7 +35,7 @@ export default function PartForm() {
 
   const [form, setForm] = useState({
     name: '', brand: '', category: '', unit: 'шт',
-    min_stock: 0, location: '', notes: '',
+    min_stock: 0, track_min_stock: false, location: '', notes: '',
   })
   const [barcodes, setBarcodes] = useState<string[]>([prefillBarcode || ''])
   const [oems, setOems] = useState<{ oem_number: string; brand: string }[]>([{ oem_number: '', brand: '' }])
@@ -54,6 +54,7 @@ export default function PartForm() {
         category: existing.category || '',
         unit: existing.unit,
         min_stock: existing.min_stock,
+        track_min_stock: existing.track_min_stock,
         location: existing.location || '',
         notes: existing.notes || '',
       })
@@ -219,6 +220,18 @@ export default function PartForm() {
             <label className="label">{t('lbl_min_stock')}</label>
             <input type="number" min="0" className="input" value={form.min_stock}
               onChange={e => setForm(f => ({ ...f, min_stock: parseInt(e.target.value) || 0 }))} />
+          </div>
+          <div className="flex items-center gap-2 sm:col-span-2">
+            <input
+              type="checkbox"
+              id="track_min"
+              className="w-4 h-4 rounded text-blue-600"
+              checked={form.track_min_stock}
+              onChange={e => setForm(f => ({ ...f, track_min_stock: e.target.checked }))}
+            />
+            <label htmlFor="track_min" className="text-sm text-gray-700 cursor-pointer select-none">
+              {t('parts_track_min_stock')}
+            </label>
           </div>
           <div className="sm:col-span-2">
             <label className="label">{t('lbl_location')}</label>

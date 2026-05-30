@@ -70,6 +70,7 @@ class PartBase(BaseModel):
     category: Optional[str] = None
     unit: str = "шт"
     min_stock: int = 0
+    track_min_stock: bool = False
     location: Optional[str] = None
     notes: Optional[str] = None
 
@@ -314,7 +315,11 @@ class StockRow(BaseModel):
     location: Optional[str] = None
     quantity: int
     min_stock: int
+    track_min_stock: bool = False
     is_low: bool
+    first_oem: Optional[str] = None
+    first_barcode: Optional[str] = None
+    car_labels: list[str] = []
 
     model_config = {"from_attributes": True}
 

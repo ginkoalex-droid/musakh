@@ -127,6 +127,7 @@ export const en: Record<TranslationKey, string> = {
   stock_movements_excel: 'Movements Excel',
   stock_low_only: 'Low stock only',
   stock_need_order: 'Needs ordering',
+  parts_track_min_stock: 'Track minimum stock level',
   stock_all_categories: 'All categories',
   stock_adjust: 'Adjust stock',
   stock_adjust_title: 'Adjustment',
