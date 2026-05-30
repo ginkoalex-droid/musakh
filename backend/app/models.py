@@ -154,7 +154,7 @@ class Mechanic(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    work_orders: Mapped[list["WorkOrder"]] = relationship(back_populates="mechanic")
+    work_orders: Mapped[list["WorkOrder"]] = relationship(back_populates="mechanic", foreign_keys="WorkOrder.mechanic_id")
 
 
 class WorkOrder(Base):
@@ -175,7 +175,7 @@ class WorkOrder(Base):
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    mechanic: Mapped["Mechanic"] = relationship(back_populates="work_orders", foreign_keys=[mechanic_id])
+    mechanic: Mapped["Mechanic"] = relationship("Mechanic", back_populates="work_orders", foreign_keys=[mechanic_id])
     mechanic2: Mapped["Mechanic | None"] = relationship("Mechanic", foreign_keys=[mechanic_id_2])
     created_by_user: Mapped["User"] = relationship("User", foreign_keys=[created_by])
 
