@@ -54,7 +54,8 @@ export default function Users() {
       qc.invalidateQueries({ queryKey: ['users'] })
       setModal(null)
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || t('err_generic'))
+      const detail = err.response?.data?.detail
+      toast.error(typeof detail === 'string' ? detail : Array.isArray(detail) ? detail[0]?.msg || t('err_generic') : t('err_generic'))
     } finally {
       setLoading(false)
     }
@@ -65,7 +66,8 @@ export default function Users() {
       await api.patch(`/auth/users/${u.id}/toggle`)
       qc.invalidateQueries({ queryKey: ['users'] })
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || t('err_generic'))
+      const detail = err.response?.data?.detail
+      toast.error(typeof detail === 'string' ? detail : t('err_generic'))
     }
   }
 
@@ -78,7 +80,8 @@ export default function Users() {
       setPwModal(null)
       setNewPw('')
     } catch (err: any) {
-      toast.error(err.response?.data?.detail || t('err_generic'))
+      const detail = err.response?.data?.detail
+      toast.error(typeof detail === 'string' ? detail : t('err_generic'))
     } finally {
       setLoading(false)
     }
