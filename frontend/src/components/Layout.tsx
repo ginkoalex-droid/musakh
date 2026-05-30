@@ -3,7 +3,7 @@ import { BarChart3, Truck, Package, ArrowLeftRight, Users, LogOut, Menu, X, Wren
 import { useState } from 'react'
 import { logout, getUser } from '../store/auth'
 import { useT, langNames, type Lang } from '../i18n'
-import { canAdmin } from '../store/permissions'
+import { canAdmin, canWarehouse } from '../store/permissions'
 import Modal from './Modal'
 import toast from 'react-hot-toast'
 import api from '../api/client'
@@ -21,17 +21,18 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const isAdmin = user ? canAdmin(user.role) : false
 
-  const isWarehouse = user ? canAdmin(user.role) || user.role === 'warehouse' : false
+  const isWarehouse = user ? canWarehouse(user.role) : false
+  const isMechanic = user?.role === 'mechanic'
 
   const nav = [
     { to: '/', label: t('nav_stock'), icon: BarChart3, show: true },
-    { to: '/receiving', label: t('nav_receiving'), icon: Truck, show: isWarehouse },
-    { to: '/issues', label: t('nav_issues'), icon: Minus, show: true },
     { to: '/work-orders', label: t('nav_workorders'), icon: ClipboardList, show: true },
-    { to: '/mechanics', label: t('mech_title'), icon: Users, show: isWarehouse },
-    { to: '/parts', label: t('nav_parts'), icon: Package, show: isWarehouse },
+    { to: '/issues', label: t('nav_issues'), icon: Minus, show: true },
     { to: '/movements', label: t('nav_movements'), icon: ArrowLeftRight, show: true },
+    { to: '/receiving', label: t('nav_receiving'), icon: Truck, show: isWarehouse },
+    { to: '/parts', label: t('nav_parts'), icon: Package, show: isWarehouse },
     { to: '/suppliers', label: t('nav_suppliers'), icon: Users, show: isWarehouse },
+    { to: '/mechanics', label: t('mech_title'), icon: Users, show: isWarehouse },
     { to: '/users', label: t('nav_users'), icon: Users, show: isAdmin },
   ].filter(n => n.show)
 

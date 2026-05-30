@@ -8,10 +8,14 @@ import PartSearch from '../components/PartSearch'
 import type { Part, StockRow } from '../types'
 import toast from 'react-hot-toast'
 import { useT } from '../i18n'
+import { getUser } from '../store/auth'
+import { canWarehouse } from '../store/permissions'
 
 export default function Stock() {
   const qc = useQueryClient()
   const { t } = useT()
+  const me = getUser()
+  const isWarehouse = me ? canWarehouse(me.role) : false
   const [lowOnly, setLowOnly] = useState(false)
   const [needOrder, setNeedOrder] = useState(false)
   const [category, setCategory] = useState('')
@@ -116,12 +120,14 @@ export default function Stock() {
           <button onClick={() => setIssueModal(true)} className="btn-danger">
             <Minus className="w-4 h-4" /> {t('stock_issue')}
           </button>
-          <button onClick={exportStock} className="btn-secondary">
-            <Download className="w-4 h-4" /> {t('stock_excel')}
-          </button>
-          <button onClick={exportMovements} className="btn-secondary">
-            <Download className="w-4 h-4" /> {t('stock_movements_excel')}
-          </button>
+          {isWarehouse && <>
+            <button onClick={exportStock} className="btn-secondary">
+              <Download className="w-4 h-4" /> {t('stock_excel')}
+            </button>
+            <button onClick={exportMovements} className="btn-secondary">
+              <Download className="w-4 h-4" /> {t('stock_movements_excel')}
+            </button>
+          </>}
         </div>
       </div>
 
@@ -227,12 +233,14 @@ export default function Stock() {
                         </td>
                         <td className="table-td text-right hidden sm:table-cell text-gray-400">{row.min_stock}</td>
                         <td className="table-td text-center">
-                          <button
-                            onClick={() => { setAdjustModal(row); setAdjustQty(String(row.quantity)) }}
-                            className="btn-secondary py-1 px-2 text-xs"
-                          >
-                            <Settings className="w-3.5 h-3.5" />
-                          </button>
+                          {isWarehouse && (
+                            <button
+                              onClick={() => { setAdjustModal(row); setAdjustQty(String(row.quantity)) }}
+                              className="btn-secondary py-1 px-2 text-xs"
+                            >
+                              <Settings className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </td>
                       </tr>
                     )

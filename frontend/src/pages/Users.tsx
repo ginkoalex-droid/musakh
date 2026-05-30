@@ -14,7 +14,7 @@ async function fetchUsers(): Promise<User[]> {
   return res.data
 }
 
-const ALL_ROLES: UserRole[] = ['admin', 'warehouse', 'mechanic', 'readonly']
+const ALL_ROLES: UserRole[] = ['admin', 'warehouse', 'mechanic']
 
 export default function Users() {
   const { t, lang } = useT()
@@ -119,25 +119,19 @@ export default function Users() {
                   <li>✓ {t('nav_users')}</li>
                 </>}
                 {role === 'warehouse' && <>
-                  <li>✓ {t('nav_stock')}</li>
+                  <li>✓ {t('nav_stock')} + корректировки</li>
                   <li>✓ {t('nav_receiving')}</li>
                   <li>✓ {t('nav_parts')}</li>
                   <li>✓ {t('stock_issue')}</li>
-                  <li>— {t('nav_users')}</li>
+                  <li>— Отмена проводки</li>
                 </>}
                 {role === 'mechanic' && <>
-                  <li>✓ {t('nav_stock')}</li>
-                  <li>— {t('nav_receiving')}</li>
-                  <li>— {t('nav_parts')}</li>
+                  <li>✓ {t('nav_stock')} (просмотр)</li>
+                  <li>✓ {t('nav_workorders')}</li>
                   <li>✓ {t('stock_issue')}</li>
-                  <li>— {t('nav_users')}</li>
-                </>}
-                {role === 'readonly' && <>
-                  <li>✓ {t('nav_stock')}</li>
                   <li>— {t('nav_receiving')}</li>
-                  <li>— {t('nav_parts')}</li>
-                  <li>— {t('stock_issue')}</li>
-                  <li>— {t('nav_users')}</li>
+                  <li>— {t('stock_adjust')}</li>
+                  <li>— Удаление/отмена</li>
                 </>}
               </ul>
             </div>

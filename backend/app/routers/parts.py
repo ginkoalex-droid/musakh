@@ -170,8 +170,11 @@ async def get_part(
 async def create_part(
     data: PartCreate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
+    from app.models import UserRole
+    if current_user.role not in (UserRole.admin, UserRole.warehouse):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
     part = Part(
         name=data.name,
         brand=data.brand,
@@ -219,8 +222,11 @@ async def update_part(
     part_id: int,
     data: PartUpdate,
     db: AsyncSession = Depends(get_db),
-    _: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
+    from app.models import UserRole
+    if current_user.role not in (UserRole.admin, UserRole.warehouse):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
     result = await db.execute(select(Part).where(Part.id == part_id))
     part = result.scalar_one_or_none()
     if not part:

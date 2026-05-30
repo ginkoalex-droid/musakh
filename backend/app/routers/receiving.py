@@ -112,6 +112,8 @@ async def create_order(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role not in (UserRole.admin, UserRole.warehouse):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
     order = ReceivingOrder(
         supplier_id=data.supplier_id,
         date=data.date or datetime.utcnow(),
