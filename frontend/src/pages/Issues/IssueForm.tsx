@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchIssueOrder, createIssueOrder, confirmIssueOrder,
-  cancelIssueOrder, deleteIssueOrder, addIssueItem, removeIssueItem
+  cancelIssueOrder, deleteIssueOrder, addIssueItem, removeIssueItem, updateIssueItemQty
 } from '../../api/issues'
 import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
 import { Link } from 'react-router-dom'
@@ -281,7 +281,26 @@ export default function IssueForm() {
                       )}
                     </div>
                   </td>
-                  <td className="table-td text-right font-semibold text-red-700">-{fmtQty(item.quantity)}</td>
+                  <td className="table-td text-right">
+                    {!existing.is_confirmed && !existing.is_cancelled ? (
+                      <input
+                        type="number"
+                        min={qtyMin(item.part_name)}
+                        step="0.001"
+                        className="input text-right w-20 text-red-700 font-semibold"
+                        defaultValue={item.quantity}
+                        onBlur={async (e) => {
+                          const val = parseFloat(e.target.value)
+                          if (!isNaN(val) && val !== item.quantity && val > 0) {
+                            const updated = await updateIssueItemQty(existing.id, item.id, val)
+                            qc.setQueryData(['issue-order', id], updated)
+                          }
+                        }}
+                      />
+                    ) : (
+                      <span className="font-semibold text-red-700">-{fmtQty(item.quantity)}</span>
+                    )}
+                  </td>
                   <td className="table-td hidden sm:table-cell text-gray-500">{item.notes || '—'}</td>
                   {!existing.is_confirmed && !existing.is_cancelled && (
                     <td className="table-td w-8">
@@ -477,7 +496,7 @@ export default function IssueForm() {
                         className={`input text-right w-24 ${item.quantity > item.part.stock_qty ? 'border-red-400' : ''}`}
                         value={item.quantity}
                         onChange={e => setItems(prev => prev.map((it, i) =>
-                          i === idx ? { ...it, quantity: parseInt(e.target.value) || 1 } : it
+                          i === idx ? { ...it, quantity: parseFloat(e.target.value) || 0 } : it
                         ))}
                       />
                     </td>

@@ -168,6 +168,30 @@ async def add_item(
     return _to_out(result.scalar_one())
 
 
+@router.patch("/{order_id}/items/{item_id}", response_model=IssueOrderOut)
+async def update_item_qty(
+    order_id: int,
+    item_id: int,
+    quantity: float,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    result = await db.execute(select(IssueOrder).options(*_load_opts()).where(IssueOrder.id == order_id))
+    order = result.scalar_one_or_none()
+    if not order or order.is_confirmed:
+        raise HTTPException(status_code=400, detail="Нельзя изменить")
+
+    item_result = await db.execute(select(IssueItem).where(IssueItem.id == item_id, IssueItem.order_id == order_id))
+    item = item_result.scalar_one_or_none()
+    if not item:
+        raise HTTPException(status_code=404, detail="Позиция не найдена")
+    item.quantity = round(quantity, 3)
+    await db.commit()
+
+    result = await db.execute(select(IssueOrder).options(*_load_opts()).where(IssueOrder.id == order.id))
+    return _to_out(result.scalar_one())
+
+
 @router.delete("/{order_id}/items/{item_id}", response_model=IssueOrderOut)
 async def remove_item(
     order_id: int,

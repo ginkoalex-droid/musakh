@@ -86,3 +86,8 @@ export const removeIssueItem = async (orderId: number, itemId: number): Promise<
   const res = await api.delete(`/issues/${orderId}/items/${itemId}`)
   return res.data
 }
+
+export const updateIssueItemQty = async (orderId: number, itemId: number, quantity: number): Promise<IssueOrder> => {
+  const res = await api.patch(`/issues/${orderId}/items/${itemId}`, null, { params: { quantity } })
+  return res.data
+}
