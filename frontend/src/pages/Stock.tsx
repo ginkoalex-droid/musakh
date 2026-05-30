@@ -18,7 +18,6 @@ export default function Stock() {
   const { t } = useT()
   const me = getUser()
   const isWarehouse = me ? canWarehouse(me.role) : false
-  const [lowOnly, setLowOnly] = useState(false)
   const [needOrder, setNeedOrder] = useState(false)
   const [category, setCategory] = useState('')
   const [adjustModal, setAdjustModal] = useState<StockRow | null>(null)
@@ -42,16 +41,16 @@ export default function Stock() {
   }
 
   const { data: stock = [], isLoading } = useQuery({
-    queryKey: ['stock', lowOnly, category, debouncedSearch],
+    queryKey: ['stock', category, debouncedSearch],
     queryFn: async () => {
       if (debouncedSearch) {
         const { fetchParts } = await import('../api/parts')
         const parts = await fetchParts(debouncedSearch, category || undefined)
         const partIds = new Set(parts.map(p => p.id))
-        const allStock = await fetchStock(lowOnly)
+        const allStock = await fetchStock(false)
         return allStock.filter(s => partIds.has(s.part_id))
       }
-      return fetchStock(lowOnly, category || undefined)
+      return fetchStock(false, category || undefined)
     },
   })
 
@@ -133,13 +132,8 @@ export default function Stock() {
 
       <div className="flex flex-wrap gap-3 items-center">
         <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" checked={lowOnly} onChange={e => { setLowOnly(e.target.checked); if (e.target.checked) setNeedOrder(false) }} className="rounded" />
-          <AlertTriangle className="w-4 h-4 text-red-500" />
-          {t('stock_low_only')}
-        </label>
-        <label className="flex items-center gap-2 text-sm cursor-pointer">
-          <input type="checkbox" checked={needOrder} onChange={e => { setNeedOrder(e.target.checked); if (e.target.checked) setLowOnly(false) }} className="rounded" />
-          <span className="text-orange-500">🛒</span>
+          <input type="checkbox" checked={needOrder} onChange={e => setNeedOrder(e.target.checked)} className="rounded" />
+          <AlertTriangle className="w-4 h-4 text-orange-500" />
           {t('stock_need_order')}
         </label>
         <select value={category} onChange={e => setCategory(e.target.value)} className="input w-auto">
