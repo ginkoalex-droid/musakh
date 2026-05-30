@@ -211,13 +211,15 @@ export default function Movements() {
                     <td className="table-td text-right font-medium hidden sm:table-cell">{mv.quantity_after}</td>
                     <td className="table-td hidden md:table-cell">
                       {mv.work_order_number ? (
-                        mv.work_order_id ? (
-                          <Link to={`/work-orders/${mv.work_order_id}`} className="font-mono text-blue-700 font-medium hover:underline">
-                            {mv.work_order_number}
-                          </Link>
-                        ) : (
-                          <span className="font-mono text-blue-700 font-medium">{mv.work_order_number}</span>
-                        )
+                        <Link
+                          to={mv.work_order_id
+                            ? `/work-orders/${mv.work_order_id}`
+                            : `/work-orders?q=${encodeURIComponent(mv.work_order_number)}`
+                          }
+                          className="font-mono text-blue-700 font-medium hover:underline"
+                        >
+                          {mv.work_order_number}
+                        </Link>
                       ) : '—'}
                     </td>
                     <td className="table-td text-gray-500 hidden lg:table-cell max-w-[180px]">

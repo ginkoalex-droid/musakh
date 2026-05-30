@@ -1,8 +1,8 @@
-import { useState, useMemo, useRef } from 'react'
+import { useState, useMemo, useRef, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchWorkOrders, fetchWOSummary, fetchMechanics, confirmWorkOrder, deleteWorkOrder, createWorkOrder } from '../../api/workOrders'
 import { Plus, CheckCircle, Clock, Users, Trash2, Search } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
 import { canAdmin, canWarehouse } from '../../store/permissions'
@@ -27,6 +27,13 @@ function getPeriod(p: Period): { from: string; to: string } {
 export default function WorkOrders() {
   const { t } = useT()
   const qc = useQueryClient()
+  const [searchParams] = useSearchParams()
+
+  // Auto-fill search from URL param (e.g. from movements link)
+  useEffect(() => {
+    const q = searchParams.get('q')
+    if (q) { setSearch(q); setDebouncedSearch(q) }
+  }, [])
   const me = getUser()
   const isWarehouse = me ? canWarehouse(me.role) : false
   const isAdmin = me ? canAdmin(me.role) : false
