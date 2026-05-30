@@ -287,7 +287,7 @@ export default function IssueForm() {
                     {!existing.is_confirmed && !existing.is_cancelled ? (
                       <input
                         type="number"
-                        min="0.001"
+                        min="0"
                         step="0.05"
                         className="input text-right w-20 text-red-700 font-semibold"
                         key={item.id + '-' + item.quantity}

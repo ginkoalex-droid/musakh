@@ -274,11 +274,7 @@ export default function ReceivingForm() {
             </tbody>
             <tfoot>
               <tr className="bg-gray-50">
-                <td className="table-td font-semibold">{t('rec_total_positions')}: {existing.items.length}</td>
-                <td className="table-td text-right font-bold text-green-700">
-                  +{existing.items.reduce((s, i) => s + i.quantity, 0)} {t('lbl_pieces')}
-                </td>
-                <td className="hidden sm:table-cell" />
+                <td className="table-td font-semibold" colSpan={3}>{t('rec_total_positions')}: {existing.items.length}</td>
               </tr>
             </tfoot>
           </table>
@@ -408,12 +404,15 @@ export default function ReceivingForm() {
                       <div className="text-xs text-gray-500">{item.part.brand}</div>
                     </td>
                     <td className="table-td">
-                      <input type="number"
-                        min={qtyMin(item.part.unit)}
-                        step={qtyStep(item.part.unit)}
-                        className="input text-right w-24"
-                        value={item.quantity}
-                        onChange={e => setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: parseFloat(e.target.value) || 0 } : it))} />
+                      <div className="flex items-center gap-1">
+                        <input type="number"
+                          min={qtyMin(item.part.unit)}
+                          step={qtyStep(item.part.unit)}
+                          className="input text-right w-20"
+                          value={item.quantity}
+                          onChange={e => setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: parseFloat(e.target.value) || 0 } : it))} />
+                        <span className="text-xs text-gray-500 shrink-0">{item.part.unit}</span>
+                      </div>
                     </td>
                     <td className="table-td hidden sm:table-cell">
                       <input type="text" className="input" placeholder={t('rec_optional_note')} value={item.notes}
@@ -429,11 +428,7 @@ export default function ReceivingForm() {
               </tbody>
               <tfoot>
                 <tr className="bg-gray-50">
-                  <td className="table-td font-semibold">{t('rec_total_positions')}: {items.length}</td>
-                  <td className="table-td text-right font-bold text-green-700">
-                    {items.reduce((s, i) => s + i.quantity, 0)} {t('lbl_pieces')}
-                  </td>
-                  <td className="hidden sm:table-cell" /><td />
+                  <td className="table-td font-semibold" colSpan={4}>{t('rec_total_positions')}: {items.length}</td>
                 </tr>
               </tfoot>
             </table>

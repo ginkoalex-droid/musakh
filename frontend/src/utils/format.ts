@@ -21,8 +21,7 @@ export function qtyStep(unit: string): string {
   return '1'
 }
 
-/** Min value based on unit */
+/** Min value based on unit — always 0 for fractional units so step grid starts correctly */
 export function qtyMin(unit: string): string {
-  const s = qtyStep(unit)
-  return s === '1' ? '1' : s
+  return qtyStep(unit) === '1' ? '1' : '0'
 }
