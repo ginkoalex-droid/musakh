@@ -242,14 +242,7 @@ async def confirm_order(
         current_qty = round(float(stock.quantity), 3)
         need_qty = round(float(item.quantity), 3)
 
-        if current_qty < need_qty:
-            part_result = await db.execute(select(Part).where(Part.id == item.part_id))
-            part = part_result.scalar_one()
-            raise HTTPException(
-                status_code=400,
-                detail=f"Недостаточно на складе: {part.name} — есть {current_qty}, нужно {need_qty}"
-            )
-
+        # Negative stock allowed during initial setup phase
         qty_before = current_qty
         stock.quantity = round(current_qty - need_qty, 3)
         stock.updated_at = datetime.utcnow()

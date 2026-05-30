@@ -164,12 +164,7 @@ async def issue_parts(
     current_qty = round(float(stock.quantity), 3)
     issue_qty = round(float(data.quantity), 3)
 
-    if current_qty < issue_qty:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Недостаточно на складе: есть {current_qty}, запрошено {issue_qty}",
-        )
-
+    # Negative stock allowed during initial setup phase
     qty_before = current_qty
     stock.quantity = round(current_qty - issue_qty, 3)
     stock.updated_at = datetime.utcnow()

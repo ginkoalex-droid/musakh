@@ -536,7 +536,6 @@ export default function IssueForm() {
                         type="number"
                         min={qtyMin(item.part.unit)}
                         step={qtyStep(item.part.unit)}
-                        max={item.part.stock_qty}
                         className={`input text-right w-24 ${item.quantity > item.part.stock_qty ? 'border-red-400' : ''}`}
                         value={item.quantity}
                         onChange={e => setItems(prev => prev.map((it, i) =>
