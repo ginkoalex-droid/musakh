@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchStock, adjustStock, issueParts, exportStock, exportMovements } from '../api/stock'
 import { fetchCategories, fetchMakes, fetchModelsForMake } from '../api/parts'
 import { AlertTriangle, Download, Settings, Minus, Search } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import Modal from '../components/Modal'
 import PartSearch from '../components/PartSearch'
 import type { Part, StockRow } from '../types'
@@ -203,11 +204,11 @@ export default function Stock() {
                     return (
                       <tr key={row.part_id} className={rowClass}>
                         <td className="table-td">
-                          <div className="font-medium">
+                          <Link to={`/parts/${row.part_id}`} className="font-medium text-blue-700 hover:underline">
                             {row.part_name}
                             {isZero && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-red-500 align-middle" />}
                             {isLow && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-yellow-400 align-middle" />}
-                          </div>
+                          </Link>
                           {row.brand && <div className="text-xs text-gray-400 mt-0.5">{row.brand}</div>}
                         </td>
                         <td className="table-td hidden md:table-cell">
