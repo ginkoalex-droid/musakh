@@ -121,14 +121,16 @@ export default function IssueForm() {
   })
 
   function addPart(part: Part) {
+    const defaultQty = part.default_issue_qty ?? 1
     const ex = items.find(i => i.part.id === part.id)
     if (ex) {
-      setItems(prev => prev.map(i => i.part.id === part.id ? { ...i, quantity: i.quantity + 1 } : i))
-      toast.success(`${part.name}: ${ex.quantity + 1}`, { duration: 1200, icon: '📦' })
+      const newQty = Math.round((ex.quantity + defaultQty) * 1000) / 1000
+      setItems(prev => prev.map(i => i.part.id === part.id ? { ...i, quantity: newQty } : i))
+      toast.success(`${part.name}: ${newQty} ${part.unit}`, { duration: 1200, icon: '📦' })
       return
     }
-    setItems(prev => [...prev, { part, quantity: 1, notes: '' }])
-    toast.success(`+ ${part.name}`, { duration: 1200 })
+    setItems(prev => [...prev, { part, quantity: defaultQty, notes: '' }])
+    toast.success(`+ ${part.name}: ${defaultQty} ${part.unit}`, { duration: 1200 })
   }
 
   async function handleSave() {
@@ -285,15 +287,16 @@ export default function IssueForm() {
                     {!existing.is_confirmed && !existing.is_cancelled ? (
                       <input
                         type="number"
-                        min={qtyMin(item.part_name)}
-                        step="0.001"
+                        min="0.001"
+                        step="0.05"
                         className="input text-right w-20 text-red-700 font-semibold"
+                        key={item.id + '-' + item.quantity}
                         defaultValue={item.quantity}
                         onBlur={async (e) => {
                           const val = parseFloat(e.target.value)
-                          if (!isNaN(val) && val !== item.quantity && val > 0) {
-                            const updated = await updateIssueItemQty(existing.id, item.id, val)
-                            qc.setQueryData(['issue-order', id], updated)
+                          if (!isNaN(val) && val > 0) {
+                            await updateIssueItemQty(existing.id, item.id, val)
+                            qc.invalidateQueries({ queryKey: ['issue-order', id] })
                           }
                         }}
                       />
@@ -305,8 +308,8 @@ export default function IssueForm() {
                   {!existing.is_confirmed && !existing.is_cancelled && (
                     <td className="table-td w-8">
                       <button onClick={async () => {
-                        const updated = await removeIssueItem(existing.id, item.id)
-                        qc.setQueryData(['issue-order', id], updated)
+                        await removeIssueItem(existing.id, item.id)
+                        qc.invalidateQueries({ queryKey: ['issue-order', id] })
                       }} className="p-1 hover:text-red-600">
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -317,10 +320,7 @@ export default function IssueForm() {
             </tbody>
             <tfoot>
               <tr className="bg-gray-50">
-                <td className="table-td font-semibold">{t('rec_total_positions')}: {existing.items.length}</td>
-                <td className="table-td text-right font-bold text-red-700">
-                  -{existing.items.reduce((s, i) => s + i.quantity, 0)} {t('lbl_pieces')}
-                </td>
+                <td className="table-td font-semibold" colSpan={3}>{t('rec_total_positions')}: {existing.items.length}</td>
                 <td className="hidden sm:table-cell" />
               </tr>
             </tfoot>
@@ -335,8 +335,8 @@ export default function IssueForm() {
             </div>
             <PartSearch
               onSelect={async (part) => {
-                const updated = await addIssueItem(existing.id, part.id, 1)
-                qc.setQueryData(['issue-order', id], updated)
+                await addIssueItem(existing.id, part.id, part.default_issue_qty ?? 1)
+                qc.invalidateQueries({ queryKey: ['issue-order', id] })
               }}
               placeholder={t('issue_add_placeholder')}
             />
@@ -515,11 +515,7 @@ export default function IssueForm() {
               </tbody>
               <tfoot>
                 <tr className="bg-gray-50">
-                  <td className="table-td font-semibold">{t('rec_total_positions')}: {items.length}</td>
-                  <td className="table-td text-right font-bold text-red-700">
-                    -{items.reduce((s, i) => s + i.quantity, 0)} {t('lbl_pieces')}
-                  </td>
-                  <td className="hidden sm:table-cell" /><td />
+                  <td className="table-td font-semibold" colSpan={4}>{t('rec_total_positions')}: {items.length}</td>
                 </tr>
               </tfoot>
             </table>

@@ -133,6 +133,8 @@ export const ru = {
   stock_low_only: 'Только заканчивающиеся',
   stock_need_order: 'Требуется к заказу',
   parts_track_min_stock: 'Контролировать минимальный остаток',
+  parts_default_issue_qty: 'Кол-во по умолчанию при списании',
+  parts_default_issue_qty_hint: 'Сколько добавляется при сканировании',
   stock_all_categories: 'Все категории',
   stock_adjust: 'Скорректировать остаток',
   stock_adjust_title: 'Корректировка',

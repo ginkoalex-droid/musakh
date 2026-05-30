@@ -128,6 +128,8 @@ export const en: Record<TranslationKey, string> = {
   stock_low_only: 'Low stock only',
   stock_need_order: 'Needs ordering',
   parts_track_min_stock: 'Track minimum stock level',
+  parts_default_issue_qty: 'Default issue quantity',
+  parts_default_issue_qty_hint: 'Amount added when scanned',
   stock_all_categories: 'All categories',
   stock_adjust: 'Adjust stock',
   stock_adjust_title: 'Adjustment',

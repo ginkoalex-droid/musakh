@@ -35,6 +35,7 @@ export interface Part {
   unit: string
   min_stock: number
   track_min_stock: boolean
+  default_issue_qty: number
   location?: string
   notes?: string
   stock_qty: number

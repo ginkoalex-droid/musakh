@@ -50,6 +50,7 @@ class Part(Base):
     unit: Mapped[str] = mapped_column(String(20), default="шт")
     min_stock: Mapped[int] = mapped_column(Integer, default=0)
     track_min_stock: Mapped[bool] = mapped_column(Boolean, default=False)
+    default_issue_qty: Mapped[float] = mapped_column(Numeric(10, 3), default=1)
     location: Mapped[str | None] = mapped_column(String(100))
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

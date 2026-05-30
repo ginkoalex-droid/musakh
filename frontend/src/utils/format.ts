@@ -13,13 +13,16 @@ export function parseQty(val: string): number {
   return isNaN(n) ? 0 : Math.round(n * 1000) / 1000
 }
 
-/** Decimal input step based on unit: liters/kg/meters → 0.001, others → 1 */
+/** Decimal input step based on unit */
 export function qtyStep(unit: string): string {
-  const u = unit?.toLowerCase()
-  return ['л', 'l', 'кг', 'kg', 'м', 'm', 'г', 'g'].includes(u) ? '0.001' : '1'
+  const u = (unit || '').toLowerCase()
+  if (['л', 'l'].includes(u)) return '0.05'           // litres: 50ml steps
+  if (['кг', 'kg', 'г', 'g', 'м', 'm'].includes(u)) return '0.001'
+  return '1'
 }
 
 /** Min value based on unit */
 export function qtyMin(unit: string): string {
-  return qtyStep(unit) === '1' ? '1' : '0.001'
+  const s = qtyStep(unit)
+  return s === '1' ? '1' : s
 }

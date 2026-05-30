@@ -35,7 +35,7 @@ export default function PartForm() {
 
   const [form, setForm] = useState({
     name: '', brand: '', category: '', unit: 'шт',
-    min_stock: 0, track_min_stock: false, location: '', notes: '',
+    min_stock: 0, track_min_stock: false, default_issue_qty: 1, location: '', notes: '',
   })
   const [barcodes, setBarcodes] = useState<string[]>([prefillBarcode || ''])
   const [oems, setOems] = useState<{ oem_number: string; brand: string }[]>([{ oem_number: '', brand: '' }])
@@ -55,6 +55,7 @@ export default function PartForm() {
         unit: existing.unit,
         min_stock: existing.min_stock,
         track_min_stock: existing.track_min_stock,
+        default_issue_qty: existing.default_issue_qty ?? 1,
         location: existing.location || '',
         notes: existing.notes || '',
       })
@@ -220,6 +221,12 @@ export default function PartForm() {
             <label className="label">{t('lbl_min_stock')}</label>
             <input type="number" min="0" className="input" value={form.min_stock}
               onChange={e => setForm(f => ({ ...f, min_stock: parseInt(e.target.value) || 0 }))} />
+          </div>
+          <div>
+            <label className="label">{t('parts_default_issue_qty')}</label>
+            <input type="number" min="0.001" step="0.05" className="input" value={form.default_issue_qty}
+              onChange={e => setForm(f => ({ ...f, default_issue_qty: parseFloat(e.target.value) || 1 }))} />
+            <p className="text-xs text-gray-400 mt-1">{t('parts_default_issue_qty_hint')}</p>
           </div>
           <div className="flex items-center gap-2 sm:col-span-2">
             <input

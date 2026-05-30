@@ -71,6 +71,7 @@ class PartBase(BaseModel):
     unit: str = "шт"
     min_stock: int = 0
     track_min_stock: bool = False
+    default_issue_qty: float = 1.0
     location: Optional[str] = None
     notes: Optional[str] = None
 

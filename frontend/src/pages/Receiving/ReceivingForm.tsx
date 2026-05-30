@@ -49,13 +49,13 @@ export default function ReceivingForm() {
     const existing = items.find(i => i.part.id === part.id)
     if (existing) {
       setItems(prev => prev.map(i =>
-        i.part.id === part.id ? { ...i, quantity: i.quantity + 1 } : i
+        i.part.id === part.id ? { ...i, quantity: Math.round((i.quantity + (part.default_issue_qty ?? 1)) * 1000) / 1000 } : i
       ))
-      toast.success(`${part.name}: ${existing.quantity + 1}`, { duration: 1200, icon: '📦' })
+      toast.success(`${part.name}: ${Math.round((existing.quantity + (part.default_issue_qty ?? 1)) * 1000) / 1000} ${part.unit}`, { duration: 1200, icon: '📦' })
       return
     }
-    setItems(prev => [...prev, { part, quantity: 1, notes: '' }])
-    toast.success(`+ ${part.name}`, { duration: 1200 })
+    setItems(prev => [...prev, { part, quantity: part.default_issue_qty ?? 1, notes: '' }])
+    toast.success(`+ ${part.name}: ${part.default_issue_qty ?? 1} ${part.unit}`, { duration: 1200 })
   }
 
   async function handleCopy() {
@@ -288,7 +288,7 @@ export default function ReceivingForm() {
         {!existing.is_confirmed && !existing.is_cancelled && isWarehouse && (
           <div className="flex gap-3 justify-end flex-wrap">
             {isAdmin && (
-              <button className="btn-secondary" onClick={() => { setEditMode(true); setEditItems(existing.items.map(i => ({ part: { id: i.part_id, name: i.part_name, stock_qty: 0, unit: 'шт', min_stock: 0, track_min_stock: false, barcodes: [], oem_numbers: [], car_applications: [], created_at: '' }, quantity: i.quantity, notes: i.notes || '' }))) }}>
+              <button className="btn-secondary" onClick={() => { setEditMode(true); setEditItems(existing.items.map(i => ({ part: { id: i.part_id, name: i.part_name, stock_qty: 0, unit: 'шт', min_stock: 0, track_min_stock: false, default_issue_qty: 1, barcodes: [], oem_numbers: [], car_applications: [], created_at: '' }, quantity: i.quantity, notes: i.notes || '' }))) }}>
                 <Edit2 className="w-4 h-4" /> {t('btn_edit')}
               </button>
             )}
