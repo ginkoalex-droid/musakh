@@ -80,8 +80,12 @@ def _wo_to_out(wo: WorkOrder) -> WorkOrderOut:
     return WorkOrderOut(
         id=wo.id,
         work_order_number=wo.work_order_number,
+        work_type=wo.work_type,
         mechanic_id=wo.mechanic_id,
         mechanic_name=wo.mechanic.name,
+        mechanic_id_2=wo.mechanic_id_2,
+        mechanic2_name=wo.mechanic2.name if wo.mechanic2 else None,
+        mechanic_share=wo.mechanic_share,
         date=wo.date,
         car_plate=wo.car_plate,
         car_make=wo.car_make,
@@ -96,6 +100,7 @@ def _wo_to_out(wo: WorkOrder) -> WorkOrderOut:
 def _load_opts():
     return [
         selectinload(WorkOrder.mechanic),
+        selectinload(WorkOrder.mechanic2),
         selectinload(WorkOrder.created_by_user),
     ]
 
@@ -106,7 +111,9 @@ async def list_work_orders(
     from_date: Optional[str] = Query(None),
     to_date: Optional[str] = Query(None),
     confirmed_only: bool = False,
-    q: Optional[str] = Query(None, description="Search by WO number, plate, make, model"),
+    open_only: bool = False,
+    work_type: Optional[str] = Query(None),
+    q: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
@@ -123,6 +130,10 @@ async def list_work_orders(
         stmt = stmt.where(WorkOrder.date <= datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59))
     if confirmed_only:
         stmt = stmt.where(WorkOrder.is_confirmed == True)
+    if open_only:
+        stmt = stmt.where(WorkOrder.is_confirmed == False)
+    if work_type:
+        stmt = stmt.where(WorkOrder.work_type == work_type)
     if q:
         q_like = f"%{q}%"
         from sqlalchemy import or_
@@ -144,32 +155,42 @@ async def work_orders_summary(
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    stmt = (
-        select(
-            WorkOrder.mechanic_id,
-            Mechanic.name,
-            func.count(WorkOrder.id).label("total"),
-            func.sum(func.cast(WorkOrder.is_confirmed, func.Integer if False else None)).label("confirmed"),
-        )
-        .join(Mechanic, WorkOrder.mechanic_id == Mechanic.id)
-        .group_by(WorkOrder.mechanic_id, Mechanic.name)
-        .order_by(Mechanic.name)
-    )
+    """Compute mechanic summary with fractional shares for split jobs."""
+    stmt = select(WorkOrder).options(*_load_opts())
     if from_date:
         stmt = stmt.where(WorkOrder.date >= datetime.strptime(from_date, "%Y-%m-%d"))
     if to_date:
         stmt = stmt.where(WorkOrder.date <= datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59))
 
     result = await db.execute(stmt)
-    rows = result.all()
+    orders = result.scalars().all()
+
+    # Aggregate: mechanic_id → {name, total, confirmed}
+    totals: dict[int, dict] = {}
+
+    for wo in orders:
+        share1 = wo.mechanic_share / 100.0
+        share2 = 1.0 - share1
+
+        def add(mech_id: int, name: str, share: float, confirmed: bool):
+            if mech_id not in totals:
+                totals[mech_id] = {"name": name, "total": 0.0, "confirmed": 0.0}
+            totals[mech_id]["total"] += share
+            if confirmed:
+                totals[mech_id]["confirmed"] += share
+
+        add(wo.mechanic_id, wo.mechanic.name, share1, wo.is_confirmed)
+        if wo.mechanic_id_2 and wo.mechanic2:
+            add(wo.mechanic_id_2, wo.mechanic2.name, share2, wo.is_confirmed)
+
     return [
         MechanicSummary(
-            mechanic_id=r[0],
-            mechanic_name=r[1],
-            total=r[2],
-            confirmed=r[3] or 0,
+            mechanic_id=mid,
+            mechanic_name=data["name"],
+            total=round(data["total"], 2),
+            confirmed=round(data["confirmed"], 2),
         )
-        for r in rows
+        for mid, data in sorted(totals.items(), key=lambda x: x[1]["name"])
     ]
 
 
@@ -198,7 +219,10 @@ async def create_work_order(
 
     wo = WorkOrder(
         work_order_number=data.work_order_number,
+        work_type=data.work_type,
         mechanic_id=data.mechanic_id,
+        mechanic_id_2=data.mechanic_id_2,
+        mechanic_share=data.mechanic_share,
         date=data.date or datetime.utcnow(),
         car_plate=data.car_plate,
         car_make=data.car_make,

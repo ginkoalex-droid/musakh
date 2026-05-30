@@ -9,11 +9,17 @@ export interface Mechanic {
   created_at: string
 }
 
+export const WORK_TYPES = ['טיפול', 'שיפוץ', 'פרואקט', 'תעונה', 'חשמל', 'ריקולת'] as const
+
 export interface WorkOrder {
   id: number
   work_order_number: string
+  work_type?: string
   mechanic_id: number
   mechanic_name: string
+  mechanic_id_2?: number
+  mechanic2_name?: string
+  mechanic_share: number
   date: string
   car_plate?: string
   car_make?: string
@@ -27,7 +33,7 @@ export interface WorkOrder {
 export interface MechanicSummary {
   mechanic_id: number
   mechanic_name: string
-  total: number
+  total: number    // float (fractional for split jobs)
   confirmed: number
 }
 
@@ -55,6 +61,8 @@ export interface WOFilters {
   from_date?: string
   to_date?: string
   confirmed_only?: boolean
+  open_only?: boolean
+  work_type?: string
   q?: string
 }
 
@@ -69,6 +77,8 @@ export const fetchWorkOrders = async (f: WOFilters = {}): Promise<WorkOrder[]> =
   if (f.from_date) params.from_date = f.from_date
   if (f.to_date) params.to_date = f.to_date
   if (f.confirmed_only) params.confirmed_only = true
+  if (f.open_only) params.open_only = true
+  if (f.work_type) params.work_type = f.work_type
   if (f.q) params.q = f.q
   const res = await api.get('/work-orders', { params })
   return res.data

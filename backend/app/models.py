@@ -162,7 +162,10 @@ class WorkOrder(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     work_order_number: Mapped[str] = mapped_column(String(100), index=True)
+    work_type: Mapped[str | None] = mapped_column(String(50), index=True)
     mechanic_id: Mapped[int] = mapped_column(ForeignKey("mechanics.id"), index=True)
+    mechanic_id_2: Mapped[int | None] = mapped_column(ForeignKey("mechanics.id"), nullable=True)
+    mechanic_share: Mapped[int] = mapped_column(Integer, default=100)  # % for mechanic_id_1
     date: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, index=True)
     car_plate: Mapped[str | None] = mapped_column(String(20))
     car_make: Mapped[str | None] = mapped_column(String(100))
@@ -172,7 +175,8 @@ class WorkOrder(Base):
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
-    mechanic: Mapped["Mechanic"] = relationship(back_populates="work_orders")
+    mechanic: Mapped["Mechanic"] = relationship(back_populates="work_orders", foreign_keys=[mechanic_id])
+    mechanic2: Mapped["Mechanic | None"] = relationship("Mechanic", foreign_keys=[mechanic_id_2])
     created_by_user: Mapped["User"] = relationship("User", foreign_keys=[created_by])
 
 

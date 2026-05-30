@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchWorkOrders, fetchWOSummary, fetchMechanics, confirmWorkOrder, deleteWorkOrder, createWorkOrder } from '../../api/workOrders'
 import { Plus, CheckCircle, Clock, Users, Trash2, Search } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
+import { WORK_TYPES } from '../../api/workOrders'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
 import { canAdmin, canWarehouse } from '../../store/permissions'
@@ -59,7 +60,13 @@ export default function WorkOrders() {
   const woCheckTimer = useRef<ReturnType<typeof setTimeout>>()
 
   // New WO form state
-  const [form, setForm] = useState({ work_order_number: '', mechanic_id: 0, car_plate: '', car_make: '', car_model: '', notes: '' })
+  const [statusFilter, setStatusFilter] = useState<'all' | 'open' | 'closed'>('all')
+  const [workTypeFilter, setWorkTypeFilter] = useState('')
+  const [form, setForm] = useState({
+    work_order_number: '', work_type: '', mechanic_id: 0,
+    mechanic_id_2: 0, mechanic_share: 100,
+    car_plate: '', car_make: '', car_model: '', notes: ''
+  })
 
   function handleWONumber(val: string) {
     setForm(f => ({ ...f, work_order_number: val }))
@@ -74,12 +81,15 @@ export default function WorkOrders() {
   const { from, to } = period === 'custom' ? { from: customFrom, to: customTo } : getPeriod(period)
 
   const { data: orders = [] } = useQuery({
-    queryKey: ['work-orders', from, to, mechFilter, debouncedSearch],
+    queryKey: ['work-orders', from, to, mechFilter, debouncedSearch, statusFilter, workTypeFilter],
     queryFn: () => fetchWorkOrders({
       from_date: debouncedSearch ? undefined : (from || undefined),
       to_date: debouncedSearch ? undefined : (to || undefined),
       mechanic_id: mechFilter || undefined,
       q: debouncedSearch || undefined,
+      confirmed_only: statusFilter === 'closed',
+      open_only: statusFilter === 'open',
+      work_type: workTypeFilter || undefined,
     }),
   })
 
@@ -120,7 +130,10 @@ export default function WorkOrders() {
     try {
       await createWorkOrder({
         work_order_number: form.work_order_number,
+        work_type: form.work_type || undefined,
         mechanic_id: form.mechanic_id,
+        mechanic_id_2: form.mechanic_id_2 || undefined,
+        mechanic_share: form.mechanic_share,
         car_plate: form.car_plate || undefined,
         car_make: form.car_make || undefined,
         car_model: form.car_model || undefined,
@@ -130,7 +143,7 @@ export default function WorkOrders() {
       qc.invalidateQueries({ queryKey: ['work-orders'] })
       qc.invalidateQueries({ queryKey: ['wo-summary'] })
       setNewModal(false)
-      setForm({ work_order_number: '', mechanic_id: 0, car_plate: '', car_make: '', car_model: '', notes: '' })
+      setForm({ work_order_number: '', work_type: '', mechanic_id: 0, mechanic_id_2: 0, mechanic_share: 100, car_plate: '', car_make: '', car_model: '', notes: '' })
     } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
     finally { setLoading(false) }
   }
@@ -160,8 +173,16 @@ export default function WorkOrders() {
         <Link to={`/work-orders/${o.id}`} className="font-mono font-semibold text-blue-700 hover:underline">
           {o.work_order_number}
         </Link>
+        {o.work_type && <span className="ml-2 badge bg-purple-100 text-purple-700 text-xs">{o.work_type}</span>}
       </td>
-      {!groupBy && <td className="table-td font-medium">{o.mechanic_name}</td>}
+      {!groupBy && (
+        <td className="table-td">
+          <div className="font-medium">{o.mechanic_name}</div>
+          {o.mechanic2_name && (
+            <div className="text-xs text-gray-400">{o.mechanic_share}% / {o.mechanic2_name} {100 - o.mechanic_share}%</div>
+          )}
+        </td>
+      )}
       <td className="table-td text-gray-500 text-sm">{new Date(o.date).toLocaleDateString('ru-RU')}</td>
       <td className="table-td hidden sm:table-cell text-gray-500 text-sm">
         {[o.car_plate, o.car_make, o.car_model].filter(Boolean).join(' ')}
@@ -249,6 +270,18 @@ export default function WorkOrders() {
             </div>
           </div>
         )}
+        <div className="flex flex-wrap gap-2">
+          {(['all', 'open', 'closed'] as const).map(s => (
+            <button key={s} onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
+              {s === 'all' ? 'Все' : s === 'open' ? `${t('wo_open')}` : `${t('wo_confirmed')}`}
+            </button>
+          ))}
+        </div>
+        <select value={workTypeFilter} onChange={e => setWorkTypeFilter(e.target.value)} className="input w-auto">
+          <option value="">Все типы</option>
+          {WORK_TYPES.map(wt => <option key={wt} value={wt}>{wt}</option>)}
+        </select>
         <select value={mechFilter} onChange={e => setMechFilter(e.target.value ? parseInt(e.target.value) : '')} className="input w-auto">
           <option value="">{t('mov_all_employees')}</option>
           {mechanics.map(m => <option key={m.id} value={m.id}>{m.name}{!m.is_active ? ' (inactive)' : ''}</option>)}
@@ -264,9 +297,9 @@ export default function WorkOrders() {
               <div key={s.mechanic_id} className="card p-4 cursor-pointer hover:border-blue-300 hover:shadow"
                 onClick={() => setMechFilter(mechFilter === s.mechanic_id ? '' : s.mechanic_id)}>
                 <div className="font-semibold text-gray-900 text-sm">{s.mechanic_name}</div>
-                <div className="text-3xl font-bold text-blue-700 mt-1">{s.total}</div>
+                <div className="text-3xl font-bold text-blue-700 mt-1">{s.confirmed}</div>
                 <div className="text-xs text-gray-500 mt-0.5">
-                  {t('wo_closed')}: <span className="text-green-600 font-medium">{s.confirmed}</span>
+                  закрыт · всего: <span className="text-gray-600 font-medium">{s.total}</span>
                 </div>
               </div>
             ))}
@@ -355,6 +388,14 @@ export default function WorkOrders() {
               )}
             </div>
             <div>
+              <label className="label">Тип работы</label>
+              <select className="input" value={form.work_type}
+                onChange={e => setForm(f => ({ ...f, work_type: e.target.value }))}>
+                <option value="">—</option>
+                {WORK_TYPES.map(wt => <option key={wt} value={wt}>{wt}</option>)}
+              </select>
+            </div>
+            <div>
               <label className="label">{t('wo_mechanic')} *</label>
               <select className="input" value={form.mechanic_id}
                 onChange={e => setForm(f => ({ ...f, mechanic_id: parseInt(e.target.value) }))}>
@@ -362,6 +403,26 @@ export default function WorkOrders() {
                 {activeMechanics.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
               </select>
             </div>
+            <div>
+              <label className="label">Второй механик (необязательно)</label>
+              <select className="input" value={form.mechanic_id_2}
+                onChange={e => setForm(f => ({ ...f, mechanic_id_2: parseInt(e.target.value) || 0 }))}>
+                <option value={0}>—</option>
+                {activeMechanics.filter(m => m.id !== form.mechanic_id).map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+              </select>
+            </div>
+            {form.mechanic_id_2 > 0 && (
+              <div>
+                <label className="label">Доля первого механика: {form.mechanic_share}% / {100 - form.mechanic_share}%</label>
+                <input type="range" min="10" max="90" step="10" className="w-full"
+                  value={form.mechanic_share}
+                  onChange={e => setForm(f => ({ ...f, mechanic_share: parseInt(e.target.value) }))} />
+                <div className="flex justify-between text-xs text-gray-400 mt-0.5">
+                  <span>{activeMechanics.find(m => m.id === form.mechanic_id)?.name}</span>
+                  <span>{activeMechanics.find(m => m.id === form.mechanic_id_2)?.name}</span>
+                </div>
+              </div>
+            )}
             <div className="grid grid-cols-3 gap-2">
               <div>
                 <label className="label">{t('wo_car_plate')}</label>

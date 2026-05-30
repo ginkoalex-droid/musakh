@@ -208,9 +208,15 @@ class MechanicOut(MechanicCreate):
 
 # ── Work Orders ────────────────────────────────────────────────────────────────
 
+WORK_TYPES = ['טיפול', 'שיפוץ', 'פרואקט', 'תעונה', 'חשמל', 'ריקולת']
+
+
 class WorkOrderCreate(BaseModel):
     work_order_number: str
+    work_type: Optional[str] = None
     mechanic_id: int
+    mechanic_id_2: Optional[int] = None
+    mechanic_share: int = 100
     date: Optional[datetime] = None
     car_plate: Optional[str] = None
     car_make: Optional[str] = None
@@ -221,8 +227,12 @@ class WorkOrderCreate(BaseModel):
 class WorkOrderOut(BaseModel):
     id: int
     work_order_number: str
+    work_type: Optional[str] = None
     mechanic_id: int
     mechanic_name: str
+    mechanic_id_2: Optional[int] = None
+    mechanic2_name: Optional[str] = None
+    mechanic_share: int = 100
     date: datetime
     car_plate: Optional[str] = None
     car_make: Optional[str] = None
@@ -238,8 +248,8 @@ class WorkOrderOut(BaseModel):
 class MechanicSummary(BaseModel):
     mechanic_id: int
     mechanic_name: str
-    total: int
-    confirmed: int
+    total: float
+    confirmed: float
 
 
 # ── Issue Orders ──────────────────────────────────────────────────────────────
