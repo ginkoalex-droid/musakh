@@ -90,7 +90,7 @@ class PartOut(PartBase):
     barcodes: list[BarcodeOut] = []
     oem_numbers: list[OemOut] = []
     car_applications: list[CarApplicationOut] = []
-    stock_qty: Optional[int] = None
+    stock_qty: Optional[float] = None
     created_at: datetime
 
     model_config = {"from_attributes": True}
@@ -104,7 +104,7 @@ class PartListItem(BaseModel):
     unit: str
     location: Optional[str] = None
     min_stock: int
-    stock_qty: int = 0
+    stock_qty: float = 0
     barcodes: list[BarcodeOut] = []
     oem_numbers: list[OemOut] = []
     car_applications: list[CarApplicationOut] = []
