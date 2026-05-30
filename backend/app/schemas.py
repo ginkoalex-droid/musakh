@@ -351,6 +351,7 @@ class MovementOut(BaseModel):
     reference_type: Optional[str] = None
     reference_id: Optional[int] = None
     work_order_number: Optional[str] = None
+    work_order_id: Optional[int] = None
     notes: Optional[str] = None
     created_by_name: str
     created_at: datetime

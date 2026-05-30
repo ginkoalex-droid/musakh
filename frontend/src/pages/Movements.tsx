@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchMovements } from '../api/stock'
 import { ArrowDown, ArrowUp, Settings, RotateCcw, Download } from 'lucide-react'
+import { Link } from 'react-router-dom'
 import type { MovementType } from '../types'
 import { useT } from '../i18n'
 import api from '../api/client'
@@ -209,9 +210,15 @@ export default function Movements() {
                     </td>
                     <td className="table-td text-right font-medium hidden sm:table-cell">{mv.quantity_after}</td>
                     <td className="table-td hidden md:table-cell">
-                      {mv.work_order_number
-                        ? <span className="font-mono text-blue-700 font-medium">{mv.work_order_number}</span>
-                        : '—'}
+                      {mv.work_order_number ? (
+                        mv.work_order_id ? (
+                          <Link to={`/work-orders/${mv.work_order_id}`} className="font-mono text-blue-700 font-medium hover:underline">
+                            {mv.work_order_number}
+                          </Link>
+                        ) : (
+                          <span className="font-mono text-blue-700 font-medium">{mv.work_order_number}</span>
+                        )
+                      ) : '—'}
                     </td>
                     <td className="table-td text-gray-500 hidden lg:table-cell max-w-[180px]">
                       <span className="line-clamp-1">

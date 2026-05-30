@@ -167,8 +167,9 @@ export default function WorkOrderDetail() {
                       <span className="badge bg-yellow-100 text-yellow-700 text-xs">{t('status_draft')}</span>
                     )}
                   </div>
-                  {!issue.is_confirmed && !issue.is_cancelled && (
-                    <div className="flex gap-2">
+                  <div className="flex gap-2">
+                    {/* Draft: confirm + delete */}
+                    {!issue.is_confirmed && !issue.is_cancelled && (<>
                       <button onClick={() => handleDeleteIssue(issue.id)}
                         className="btn-secondary py-1 px-2 text-xs text-red-500">
                         <Trash2 className="w-3.5 h-3.5" />
@@ -177,8 +178,15 @@ export default function WorkOrderDetail() {
                         className="btn-success py-1 px-2 text-xs">
                         <CheckCircle className="w-3.5 h-3.5" /> {t('issue_confirm_btn')}
                       </button>
-                    </div>
-                  )}
+                    </>)}
+                    {/* Cancelled: delete only */}
+                    {issue.is_cancelled && isAdmin && (
+                      <button onClick={() => handleDeleteIssue(issue.id)}
+                        className="btn-secondary py-1 px-2 text-xs text-red-500">
+                        <Trash2 className="w-3.5 h-3.5" /> {t('btn_delete')}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Fetch full issue to show items - use IssueOrderOut */}

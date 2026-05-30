@@ -252,6 +252,7 @@ async def list_movements(
             reference_type=mv.reference_type,
             reference_id=mv.reference_id,
             work_order_number=mv.work_order_number,
+            work_order_id=getattr(mv, 'work_order_id', None),
             notes=mv.notes,
             created_by_name=user.name,
             created_at=mv.created_at,

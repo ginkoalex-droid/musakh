@@ -231,6 +231,7 @@ class StockMovement(Base):
     reference_type: Mapped[str | None] = mapped_column(String(50))
     reference_id: Mapped[int | None] = mapped_column(Integer)
     work_order_number: Mapped[str | None] = mapped_column(String(100), index=True)
+    work_order_id: Mapped[int | None] = mapped_column(ForeignKey("work_orders.id"), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

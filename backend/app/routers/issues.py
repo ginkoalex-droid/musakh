@@ -257,12 +257,13 @@ async def confirm_order(
         db.add(StockMovement(
             part_id=item.part_id,
             movement_type=MovementType.issue,
-            quantity=-item.quantity,
+            quantity=-need_qty,
             quantity_before=qty_before,
-            quantity_after=stock.quantity,
+            quantity_after=round(float(stock.quantity), 3),
             reference_type="issue_order",
             reference_id=order.id,
             work_order_number=order.work_order_number,
+            work_order_id=order.work_order_id,
             notes=item.notes,
             created_by=current_user.id,
         ))
