@@ -239,16 +239,19 @@ async def confirm_order(
             db.add(stock)
             await db.flush()
 
-        if stock.quantity < item.quantity:
+        current_qty = round(float(stock.quantity), 3)
+        need_qty = round(float(item.quantity), 3)
+
+        if current_qty < need_qty:
             part_result = await db.execute(select(Part).where(Part.id == item.part_id))
             part = part_result.scalar_one()
             raise HTTPException(
                 status_code=400,
-                detail=f"Недостаточно на складе: {part.name} — есть {stock.quantity}, нужно {item.quantity}"
+                detail=f"Недостаточно на складе: {part.name} — есть {current_qty}, нужно {need_qty}"
             )
 
-        qty_before = stock.quantity
-        stock.quantity -= item.quantity
+        qty_before = current_qty
+        stock.quantity = round(current_qty - need_qty, 3)
         stock.updated_at = datetime.utcnow()
 
         db.add(StockMovement(
@@ -293,8 +296,8 @@ async def cancel_order(
         stock_result = await db.execute(select(Stock).where(Stock.part_id == item.part_id))
         stock = stock_result.scalar_one_or_none()
         if stock:
-            qty_before = stock.quantity
-            stock.quantity += item.quantity
+            qty_before = round(float(stock.quantity), 3)
+            stock.quantity = round(qty_before + float(item.quantity), 3)
             stock.updated_at = datetime.utcnow()
             db.add(StockMovement(
                 part_id=item.part_id,

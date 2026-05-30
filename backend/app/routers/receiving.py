@@ -183,8 +183,8 @@ async def confirm_order(
             db.add(stock)
             await db.flush()
 
-        qty_before = stock.quantity
-        stock.quantity += item.quantity
+        qty_before = round(float(stock.quantity), 3)
+        stock.quantity = round(qty_before + float(item.quantity), 3)
         stock.updated_at = datetime.utcnow()
 
         movement = StockMovement(
@@ -409,7 +409,7 @@ async def delete_order(
             stock_result = await db.execute(select(Stock).where(Stock.part_id == mv.part_id))
             stock = stock_result.scalar_one_or_none()
             if stock:
-                stock.quantity = max(0, stock.quantity - mv.quantity)
+                stock.quantity = round(max(0.0, float(stock.quantity) - float(mv.quantity)), 3)
             await db.delete(mv)
     await db.delete(order)
     await db.commit()

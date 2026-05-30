@@ -100,14 +100,13 @@ async def adjust_stock(
         db.add(stock)
         await db.flush()
 
-    qty_before = stock.quantity
-    new_qty = data.quantity
+    qty_before = round(float(stock.quantity), 3)
+    new_qty = round(float(data.quantity), 3)
 
     if new_qty < 0:
         raise HTTPException(status_code=400, detail="Количество не может быть отрицательным")
-    new_qty = round(new_qty, 3)
 
-    delta = new_qty - qty_before
+    delta = round(new_qty - qty_before, 3)
     stock.quantity = new_qty
     stock.updated_at = datetime.utcnow()
 
@@ -162,14 +161,17 @@ async def issue_parts(
         db.add(stock)
         await db.flush()
 
-    if stock.quantity < data.quantity:
+    current_qty = round(float(stock.quantity), 3)
+    issue_qty = round(float(data.quantity), 3)
+
+    if current_qty < issue_qty:
         raise HTTPException(
             status_code=400,
-            detail=f"Недостаточно на складе: есть {stock.quantity}, запрошено {data.quantity}",
+            detail=f"Недостаточно на складе: есть {current_qty}, запрошено {issue_qty}",
         )
 
-    qty_before = stock.quantity
-    stock.quantity -= data.quantity
+    qty_before = current_qty
+    stock.quantity = round(current_qty - issue_qty, 3)
     stock.updated_at = datetime.utcnow()
 
     movement = StockMovement(
@@ -177,8 +179,8 @@ async def issue_parts(
         movement_type=MovementType.issue,
         quantity=-data.quantity,
         quantity_before=qty_before,
-        quantity_after=stock.quantity,
-        reference_type="work_order",
+        quantity_after=round(float(stock.quantity), 3),
+            reference_type="work_order",
         work_order_number=data.work_order_number,
         notes=data.notes,
         created_by=current_user.id,
