@@ -105,6 +105,7 @@ async def adjust_stock(
 
     if new_qty < 0:
         raise HTTPException(status_code=400, detail="Количество не может быть отрицательным")
+    new_qty = round(new_qty, 3)
 
     delta = new_qty - qty_before
     stock.quantity = new_qty

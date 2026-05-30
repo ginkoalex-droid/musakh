@@ -440,7 +440,7 @@ export default function IssueForm() {
                     </td>
                     <td className="table-td">
                       <input
-                        type="number" min="1" max={item.part.stock_qty}
+                        type="number" min="0.001" step="0.001" max={item.part.stock_qty}
                         className={`input text-right w-24 ${item.quantity > item.part.stock_qty ? 'border-red-400' : ''}`}
                         value={item.quantity}
                         onChange={e => setItems(prev => prev.map((it, i) =>

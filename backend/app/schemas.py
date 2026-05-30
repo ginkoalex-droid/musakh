@@ -132,7 +132,7 @@ class SupplierOut(SupplierCreate):
 
 class ReceivingItemCreate(BaseModel):
     part_id: int
-    quantity: int
+    quantity: float
     notes: Optional[str] = None
 
 
@@ -140,7 +140,7 @@ class ReceivingItemOut(BaseModel):
     id: int
     part_id: int
     part_name: str
-    quantity: int
+    quantity: float
     notes: Optional[str] = None
     barcode: Optional[str] = None
     oem_number: Optional[str] = None
@@ -245,7 +245,7 @@ class MechanicSummary(BaseModel):
 
 class IssueItemCreate(BaseModel):
     part_id: int
-    quantity: int
+    quantity: float
     notes: Optional[str] = None
 
 
@@ -253,7 +253,7 @@ class IssueItemOut(BaseModel):
     id: int
     part_id: int
     part_name: str
-    quantity: int
+    quantity: float
     notes: Optional[str] = None
     barcode: Optional[str] = None
     oem_number: Optional[str] = None
@@ -313,7 +313,7 @@ class StockRow(BaseModel):
     category: Optional[str] = None
     unit: str
     location: Optional[str] = None
-    quantity: int
+    quantity: float
     min_stock: int
     track_min_stock: bool = False
     is_low: bool
@@ -326,13 +326,13 @@ class StockRow(BaseModel):
 
 class StockAdjustment(BaseModel):
     part_id: int
-    quantity: int
+    quantity: float
     notes: str
 
 
 class IssueRequest(BaseModel):
     part_id: int
-    quantity: int
+    quantity: float
     work_order_number: str
     notes: Optional[str] = None
 
@@ -344,9 +344,9 @@ class MovementOut(BaseModel):
     part_id: int
     part_name: str
     movement_type: MovementType
-    quantity: int
-    quantity_before: int
-    quantity_after: int
+    quantity: float
+    quantity_before: float
+    quantity_after: float
     reference_type: Optional[str] = None
     reference_id: Optional[int] = None
     work_order_number: Optional[str] = None

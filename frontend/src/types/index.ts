@@ -58,7 +58,7 @@ export interface ReceivingItem {
   id: number
   part_id: number
   part_name: string
-  quantity: number
+  quantity: number   // float
   notes?: string
   barcode?: string
   oem_number?: string
@@ -100,7 +100,7 @@ export interface Movement {
   part_id: number
   part_name: string
   movement_type: MovementType
-  quantity: number
+  quantity: number   // float
   quantity_before: number
   quantity_after: number
   reference_type?: string

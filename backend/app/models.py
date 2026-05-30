@@ -136,7 +136,7 @@ class ReceivingItem(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("receiving_orders.id"))
     part_id: Mapped[int] = mapped_column(ForeignKey("parts.id"))
-    quantity: Mapped[int] = mapped_column(Integer)
+    quantity: Mapped[float] = mapped_column(Numeric(10, 3))
     notes: Mapped[str | None] = mapped_column(String(300))
 
     order: Mapped["ReceivingOrder"] = relationship(back_populates="items")
@@ -201,7 +201,7 @@ class IssueItem(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("issue_orders.id"))
     part_id: Mapped[int] = mapped_column(ForeignKey("parts.id"))
-    quantity: Mapped[int] = mapped_column(Integer)
+    quantity: Mapped[float] = mapped_column(Numeric(10, 3))
     notes: Mapped[str | None] = mapped_column(String(300))
 
     order: Mapped["IssueOrder"] = relationship(back_populates="items")
@@ -212,7 +212,7 @@ class Stock(Base):
     __tablename__ = "stock"
 
     part_id: Mapped[int] = mapped_column(ForeignKey("parts.id"), primary_key=True)
-    quantity: Mapped[int] = mapped_column(Integer, default=0)
+    quantity: Mapped[float] = mapped_column(Numeric(10, 3), default=0)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     part: Mapped["Part"] = relationship(back_populates="stock")
@@ -224,9 +224,9 @@ class StockMovement(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     part_id: Mapped[int] = mapped_column(ForeignKey("parts.id"), index=True)
     movement_type: Mapped[MovementType] = mapped_column(SAEnum(MovementType))
-    quantity: Mapped[int] = mapped_column(Integer)
-    quantity_before: Mapped[int] = mapped_column(Integer)
-    quantity_after: Mapped[int] = mapped_column(Integer)
+    quantity: Mapped[float] = mapped_column(Numeric(10, 3))
+    quantity_before: Mapped[float] = mapped_column(Numeric(10, 3))
+    quantity_after: Mapped[float] = mapped_column(Numeric(10, 3))
     reference_type: Mapped[str | None] = mapped_column(String(50))
     reference_id: Mapped[int | None] = mapped_column(Integer)
     work_order_number: Mapped[str | None] = mapped_column(String(100), index=True)

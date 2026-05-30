@@ -4,6 +4,7 @@ import { fetchStock, adjustStock, issueParts, exportStock, exportMovements } fro
 import { fetchCategories, fetchMakes, fetchModelsForMake } from '../api/parts'
 import { AlertTriangle, Download, Settings, Minus, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { fmtQty } from '../utils/format'
 import Modal from '../components/Modal'
 import PartSearch from '../components/PartSearch'
 import type { Part, StockRow } from '../types'
@@ -230,7 +231,7 @@ export default function Stock() {
                         <td className="table-td hidden lg:table-cell text-gray-500">{row.category || '—'}</td>
                         <td className="table-td hidden lg:table-cell text-gray-500">{row.location || '—'}</td>
                         <td className="table-td text-right font-semibold">
-                          <span className={qtyClass}>{row.quantity} {row.unit}</span>
+                          <span className={qtyClass}>{fmtQty(row.quantity)} {row.unit}</span>
                         </td>
                         <td className="table-td text-right hidden sm:table-cell text-gray-400">{row.min_stock}</td>
                         <td className="table-td text-center">
@@ -256,7 +257,7 @@ export default function Stock() {
           <div className="space-y-4">
             <div>
               <label className="label">{t('lbl_quantity')}</label>
-              <input type="number" min="0" className="input" value={adjustQty} onChange={e => setAdjustQty(e.target.value)} autoFocus />
+              <input type="number" min="0" step="0.001" className="input" value={adjustQty} onChange={e => setAdjustQty(e.target.value)} autoFocus />
               <p className="text-xs text-gray-500 mt-1">{t('stock_was')}: {adjustModal.quantity} {adjustModal.unit}</p>
             </div>
             <div>

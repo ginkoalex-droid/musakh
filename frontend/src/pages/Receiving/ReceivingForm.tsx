@@ -407,8 +407,8 @@ export default function ReceivingForm() {
                       <div className="text-xs text-gray-500">{item.part.brand}</div>
                     </td>
                     <td className="table-td">
-                      <input type="number" min="1" className="input text-right w-24" value={item.quantity}
-                        onChange={e => setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: parseInt(e.target.value) || 1 } : it))} />
+                      <input type="number" min="0.001" step="0.001" className="input text-right w-24" value={item.quantity}
+                        onChange={e => setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: parseFloat(e.target.value) || 0 } : it))} />
                     </td>
                     <td className="table-td hidden sm:table-cell">
                       <input type="text" className="input" placeholder={t('rec_optional_note')} value={item.notes}
