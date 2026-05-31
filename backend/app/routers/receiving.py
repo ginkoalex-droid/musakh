@@ -175,6 +175,33 @@ async def confirm_order(
     if order.is_confirmed:
         raise HTTPException(status_code=400, detail="Приемка уже подтверждена")
 
+    # Delete old movements for this order (clean slate before re-confirming)
+    from sqlalchemy import delete as sa_delete
+    # Collect affected part_ids to recalculate stock after
+    affected_part_ids = [item.part_id for item in order.items]
+    await db.execute(
+        sa_delete(StockMovement).where(
+            StockMovement.reference_type == "receiving_order",
+            StockMovement.reference_id == order_id
+        )
+    )
+    await db.flush()
+
+    # Recalculate stock from remaining movements for affected parts
+    for part_id in set(affected_part_ids):
+        from sqlalchemy import func as sqlfunc
+        total = await db.execute(
+            select(sqlfunc.coalesce(sqlfunc.sum(StockMovement.quantity), 0))
+            .where(StockMovement.part_id == part_id)
+        )
+        recalculated = round(float(total.scalar()), 3)
+        stock_row = await db.execute(select(Stock).where(Stock.part_id == part_id))
+        stock_obj = stock_row.scalar_one_or_none()
+        if stock_obj:
+            stock_obj.quantity = recalculated
+            stock_obj.updated_at = datetime.utcnow()
+    await db.flush()
+
     for item in order.items:
         stock_result = await db.execute(select(Stock).where(Stock.part_id == item.part_id))
         stock = stock_result.scalar_one_or_none()
@@ -397,22 +424,36 @@ async def delete_order(
     if order.is_confirmed:
         if current_user.role != UserRole.admin:
             raise HTTPException(status_code=403, detail="Только администратор может удалить проведённую приемку")
-        # Admin reverses stock movements
-        movements_result = await db.execute(
-            select(StockMovement).where(
+        # Admin cancels: delete receiving movements then recalculate from remaining
+        from sqlalchemy import delete as sa_delete, func as sqlfunc
+        part_ids_result = await db.execute(
+            select(StockMovement.part_id).where(
                 StockMovement.reference_type == "receiving_order",
                 StockMovement.reference_id == order_id
             )
         )
-        movements = movements_result.scalars().all()
-        for mv in movements:
-            stock_result = await db.execute(select(Stock).where(Stock.part_id == mv.part_id))
-            stock = stock_result.scalar_one_or_none()
-            if stock:
-                # Allow negative: don't clamp to 0, preserves prior issues
-                stock.quantity = round(float(stock.quantity) - float(mv.quantity), 3)
-                stock.updated_at = datetime.utcnow()
-            await db.delete(mv)
+        cancel_part_ids = [r[0] for r in part_ids_result.all()]
+
+        await db.execute(
+            sa_delete(StockMovement).where(
+                StockMovement.reference_type == "receiving_order",
+                StockMovement.reference_id == order_id
+            )
+        )
+        await db.flush()
+
+        # Recalculate stock from remaining movements
+        for part_id in set(cancel_part_ids):
+            total = await db.execute(
+                select(sqlfunc.coalesce(sqlfunc.sum(StockMovement.quantity), 0))
+                .where(StockMovement.part_id == part_id)
+            )
+            recalculated = round(float(total.scalar()), 3)
+            stock_row = await db.execute(select(Stock).where(Stock.part_id == part_id))
+            stock_obj = stock_row.scalar_one_or_none()
+            if stock_obj:
+                stock_obj.quantity = recalculated
+                stock_obj.updated_at = datetime.utcnow()
     await db.delete(order)
     await db.commit()
     return {"ok": True}
