@@ -11,6 +11,7 @@ import Stock from './pages/Stock'
 import Movements from './pages/Movements'
 import Parts from './pages/Parts'
 import PartForm from './pages/Parts/PartForm'
+import PrintLabels from './pages/Parts/PrintLabels'
 import ReceivingList from './pages/Receiving'
 import ReceivingForm from './pages/Receiving/ReceivingForm'
 import Suppliers from './pages/Suppliers'
@@ -65,6 +66,7 @@ export default function App() {
                   <Route path="/dashboard" element={<Dashboard />} />
                   <Route path="/movements" element={<Movements />} />
                   <Route path="/parts" element={<RequireWarehouse><Parts /></RequireWarehouse>} />
+                  <Route path="/parts/print" element={<RequireWarehouse><PrintLabels /></RequireWarehouse>} />
                   <Route path="/parts/:id" element={<RequireWarehouse><PartForm /></RequireWarehouse>} />
                   <Route path="/receiving" element={<RequireWarehouse><ReceivingList /></RequireWarehouse>} />
                   <Route path="/receiving/:id" element={<RequireWarehouse><ReceivingForm /></RequireWarehouse>} />

@@ -1,13 +1,36 @@
 import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchParts, fetchCategories, fetchMakes, fetchModelsForMake } from '../../api/parts'
-import { Plus, Package, Search, Car } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Plus, Package, Search, Car, Printer } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
 
 export default function Parts() {
   const { t } = useT()
+  const navigate = useNavigate()
   const [q, setQ] = useState('')
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+
+  function toggleSelect(id: number) {
+    setSelected(prev => {
+      const next = new Set(prev)
+      next.has(id) ? next.delete(id) : next.add(id)
+      return next
+    })
+  }
+
+  function toggleAll(ids: number[]) {
+    if (ids.every(id => selected.has(id))) {
+      setSelected(new Set())
+    } else {
+      setSelected(new Set(ids))
+    }
+  }
+
+  function printSelected() {
+    const ids = Array.from(selected).join(',')
+    navigate(`/parts/print?ids=${ids}`)
+  }
   const [category, setCategory] = useState('')
   const [make, setMake] = useState('')
   const [model, setModel] = useState('')
@@ -38,11 +61,18 @@ export default function Parts() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-2xl font-bold text-gray-900">{t('parts_title')}</h1>
-        <Link to="/parts/new" className="btn-primary">
-          <Plus className="w-4 h-4" /> {t('parts_new')}
-        </Link>
+        <div className="flex gap-2">
+          {selected.size > 0 && (
+            <button onClick={printSelected} className="btn-secondary">
+              <Printer className="w-4 h-4" /> Печать ({selected.size})
+            </button>
+          )}
+          <Link to="/parts/new" className="btn-primary">
+            <Plus className="w-4 h-4" /> {t('parts_new')}
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -72,6 +102,13 @@ export default function Parts() {
           <table className="w-full">
             <thead>
               <tr>
+                <th className="table-th w-8">
+                  <input type="checkbox"
+                    checked={parts.length > 0 && parts.filter(p=>p.barcodes.length>0).every(p => selected.has(p.id))}
+                    onChange={() => toggleAll(parts.filter(p=>p.barcodes.length>0).map(p=>p.id))}
+                    className="rounded"
+                  />
+                </th>
                 <th className="table-th">{t('lbl_name')}</th>
                 <th className="table-th hidden sm:table-cell">{t('lbl_brand')}</th>
                 <th className="table-th hidden md:table-cell">{t('lbl_category')}</th>
@@ -93,6 +130,14 @@ export default function Parts() {
                 </tr>
               ) : parts.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50">
+                  <td className="table-td">
+                    {p.barcodes.length > 0 ? (
+                      <input type="checkbox" checked={selected.has(p.id)}
+                        onChange={() => toggleSelect(p.id)} className="rounded" />
+                    ) : (
+                      <span className="text-gray-300 text-xs">—</span>
+                    )}
+                  </td>
                   <td className="table-td">
                     <Link to={`/parts/${p.id}`} className="font-medium text-blue-700 hover:underline">{p.name}</Link>
                   </td>

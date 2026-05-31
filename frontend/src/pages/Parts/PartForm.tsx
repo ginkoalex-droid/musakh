@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories, fetchParts } from '../../api/parts'
+import api from '../../api/client'
 import { ArrowLeft, Plus, Trash2, ScanLine, Car } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
@@ -118,6 +119,19 @@ export default function PartForm() {
       toast.error(err.response?.data?.detail || t('err_generic'))
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function handleGenerateBarcode() {
+    if (!existing) return
+    try {
+      const res = await api.post(`/parts/${existing.id}/generate-barcode`)
+      const { barcode, existed } = res.data
+      toast.success(existed ? `Уже есть: ${barcode}` : `Сгенерирован: ${barcode}`)
+      qc.invalidateQueries({ queryKey: ['part', id] })
+      qc.invalidateQueries({ queryKey: ['parts'] })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
     }
   }
 
@@ -367,9 +381,17 @@ export default function PartForm() {
       {!isNew && existing && (
         <>
           <div className="card p-6 space-y-3">
-            <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-              <ScanLine className="w-4 h-4" /> {t('parts_barcodes_title')}
-            </h2>
+            <div className="flex items-center justify-between">
+              <h2 className="font-semibold text-gray-700 flex items-center gap-2">
+                <ScanLine className="w-4 h-4" /> {t('parts_barcodes_title')}
+              </h2>
+              {!existing.barcodes.some(b => b.barcode.startsWith('DR')) && (
+                <button type="button" onClick={handleGenerateBarcode}
+                  className="btn-secondary text-xs py-1">
+                  ⚡ Сгенерировать DR-код
+                </button>
+              )}
+            </div>
             {existing.barcodes.map(bc => (
               <div key={bc.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
                 <span className="font-mono text-sm">{bc.barcode}</span>

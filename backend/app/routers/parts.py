@@ -256,6 +256,39 @@ async def update_part(
     return out
 
 
+@router.post("/{part_id}/generate-barcode", response_model=dict)
+async def generate_barcode(
+    part_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Generate an internal barcode DR-XXXXXX for a part."""
+    result = await db.execute(select(Part).where(Part.id == part_id))
+    part = result.scalar_one_or_none()
+    if not part:
+        raise HTTPException(status_code=404, detail="Запчасть не найдена")
+
+    # Check if already has a DR barcode
+    bc_result = await db.execute(
+        select(Barcode).where(Barcode.part_id == part_id, Barcode.barcode.like("DR%"))
+    )
+    existing = bc_result.scalar_one_or_none()
+    if existing:
+        return {"barcode": existing.barcode, "existed": True}
+
+    # Generate: DR + part_id zero-padded to 6 digits
+    code = f"DR{part_id:06d}"
+    # Ensure unique (in case of collision with manually entered codes)
+    check = await db.execute(select(Barcode).where(Barcode.barcode == code))
+    if check.scalar_one_or_none():
+        code = f"DR{part_id:06d}X"
+
+    bc = Barcode(part_id=part_id, barcode=code, is_primary=not bool(part.barcodes))
+    db.add(bc)
+    await db.commit()
+    return {"barcode": code, "existed": False}
+
+
 @router.post("/{part_id}/barcodes", response_model=list)
 async def add_barcode(
     part_id: int,
