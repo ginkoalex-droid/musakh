@@ -181,27 +181,27 @@ export default function WorkOrderDetail() {
             <span className="ml-2">{wo.car_make} {wo.car_model}</span>
           </div>
         )}
-          <div className="sm:col-span-2 flex items-start gap-2">
-            <div className="flex-1">
-              <span className="text-gray-500">{t('lbl_notes')}:</span>
-              {editNotes ? (
-                <div className="flex gap-2 mt-1">
-                  <input className="input flex-1" value={notesVal}
-                    onChange={e => setNotesVal(e.target.value)}
-                    autoFocus onKeyDown={e => { if (e.key === 'Enter') handleUpdateNotes(); if (e.key === 'Escape') setEditNotes(false) }}
-                  />
-                  <button className="btn-primary py-1.5" onClick={handleUpdateNotes}>{t('btn_save')}</button>
-                  <button className="btn-secondary py-1.5" onClick={() => setEditNotes(false)}>{t('btn_cancel')}</button>
-                </div>
-              ) : (
-                <span className="ml-2 text-gray-700">{wo.notes || <span className="text-gray-400">—</span>}</span>
-              )}
-            </div>
-            {!editNotes && isWarehouse && (
-              <button onClick={() => { setNotesVal(wo.notes || ''); setEditNotes(true) }}
-                className="text-gray-400 hover:text-gray-600 p-1">
-                <Edit2 className="w-3.5 h-3.5" />
-              </button>
+          <div className="sm:col-span-2">
+            <label className="text-gray-500 text-xs font-medium block mb-1">{t('lbl_notes')}</label>
+            {isWarehouse ? (
+              <div className="flex gap-2">
+                <input
+                  className="input flex-1"
+                  value={editNotes ? notesVal : (wo.notes || '')}
+                  placeholder="Добавить примечание..."
+                  onFocus={() => { setNotesVal(wo.notes || ''); setEditNotes(true) }}
+                  onChange={e => setNotesVal(e.target.value)}
+                  onBlur={async () => {
+                    if (editNotes) { await handleUpdateNotes() }
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') { e.currentTarget.blur() }
+                    if (e.key === 'Escape') { setEditNotes(false); setNotesVal(wo.notes || '') }
+                  }}
+                />
+              </div>
+            ) : (
+              <span className="text-gray-700">{wo.notes || <span className="text-gray-400">—</span>}</span>
             )}
           </div>
       </div>
