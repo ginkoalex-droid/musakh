@@ -70,11 +70,28 @@ export default function Movements() {
     { key: 'custom', label: t('mov_period_custom') },
   ]
 
+  const [viewMode, setViewMode] = useState<'list' | 'summary'>('list')
+
   // Summary stats — count only, no quantity sum (mixed units)
   const stats = useMemo(() => {
     const incoming = movements.filter(m => m.movement_type === 'receiving').length
     const issued = movements.filter(m => m.movement_type === 'issue').length
     return { total: movements.length, incoming, issued }
+  }, [movements])
+
+  // Summary by part: group movements per part, show in/out totals
+  type PartSummary = { part_name: string; unit: string; received: number; issued: number; net: number }
+  const partSummary = useMemo((): PartSummary[] => {
+    const map = new Map<string, PartSummary>()
+    for (const mv of movements) {
+      const key = mv.part_name
+      if (!map.has(key)) map.set(key, { part_name: mv.part_name, unit: '', received: 0, issued: 0, net: 0 })
+      const entry = map.get(key)!
+      if (mv.movement_type === 'receiving') entry.received += Math.abs(Number(mv.quantity))
+      else if (mv.movement_type === 'issue') entry.issued += Math.abs(Number(mv.quantity))
+      entry.net = entry.received - entry.issued
+    }
+    return Array.from(map.values()).sort((a, b) => a.part_name.localeCompare(b.part_name))
   }, [movements])
 
   function refLabel(mv: (typeof movements)[0]): string {
@@ -98,9 +115,25 @@ export default function Movements() {
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="text-2xl font-bold text-gray-900">{t('mov_title')}</h1>
-        <button onClick={exportExcel} className="btn-secondary">
-          <Download className="w-4 h-4" /> Excel
-        </button>
+        <div className="flex gap-2">
+          <div className="flex rounded-lg overflow-hidden border border-gray-200">
+            <button
+              onClick={() => setViewMode('list')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              Операции
+            </button>
+            <button
+              onClick={() => setViewMode('summary')}
+              className={`px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'summary' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
+            >
+              По позициям
+            </button>
+          </div>
+          <button onClick={exportExcel} className="btn-secondary">
+            <Download className="w-4 h-4" /> Excel
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -162,8 +195,51 @@ export default function Movements() {
         )}
       </div>
 
+      {/* Summary view */}
+      {viewMode === 'summary' && (
+        <div className="card overflow-hidden">
+          <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 text-sm font-semibold text-gray-600">
+            Итого за период: {partSummary.length} позиций
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr>
+                  <th className="table-th">{t('lbl_name')}</th>
+                  <th className="table-th text-right text-green-700">Приход ↓</th>
+                  <th className="table-th text-right text-red-600">Расход ↑</th>
+                  <th className="table-th text-right">Итого</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-100">
+                {isLoading ? (
+                  <tr><td colSpan={4} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
+                ) : partSummary.length === 0 ? (
+                  <tr><td colSpan={4} className="table-td text-center text-gray-400 py-8">{t('mov_no_data')}</td></tr>
+                ) : partSummary.map(row => (
+                  <tr key={row.part_name} className="hover:bg-gray-50">
+                    <td className="table-td font-medium">{row.part_name}</td>
+                    <td className="table-td text-right font-semibold text-green-700">
+                      {row.received > 0 ? `+${parseFloat(row.received.toFixed(3))}` : '—'}
+                    </td>
+                    <td className="table-td text-right font-semibold text-red-600">
+                      {row.issued > 0 ? `-${parseFloat(row.issued.toFixed(3))}` : '—'}
+                    </td>
+                    <td className="table-td text-right font-semibold">
+                      <span className={row.net > 0 ? 'text-green-600' : row.net < 0 ? 'text-red-600' : 'text-gray-400'}>
+                        {row.net > 0 ? '+' : ''}{parseFloat(row.net.toFixed(3))}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
       {/* Table */}
-      <div className="card overflow-hidden">
+      {viewMode === 'list' && <div className="card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -235,7 +311,7 @@ export default function Movements() {
             </tbody>
           </table>
         </div>
-      </div>
+      </div>}
     </div>
   )
 }
