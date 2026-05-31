@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/parts", tags=["parts"])
 
 
 def _build_part_list_item(part: Part) -> PartListItem:
-    qty = part.stock.quantity if part.stock else 0
+    qty = float(part.stock.quantity) if part.stock else 0
     return PartListItem(
         id=part.id,
         name=part.name,
@@ -22,6 +22,8 @@ def _build_part_list_item(part: Part) -> PartListItem:
         unit=part.unit,
         location=part.location,
         min_stock=part.min_stock,
+        track_min_stock=part.track_min_stock,
+        default_issue_qty=float(part.default_issue_qty) if part.default_issue_qty else 1.0,
         stock_qty=qty,
         barcodes=part.barcodes,
         oem_numbers=part.oem_numbers,

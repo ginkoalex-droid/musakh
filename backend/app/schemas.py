@@ -104,6 +104,8 @@ class PartListItem(BaseModel):
     unit: str
     location: Optional[str] = None
     min_stock: int
+    track_min_stock: bool = False
+    default_issue_qty: float = 1.0
     stock_qty: float = 0
     barcodes: list[BarcodeOut] = []
     oem_numbers: list[OemOut] = []
