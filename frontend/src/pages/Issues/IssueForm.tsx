@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -68,6 +68,17 @@ export default function IssueForm() {
     wo.mechanic_name?.toLowerCase().includes(woSearch.toLowerCase()) ||
     wo.car_plate?.toLowerCase().includes(woSearch.toLowerCase())
   )
+
+  const partSearchRef = useRef<HTMLDivElement>(null)
+
+  // Auto-focus part search when WO is selected
+  useEffect(() => {
+    if (selectedWOId) {
+      setTimeout(() => {
+        partSearchRef.current?.querySelector<HTMLInputElement>('input')?.focus()
+      }, 100)
+    }
+  }, [selectedWOId])
 
   const selectedWO = openWorkOrders.find(wo => wo.id === selectedWOId)
   const effectiveWONumber =
@@ -507,8 +518,8 @@ export default function IssueForm() {
 
       <div className="card p-6 space-y-4">
         <h2 className="font-semibold text-gray-700">{t('issue_items_title')}</h2>
-        <div className="part-search-wrapper">
-          <PartSearch onSelect={addPart} placeholder={t('issue_add_placeholder')} />
+        <div className="part-search-wrapper" ref={partSearchRef}>
+          <PartSearch onSelect={addPart} placeholder={t('issue_add_placeholder')} autoFocus />
         </div>
 
         {items.length > 0 ? (

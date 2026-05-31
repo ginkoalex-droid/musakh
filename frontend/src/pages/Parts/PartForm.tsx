@@ -317,7 +317,15 @@ export default function PartForm() {
                 <div key={i} className="flex gap-2 mb-2">
                   <input className="input font-mono" value={bc} onChange={e => {
                     const next = [...barcodes]; next[i] = e.target.value; setBarcodes(next)
-                  }} placeholder={t('parts_scan_placeholder')} />
+                  }}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault() // prevent form submit on scanner Enter
+                      // add new barcode field if last one is filled
+                      if (i === barcodes.length - 1 && bc.trim()) setBarcodes(b => [...b, ''])
+                    }
+                  }}
+                  placeholder={t('parts_scan_placeholder')} />
                   {i > 0 && (
                     <button type="button" onClick={() => setBarcodes(b => b.filter((_, j) => j !== i))} className="btn-secondary py-1.5 px-2">
                       <Trash2 className="w-4 h-4 text-red-500" />
