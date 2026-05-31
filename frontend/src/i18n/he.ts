@@ -191,7 +191,7 @@ export const he: Record<TranslationKey, string> = {
   parts_edit_title: 'עריכה',
   parts_new_title: 'חלק חדש',
   parts_basic_data: 'פרטים בסיסיים',
-  parts_barcodes_title: 'ברקודים',
+  parts_barcodes_title: 'ברקוד / OEM',
   parts_oem_title: 'מספרי OEM',
   parts_cars_title: 'התאמה לרכב (יצרן / דגם)',
   parts_add_car: 'הוסף יצרן',

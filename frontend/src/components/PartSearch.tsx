@@ -144,9 +144,6 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
               <div className="font-medium text-sm text-gray-900">{p.name}</div>
               <div className="text-xs text-gray-500 flex flex-wrap gap-2 mt-0.5">
                 {p.brand && <span className="text-gray-600">{p.brand}</span>}
-                {p.oem_numbers[0] && (
-                  <span className="font-mono bg-gray-100 px-1 rounded">{p.oem_numbers[0].oem_number}</span>
-                )}
                 {p.barcodes[0] && (
                   <span className="font-mono text-blue-600 bg-blue-50 px-1 rounded">
                     ▌{p.barcodes[0].barcode}

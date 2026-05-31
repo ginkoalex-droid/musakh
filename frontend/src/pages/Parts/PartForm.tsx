@@ -380,25 +380,6 @@ export default function PartForm() {
                 <Plus className="w-3.5 h-3.5" /> {t('parts_add_barcode')}
               </button>
             </div>
-            <div>
-              <label className="label">{t('parts_oem_title')}</label>
-              {oems.map((oem, i) => (
-                <div key={i} className="flex gap-2 mb-2">
-                  <input className="input font-mono" placeholder={t('lbl_oem')} value={oem.oem_number}
-                    onChange={e => { const next = [...oems]; next[i].oem_number = e.target.value; setOems(next) }} />
-                  <input className="input w-32" placeholder={t('lbl_brand')} value={oem.brand}
-                    onChange={e => { const next = [...oems]; next[i].brand = e.target.value; setOems(next) }} />
-                  {i > 0 && (
-                    <button type="button" onClick={() => setOems(o => o.filter((_, j) => j !== i))} className="btn-secondary py-1.5 px-2">
-                      <Trash2 className="w-4 h-4 text-red-500" />
-                    </button>
-                  )}
-                </div>
-              ))}
-              <button type="button" onClick={() => setOems(o => [...o, { oem_number: '', brand: '' }])} className="btn-secondary text-xs">
-                <Plus className="w-3.5 h-3.5" /> {t('parts_add_oem')}
-              </button>
-            </div>
           </>
         )}
 
@@ -442,27 +423,6 @@ export default function PartForm() {
             </div>
           </div>
 
-          <div className="card p-6 space-y-3">
-            <h2 className="font-semibold text-gray-700">{t('parts_oem_title')}</h2>
-            {existing.oem_numbers.map(oem => (
-              <div key={oem.id} className="flex items-center justify-between bg-gray-50 rounded-lg px-3 py-2">
-                <div>
-                  <span className="font-mono text-sm">{oem.oem_number}</span>
-                  {oem.brand && <span className="text-xs text-gray-500 ml-2">{oem.brand}</span>}
-                </div>
-                <button onClick={() => handleDelOem(existing.id, oem.id)} className="p-1 hover:text-red-600">
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            ))}
-            <div className="flex gap-2">
-              <input className="input font-mono" placeholder={t('lbl_oem')} value={newOemNum} onChange={e => setNewOemNum(e.target.value)} />
-              <input className="input w-32" placeholder={t('lbl_brand')} value={newOemBrand} onChange={e => setNewOemBrand(e.target.value)} />
-              <button className="btn-secondary" onClick={() => { handleAddOem(newOemNum, newOemBrand); setNewOemNum(''); setNewOemBrand('') }}>
-                <Plus className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
 
           <div className="card p-6 space-y-3">
             <h2 className="font-semibold text-gray-700 flex items-center gap-2">

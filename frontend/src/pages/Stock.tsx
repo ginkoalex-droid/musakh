@@ -161,8 +161,8 @@ export default function Stock() {
         </td>
         <td className="table-td hidden md:table-cell">
           <div className="flex flex-wrap gap-1">
-            {row.first_oem && <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{row.first_oem}</span>}
             {row.first_barcode && <span className="text-xs font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">▌{row.first_barcode}</span>}
+            {!row.first_barcode && row.first_oem && <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{row.first_oem}</span>}
             {row.car_labels.slice(0, 2).map((c, i) => <span key={i} className="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">{c}</span>)}
             {row.car_labels.length > 2 && <span className="text-xs text-gray-400">+{row.car_labels.length - 2}</span>}
           </div>
@@ -242,7 +242,7 @@ export default function Stock() {
             <thead>
               <tr>
                 <th className="table-th">{t('lbl_name')}</th>
-                <th className="table-th hidden md:table-cell">{t('parts_oem_barcodes')} / {t('lbl_cars')}</th>
+                <th className="table-th hidden md:table-cell">ОЕМ / Штрихкод</th>
                 <th className="table-th hidden lg:table-cell">{t('lbl_category')}</th>
                 <th className="table-th hidden lg:table-cell">{t('lbl_location')}</th>
                 <th className="table-th text-right">{t('parts_stock_qty')}</th>

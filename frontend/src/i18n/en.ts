@@ -191,7 +191,7 @@ export const en: Record<TranslationKey, string> = {
   parts_edit_title: 'Edit',
   parts_new_title: 'New Part',
   parts_basic_data: 'Basic Info',
-  parts_barcodes_title: 'Barcodes',
+  parts_barcodes_title: 'Barcode / OEM',
   parts_oem_title: 'OEM Numbers',
   parts_cars_title: 'Fitment (make / model)',
   parts_add_car: 'Add make',

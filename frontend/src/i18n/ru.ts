@@ -198,7 +198,7 @@ export const ru = {
   parts_edit_title: 'Редактировать',
   parts_new_title: 'Новая запчасть',
   parts_basic_data: 'Основные данные',
-  parts_barcodes_title: 'Штрихкоды',
+  parts_barcodes_title: 'Штрихкод / ОЕМ',
   parts_oem_title: 'OEM номера',
   parts_cars_title: 'Применимость (марка / модель)',
   parts_add_car: 'Добавить марку',
