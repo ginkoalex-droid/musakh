@@ -545,13 +545,22 @@ export default function IssueForm() {
                     <td className="table-td">
                       <input
                         type="number"
-                        min={qtyMin(item.part.unit)}
-                        step={qtyStep(item.part.unit)}
+                        min="0"
+                        step="any"
+                        inputMode="decimal"
                         className={`input text-right w-24 ${item.quantity > item.part.stock_qty ? 'border-red-400' : ''}`}
-                        value={item.quantity}
-                        onChange={e => setItems(prev => prev.map((it, i) =>
-                          i === idx ? { ...it, quantity: parseFloat(e.target.value) || 0 } : it
-                        ))}
+                        key={`iss-${idx}-${item.part.id}`}
+                        defaultValue={item.quantity}
+                        onBlur={e => {
+                          const val = parseFloat(e.target.value)
+                          if (!isNaN(val) && val >= 0)
+                            setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: val } : it))
+                        }}
+                        onChange={e => {
+                          const val = parseFloat(e.target.value)
+                          if (!isNaN(val) && val >= 0)
+                            setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: val } : it))
+                        }}
                       />
                     </td>
                     <td className="table-td hidden sm:table-cell">

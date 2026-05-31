@@ -406,11 +406,23 @@ export default function ReceivingForm() {
                     <td className="table-td">
                       <div className="flex items-center gap-1">
                         <input type="number"
-                          min={qtyMin(item.part.unit)}
-                          step={qtyStep(item.part.unit)}
+                          min="0"
+                          step="any"
+                          inputMode="decimal"
                           className="input text-right w-20"
-                          value={item.quantity}
-                          onChange={e => setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: parseFloat(e.target.value) || 0 } : it))} />
+                          key={`rcv-${idx}-${item.part.id}`}
+                          defaultValue={item.quantity}
+                          onBlur={e => {
+                            const val = parseFloat(e.target.value)
+                            if (!isNaN(val) && val >= 0)
+                              setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: val } : it))
+                          }}
+                          onChange={e => {
+                            const val = parseFloat(e.target.value)
+                            if (!isNaN(val) && val >= 0)
+                              setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: val } : it))
+                          }}
+                        />
                         <span className="text-xs text-gray-500 shrink-0">{item.part.unit}</span>
                       </div>
                     </td>
