@@ -57,7 +57,7 @@ export default function Stock() {
   })
 
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
-  const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>('none')
+  const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>('brand')
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   function toggleCollapse(key: string) {
     setCollapsed(prev => {
@@ -67,17 +67,38 @@ export default function Stock() {
     })
   }
 
-  // Group stock rows
-  const groupedStock = useMemo(() => {
+  // Nested grouping: brand → category subgroups
+  type NestedGroup = { name: string; rows?: typeof stock; subs?: { name: string; rows: typeof stock }[] }
+  const groupedStock = useMemo((): NestedGroup[] | null => {
     if (groupBy === 'none') return null
-    const map = new Map<string, typeof stock>()
-    for (const row of stock) {
-      const key = (groupBy === 'category' ? row.category : row.brand) || '—'
-      if (!map.has(key)) map.set(key, [])
-      map.get(key)!.push(row)
+    const filtered = stock.filter(row => !needOrder || row.quantity <= row.min_stock)
+
+    if (groupBy === 'category') {
+      const map = new Map<string, typeof stock>()
+      for (const row of filtered) {
+        const key = row.category || '—'
+        if (!map.has(key)) map.set(key, [])
+        map.get(key)!.push(row)
+      }
+      return Array.from(map.entries()).sort((a,b) => a[0].localeCompare(b[0]))
+        .map(([name, rows]) => ({ name, rows }))
     }
-    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]))
-  }, [stock, groupBy])
+
+    // brand → nested by category
+    const brandMap = new Map<string, Map<string, typeof stock>>()
+    for (const row of filtered) {
+      const brand = row.brand || '—'
+      const cat = row.category || '—'
+      if (!brandMap.has(brand)) brandMap.set(brand, new Map())
+      const catMap = brandMap.get(brand)!
+      if (!catMap.has(cat)) catMap.set(cat, [])
+      catMap.get(cat)!.push(row)
+    }
+    return Array.from(brandMap.entries()).sort((a,b) => a[0].localeCompare(b[0])).map(([brand, catMap]) => ({
+      name: brand,
+      subs: Array.from(catMap.entries()).sort((a,b) => a[0].localeCompare(b[0])).map(([cat, rows]) => ({ name: cat, rows }))
+    }))
+  }, [stock, groupBy, needOrder])
 
   async function handleAdjust() {
     if (!adjustModal) return
@@ -235,20 +256,39 @@ export default function Stock() {
               ) : stock.length === 0 ? (
                 <tr><td colSpan={7} className="table-td text-center text-gray-400 py-8">{t('stock_no_data')}</td></tr>
               ) : groupedStock ? (
-                groupedStock.map(([groupName, rows]) => {
-                  const isCollapsed = collapsed.has(groupName)
-                  const visibleRows = rows.filter(row => !needOrder || row.quantity <= row.min_stock)
+                groupedStock.map(group => {
+                  const isCollapsed = collapsed.has(group.name)
+                  const totalCount = group.rows?.length ?? (group.subs?.reduce((s, sub) => s + sub.rows.length, 0) ?? 0)
                   return (
                     <>
-                      <tr key={`g-${groupName}`} className="bg-blue-50 cursor-pointer select-none hover:bg-blue-100"
-                        onClick={() => toggleCollapse(groupName)}>
-                        <td colSpan={7} className="px-4 py-2 text-xs font-bold text-blue-700 uppercase tracking-wide">
+                      {/* Brand / Category header */}
+                      <tr key={`g-${group.name}`} className="bg-blue-600 cursor-pointer select-none hover:bg-blue-700"
+                        onClick={() => toggleCollapse(group.name)}>
+                        <td colSpan={7} className="px-4 py-2 text-xs font-bold text-white uppercase tracking-wide">
                           <span className="mr-2">{isCollapsed ? '▶' : '▼'}</span>
-                          {groupName}
-                          <span className="font-normal text-blue-500 ml-1">({visibleRows.length})</span>
+                          {group.name} <span className="font-normal opacity-75 ml-1">({totalCount})</span>
                         </td>
                       </tr>
-                      {!isCollapsed && visibleRows.map(row => renderRow(row))}
+                      {!isCollapsed && (
+                        group.rows
+                          ? group.rows.map(row => renderRow(row))
+                          : group.subs?.map(sub => {
+                              const subKey = `${group.name}::${sub.name}`
+                              const subCollapsed = collapsed.has(subKey)
+                              return (
+                                <>
+                                  <tr key={`sg-${subKey}`} className="bg-blue-50 cursor-pointer select-none hover:bg-blue-100"
+                                    onClick={e => { e.stopPropagation(); toggleCollapse(subKey) }}>
+                                    <td colSpan={7} className="px-8 py-1.5 text-xs font-semibold text-blue-700 uppercase tracking-wide">
+                                      <span className="mr-2">{subCollapsed ? '▶' : '▼'}</span>
+                                      {sub.name} <span className="font-normal text-blue-500 ml-1">({sub.rows.length})</span>
+                                    </td>
+                                  </tr>
+                                  {!subCollapsed && sub.rows.map(row => renderRow(row))}
+                                </>
+                              )
+                            })
+                      )}
                     </>
                   )
                 })

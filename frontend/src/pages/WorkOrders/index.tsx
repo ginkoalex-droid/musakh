@@ -1,9 +1,9 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchWorkOrders, fetchWOSummary, fetchMechanics, confirmWorkOrder, deleteWorkOrder, createWorkOrder } from '../../api/workOrders'
-import { Plus, CheckCircle, Clock, Users, Trash2, Search } from 'lucide-react'
+import { Plus, CheckCircle, Clock, Users, Trash2, Search, ChevronDown } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { WORK_TYPES } from '../../api/workOrders'
+import { WORK_TYPES, fetchWOModels } from '../../api/workOrders'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
 import { canAdmin, canWarehouse } from '../../store/permissions'
@@ -100,6 +100,21 @@ export default function WorkOrders() {
 
   const { data: mechanics = [] } = useQuery({ queryKey: ['mechanics'], queryFn: fetchMechanics })
   const activeMechanics = mechanics.filter(m => m.is_active)
+  const { data: existingModels = [] } = useQuery({ queryKey: ['wo-models'], queryFn: fetchWOModels })
+  const [modelSuggestions, setModelSuggestions] = useState<string[]>([])
+  const [showModelSugg, setShowModelSugg] = useState(false)
+
+  function handleModelInput(val: string) {
+    const upper = val.toUpperCase()
+    setForm(f => ({ ...f, car_model: upper }))
+    if (val.length >= 1) {
+      const sugg = existingModels.filter(m => m.toLowerCase().includes(val.toLowerCase()))
+      setModelSuggestions(sugg.slice(0, 8))
+      setShowModelSugg(sugg.length > 0)
+    } else {
+      setShowModelSugg(false)
+    }
+  }
 
   useKeyboardShortcuts({ insert: () => setNewModal(true) })
 
@@ -124,7 +139,10 @@ export default function WorkOrders() {
 
   async function handleCreate() {
     if (!form.work_order_number.trim()) { toast.error(t('err_no_name')); return }
-    if (!form.mechanic_id) { toast.error(t('wo_mechanic') + ' required'); return }
+    if (!form.mechanic_id) { toast.error(t('wo_mechanic') + ' обязательно'); return }
+    if (!form.car_model.trim()) { toast.error('Модель обязательно'); return }
+    if (!form.work_type) { toast.error('Тип работы обязательно'); return }
+    if (!form.notes.trim()) { toast.error('Примечание (вид ремонта) обязательно'); return }
     if (woExists) { toast.error(`ЗН ${form.work_order_number} уже существует`); return }
     setLoading(true)
     try {
@@ -397,14 +415,6 @@ export default function WorkOrders() {
               )}
             </div>
             <div>
-              <label className="label">Тип работы</label>
-              <select id="wo-worktype-select" className="input" value={form.work_type}
-                onChange={e => setForm(f => ({ ...f, work_type: e.target.value }))}>
-                <option value="">—</option>
-                {WORK_TYPES.map(wt => <option key={wt} value={wt}>{wt}</option>)}
-              </select>
-            </div>
-            <div>
               <label className="label">{t('wo_mechanic')} *</label>
               <select className="input" value={form.mechanic_id}
                 onChange={e => setForm(f => ({ ...f, mechanic_id: parseInt(e.target.value) }))}>
@@ -432,23 +442,49 @@ export default function WorkOrders() {
                 </div>
               </div>
             )}
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="label">{t('wo_car_plate')}</label>
-                <input className="input font-mono" value={form.car_plate} onChange={e => setForm(f => ({ ...f, car_plate: e.target.value }))} />
+                <input className="input font-mono" value={form.car_plate}
+                  onChange={e => setForm(f => ({ ...f, car_plate: e.target.value }))} />
               </div>
-              <div>
-                <label className="label">{t('lbl_make')}</label>
-                <input className="input" placeholder="BMW, Yamaha..." value={form.car_make} onChange={e => setForm(f => ({ ...f, car_make: e.target.value }))} />
-              </div>
-              <div>
-                <label className="label">{t('lbl_model')}</label>
-                <input className="input" placeholder="R1200GS, MT-07..." value={form.car_model} onChange={e => setForm(f => ({ ...f, car_model: e.target.value }))} />
+              <div className="relative">
+                <label className="label">{t('lbl_model')} *</label>
+                <input className={`input ${!form.car_model.trim() ? 'border-orange-300' : ''}`}
+                  placeholder="R1200GS, CBR600, MT-07..."
+                  value={form.car_model}
+                  style={{ textTransform: 'uppercase' }}
+                  onChange={e => handleModelInput(e.target.value.toUpperCase())}
+                  onFocus={() => form.car_model && setShowModelSugg(modelSuggestions.length > 0)}
+                  onBlur={() => setTimeout(() => setShowModelSugg(false), 150)}
+                  autoComplete="off"
+                />
+                {showModelSugg && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 max-h-40 overflow-y-auto">
+                    {modelSuggestions.map(m => (
+                      <button key={m} type="button"
+                        onMouseDown={() => { setForm(f => ({ ...f, car_model: m })); setShowModelSugg(false) }}
+                        className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 border-b border-gray-100 last:border-0">
+                        {m}
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
             <div>
-              <label className="label">{t('lbl_notes')}</label>
-              <input className="input" value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+              <label className="label">Вид ремонта *</label>
+              <input className={`input ${!form.notes.trim() ? 'border-orange-300' : ''}`}
+                placeholder="Замена масла, ТО, ремонт тормозов, диагностика..."
+                value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
+            </div>
+            <div>
+              <label className="label">Тип работы *</label>
+              <select id="wo-worktype-select" className={`input ${!form.work_type ? 'border-orange-300' : ''}`}
+                value={form.work_type} onChange={e => setForm(f => ({ ...f, work_type: e.target.value }))}>
+                <option value="">— выбери тип —</option>
+                {WORK_TYPES.map(wt => <option key={wt} value={wt}>{wt}</option>)}
+              </select>
             </div>
             <div className="flex gap-2 justify-end pt-2">
               <button className="btn-secondary" onClick={() => setNewModal(false)}>{t('btn_cancel')}</button>

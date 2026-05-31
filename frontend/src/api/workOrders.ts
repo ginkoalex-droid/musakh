@@ -84,6 +84,12 @@ export const fetchWorkOrders = async (f: WOFilters = {}): Promise<WorkOrder[]> =
   return res.data
 }
 
+export const fetchWOModels = async (): Promise<string[]> => {
+  const wos = await fetchWorkOrders({})
+  const models = wos.map(wo => wo.car_model).filter(Boolean) as string[]
+  return Array.from(new Set(models)).sort()
+}
+
 export const fetchWOSummary = async (from_date?: string, to_date?: string): Promise<MechanicSummary[]> => {
   const params: Record<string, string> = {}
   if (from_date) params.from_date = from_date

@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchParts, fetchCategories, fetchMakes, fetchModelsForMake } from '../../api/parts'
-import { Plus, Package, Search, Car, Printer } from 'lucide-react'
+import { Plus, Package, Search, Car, Printer, Copy } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
 
@@ -181,7 +181,7 @@ export default function Parts() {
                   </>
                 )})
               ) : parts.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50">
+                <tr key={p.id} className="hover:bg-gray-50 group">
                   <td className="table-td">
                     {p.barcodes.length > 0 ? (
                       <input type="checkbox" checked={selected.has(p.id)}
@@ -191,7 +191,16 @@ export default function Parts() {
                     )}
                   </td>
                   <td className="table-td">
-                    <Link to={`/parts/${p.id}`} className="font-medium text-blue-700 hover:underline">{p.name}</Link>
+                    <div className="flex items-center gap-1.5">
+                      <Link to={`/parts/${p.id}`} className="font-medium text-blue-700 hover:underline">{p.name}</Link>
+                      <button
+                        onClick={() => navigate('/parts/new', { state: { copy: { name: p.name + ' (копия)', brand: p.brand, category: p.category, unit: p.unit, min_stock: p.min_stock, track_min_stock: p.track_min_stock, default_issue_qty: p.default_issue_qty, location: p.location } } })}
+                        className="p-0.5 text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        title="Копировать"
+                      >
+                        <Copy className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </td>
                   <td className="table-td hidden sm:table-cell text-gray-500">{p.brand || '—'}</td>
                   <td className="table-td hidden md:table-cell">
