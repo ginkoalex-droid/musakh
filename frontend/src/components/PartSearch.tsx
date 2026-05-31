@@ -38,19 +38,24 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
 
 
   async function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter' && query.trim()) {
+    if (e.key === 'Enter') {
       e.preventDefault()
-      // Try barcode first (scanner fast path)
+      // Read directly from DOM — React state may lag behind fast scanner input
+      const val = ((e.target as HTMLInputElement).value || query).trim()
+      if (!val) return
+
+      // Sync state if DOM is ahead
+      if (val !== query) setQuery(val)
+
       try {
-        const part = await fetchPartByBarcode(query.trim())
+        const part = await fetchPartByBarcode(val)
         setUnknownBarcode(null)
         select(part)
       } catch {
         if (results.length === 1) {
           select(results[0])
         } else if (results.length === 0) {
-          // Unknown barcode - offer to create new part
-          setUnknownBarcode(query.trim())
+          setUnknownBarcode(val)
           setOpen(true)
         }
       }

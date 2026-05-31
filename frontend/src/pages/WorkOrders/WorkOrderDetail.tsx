@@ -21,6 +21,23 @@ export default function WorkOrderDetail() {
 
   const [editMechanics, setEditMechanics] = useState(false)
   const [mechForm, setMechForm] = useState({ mechanic_id_2: 0, mechanic_share: 50, work_type: '' })
+  const [editNotes, setEditNotes] = useState(false)
+  const [notesVal, setNotesVal] = useState('')
+
+  async function handleUpdateNotes() {
+    if (!wo) return
+    try {
+      await updateWorkOrder(wo.id, {
+        work_order_number: wo.work_order_number,
+        mechanic_id: wo.mechanic_id,
+        mechanic_share: wo.mechanic_share,
+        notes: notesVal || undefined,
+      })
+      toast.success(t('btn_save'))
+      setEditNotes(false)
+      qc.invalidateQueries({ queryKey: ['work-order', id] })
+    } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
+  }
 
   const { data: mechanics = [] } = useQuery({ queryKey: ['mechanics'], queryFn: fetchMechanics })
   const activeMechanics = mechanics.filter(m => m.is_active)
@@ -164,12 +181,29 @@ export default function WorkOrderDetail() {
             <span className="ml-2">{wo.car_make} {wo.car_model}</span>
           </div>
         )}
-        {wo.notes && (
-          <div className="sm:col-span-2">
-            <span className="text-gray-500">{t('lbl_notes')}:</span>
-            <span className="ml-2">{wo.notes}</span>
+          <div className="sm:col-span-2 flex items-start gap-2">
+            <div className="flex-1">
+              <span className="text-gray-500">{t('lbl_notes')}:</span>
+              {editNotes ? (
+                <div className="flex gap-2 mt-1">
+                  <input className="input flex-1" value={notesVal}
+                    onChange={e => setNotesVal(e.target.value)}
+                    autoFocus onKeyDown={e => { if (e.key === 'Enter') handleUpdateNotes(); if (e.key === 'Escape') setEditNotes(false) }}
+                  />
+                  <button className="btn-primary py-1.5" onClick={handleUpdateNotes}>{t('btn_save')}</button>
+                  <button className="btn-secondary py-1.5" onClick={() => setEditNotes(false)}>{t('btn_cancel')}</button>
+                </div>
+              ) : (
+                <span className="ml-2 text-gray-700">{wo.notes || <span className="text-gray-400">—</span>}</span>
+              )}
+            </div>
+            {!editNotes && isWarehouse && (
+              <button onClick={() => { setNotesVal(wo.notes || ''); setEditNotes(true) }}
+                className="text-gray-400 hover:text-gray-600 p-1">
+                <Edit2 className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
-        )}
       </div>
 
       {/* Parts summary */}
