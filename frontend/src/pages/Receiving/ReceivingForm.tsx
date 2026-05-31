@@ -43,6 +43,8 @@ export default function ReceivingForm() {
   const [notes, setNotes] = useState('')
   const [items, setItems] = useState<LineItem[]>([])
   const [loading, setLoading] = useState(false)
+  // Raw display strings for qty inputs (avoids losing "0." while typing)
+  const [qtyDisplay, setQtyDisplay] = useState<Record<string, string>>({})
   const searchRef = useRef<HTMLInputElement | null>(null)
 
   function addPart(part: Part) {
@@ -405,22 +407,25 @@ export default function ReceivingForm() {
                     </td>
                     <td className="table-td">
                       <div className="flex items-center gap-1">
-                        <input type="number"
-                          min="0"
-                          step="any"
+                        <input
+                          type="text"
                           inputMode="decimal"
+                          pattern="[0-9]*[.,]?[0-9]*"
                           className="input text-right w-20"
-                          key={`rcv-${idx}-${item.part.id}`}
-                          defaultValue={item.quantity}
-                          onBlur={e => {
-                            const val = parseFloat(e.target.value)
+                          value={qtyDisplay[`${idx}-${item.part.id}`] ?? String(item.quantity)}
+                          onChange={e => {
+                            const raw = e.target.value.replace(',', '.')
+                            setQtyDisplay(prev => ({ ...prev, [`${idx}-${item.part.id}`]: raw }))
+                            const val = parseFloat(raw)
                             if (!isNaN(val) && val >= 0)
                               setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: val } : it))
                           }}
-                          onChange={e => {
-                            const val = parseFloat(e.target.value)
-                            if (!isNaN(val) && val >= 0)
-                              setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: val } : it))
+                          onBlur={e => {
+                            const raw = e.target.value.replace(',', '.')
+                            const val = parseFloat(raw)
+                            const final = (!isNaN(val) && val > 0) ? val : item.quantity
+                            setQtyDisplay(prev => ({ ...prev, [`${idx}-${item.part.id}`]: String(final) }))
+                            setItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: final } : it))
                           }}
                         />
                         <span className="text-xs text-gray-500 shrink-0">{item.part.unit}</span>
