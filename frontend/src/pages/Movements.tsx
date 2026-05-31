@@ -79,17 +79,17 @@ export default function Movements() {
     return { total: movements.length, incoming, issued }
   }, [movements])
 
-  // Summary by part: group movements per part, show in/out totals
-  type PartSummary = { part_name: string; unit: string; received: number; issued: number; net: number }
+  // Summary by part_id: group by exact part, show in/out totals with unit
+  type PartSummary = { part_id: number; part_name: string; unit: string; received: number; issued: number; net: number }
   const partSummary = useMemo((): PartSummary[] => {
-    const map = new Map<string, PartSummary>()
+    const map = new Map<number, PartSummary>()
     for (const mv of movements) {
-      const key = mv.part_name
-      if (!map.has(key)) map.set(key, { part_name: mv.part_name, unit: '', received: 0, issued: 0, net: 0 })
+      const key = mv.part_id
+      if (!map.has(key)) map.set(key, { part_id: key, part_name: mv.part_name, unit: mv.part_unit || 'шт', received: 0, issued: 0, net: 0 })
       const entry = map.get(key)!
-      if (mv.movement_type === 'receiving') entry.received += Math.abs(Number(mv.quantity))
-      else if (mv.movement_type === 'issue') entry.issued += Math.abs(Number(mv.quantity))
-      entry.net = entry.received - entry.issued
+      if (mv.movement_type === 'receiving') entry.received = Math.round((entry.received + Math.abs(Number(mv.quantity))) * 1000) / 1000
+      else if (mv.movement_type === 'issue') entry.issued = Math.round((entry.issued + Math.abs(Number(mv.quantity))) * 1000) / 1000
+      entry.net = Math.round((entry.received - entry.issued) * 1000) / 1000
     }
     return Array.from(map.values()).sort((a, b) => a.part_name.localeCompare(b.part_name))
   }, [movements])
@@ -217,17 +217,17 @@ export default function Movements() {
                 ) : partSummary.length === 0 ? (
                   <tr><td colSpan={4} className="table-td text-center text-gray-400 py-8">{t('mov_no_data')}</td></tr>
                 ) : partSummary.map(row => (
-                  <tr key={row.part_name} className="hover:bg-gray-50">
+                  <tr key={row.part_id} className="hover:bg-gray-50">
                     <td className="table-td font-medium">{row.part_name}</td>
                     <td className="table-td text-right font-semibold text-green-700">
-                      {row.received > 0 ? `+${parseFloat(row.received.toFixed(3))}` : '—'}
+                      {row.received > 0 ? <span>+{row.received} <span className="text-xs font-normal text-gray-400">{row.unit}</span></span> : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="table-td text-right font-semibold text-red-600">
-                      {row.issued > 0 ? `-${parseFloat(row.issued.toFixed(3))}` : '—'}
+                      {row.issued > 0 ? <span>-{row.issued} <span className="text-xs font-normal text-gray-400">{row.unit}</span></span> : <span className="text-gray-300">—</span>}
                     </td>
                     <td className="table-td text-right font-semibold">
                       <span className={row.net > 0 ? 'text-green-600' : row.net < 0 ? 'text-red-600' : 'text-gray-400'}>
-                        {row.net > 0 ? '+' : ''}{parseFloat(row.net.toFixed(3))}
+                        {row.net > 0 ? '+' : ''}{row.net} {row.unit}
                       </span>
                     </td>
                   </tr>

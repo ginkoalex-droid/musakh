@@ -4,6 +4,7 @@ import { fetchStock, adjustStock, issueParts, exportStock, exportMovements } fro
 import { fetchCategories } from '../api/parts'
 import { AlertTriangle, Download, Settings, Minus, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
+import { useMemo } from 'react'
 import { fmtQty } from '../utils/format'
 import Modal from '../components/Modal'
 import PartSearch from '../components/PartSearch'
@@ -56,6 +57,19 @@ export default function Stock() {
   })
 
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
+  const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>('none')
+
+  // Group stock rows
+  const groupedStock = useMemo(() => {
+    if (groupBy === 'none') return null
+    const map = new Map<string, typeof stock>()
+    for (const row of stock) {
+      const key = (groupBy === 'category' ? row.category : row.brand) || '—'
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(row)
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+  }, [stock, groupBy])
 
   async function handleAdjust() {
     if (!adjustModal) return
@@ -100,6 +114,47 @@ export default function Stock() {
     }
   }
 
+  function renderRow(row: typeof stock[0]) {
+    const tracked = row.track_min_stock
+    const isZero = tracked && row.quantity === 0
+    const isLow = tracked && !isZero && row.quantity <= row.min_stock
+    const rowClass = isZero ? 'bg-red-50' : isLow ? 'bg-yellow-50' : ''
+    const qtyClass = isZero ? 'text-red-600' : isLow ? 'text-yellow-700' : 'text-gray-900'
+    return (
+      <tr key={row.part_id} className={rowClass}>
+        <td className="table-td">
+          <Link to={`/parts/${row.part_id}`} className="font-medium text-blue-700 hover:underline">
+            {row.part_name}
+            {isZero && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-red-500 align-middle" />}
+            {isLow && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-yellow-400 align-middle" />}
+          </Link>
+          {row.brand && <div className="text-xs text-gray-400 mt-0.5">{row.brand}</div>}
+        </td>
+        <td className="table-td hidden md:table-cell">
+          <div className="flex flex-wrap gap-1">
+            {row.first_oem && <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{row.first_oem}</span>}
+            {row.first_barcode && <span className="text-xs font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">▌{row.first_barcode}</span>}
+            {row.car_labels.slice(0, 2).map((c, i) => <span key={i} className="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">{c}</span>)}
+            {row.car_labels.length > 2 && <span className="text-xs text-gray-400">+{row.car_labels.length - 2}</span>}
+          </div>
+        </td>
+        <td className="table-td hidden lg:table-cell text-gray-500">{row.category || '—'}</td>
+        <td className="table-td hidden lg:table-cell text-gray-500">{row.location || '—'}</td>
+        <td className="table-td text-right font-semibold">
+          <span className={qtyClass}>{fmtQty(row.quantity)} {row.unit}</span>
+        </td>
+        <td className="table-td text-right hidden sm:table-cell text-gray-400">{row.min_stock}</td>
+        <td className="table-td text-center">
+          {isWarehouse && (
+            <button onClick={() => { setAdjustModal(row); setAdjustQty(String(row.quantity)) }} className="btn-secondary py-1 px-2 text-xs">
+              <Settings className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </td>
+      </tr>
+    )
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -137,6 +192,15 @@ export default function Stock() {
           <AlertTriangle className="w-4 h-4 text-orange-500" />
           {t('stock_need_order')}
         </label>
+        <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden text-xs">
+          <span className="px-2 py-1.5 text-gray-500 bg-gray-50">Группа:</span>
+          {(['none', 'category', 'brand'] as const).map(g => (
+            <button key={g} onClick={() => setGroupBy(g)}
+              className={`px-2 py-1.5 font-medium transition-colors ${groupBy === g ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+              {g === 'none' ? 'Нет' : g === 'category' ? 'Категория' : 'Бренд'}
+            </button>
+          ))}
+        </div>
         <select value={category} onChange={e => setCategory(e.target.value)} className="input w-auto">
           <option value="">{t('stock_all_categories')}</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
@@ -162,62 +226,18 @@ export default function Stock() {
                 <tr><td colSpan={7} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
               ) : stock.length === 0 ? (
                 <tr><td colSpan={7} className="table-td text-center text-gray-400 py-8">{t('stock_no_data')}</td></tr>
-              ) : stock
-                  .filter(row => {
-                    if (needOrder) return row.quantity <= row.min_stock
-                    return true
-                  })
-                  .map(row => {
-                    const tracked = row.track_min_stock
-                    const isZero = tracked && row.quantity === 0
-                    const isLow = tracked && !isZero && row.quantity <= row.min_stock
-                    const rowClass = isZero ? 'bg-red-50' : isLow ? 'bg-yellow-50' : ''
-                    const qtyClass = isZero ? 'text-red-600' : isLow ? 'text-yellow-700' : 'text-gray-900'
-                    return (
-                      <tr key={row.part_id} className={rowClass}>
-                        <td className="table-td">
-                          <Link to={`/parts/${row.part_id}`} className="font-medium text-blue-700 hover:underline">
-                            {row.part_name}
-                            {isZero && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-red-500 align-middle" />}
-                            {isLow && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-yellow-400 align-middle" />}
-                          </Link>
-                          {row.brand && <div className="text-xs text-gray-400 mt-0.5">{row.brand}</div>}
-                        </td>
-                        <td className="table-td hidden md:table-cell">
-                          <div className="flex flex-wrap gap-1">
-                            {row.first_oem && (
-                              <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{row.first_oem}</span>
-                            )}
-                            {row.first_barcode && (
-                              <span className="text-xs font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">▌{row.first_barcode}</span>
-                            )}
-                            {row.car_labels.slice(0, 2).map((c, i) => (
-                              <span key={i} className="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded">{c}</span>
-                            ))}
-                            {row.car_labels.length > 2 && (
-                              <span className="text-xs text-gray-400">+{row.car_labels.length - 2}</span>
-                            )}
-                          </div>
-                        </td>
-                        <td className="table-td hidden lg:table-cell text-gray-500">{row.category || '—'}</td>
-                        <td className="table-td hidden lg:table-cell text-gray-500">{row.location || '—'}</td>
-                        <td className="table-td text-right font-semibold">
-                          <span className={qtyClass}>{fmtQty(row.quantity)} {row.unit}</span>
-                        </td>
-                        <td className="table-td text-right hidden sm:table-cell text-gray-400">{row.min_stock}</td>
-                        <td className="table-td text-center">
-                          {isWarehouse && (
-                            <button
-                              onClick={() => { setAdjustModal(row); setAdjustQty(String(row.quantity)) }}
-                              className="btn-secondary py-1 px-2 text-xs"
-                            >
-                              <Settings className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    )
-                  })}
+              ) : groupedStock ? (
+                groupedStock.map(([groupName, rows]) => (
+                  <>
+                    <tr key={`g-${groupName}`} className="bg-blue-50">
+                      <td colSpan={7} className="px-4 py-2 text-xs font-bold text-blue-700 uppercase tracking-wide">
+                        {groupName} <span className="font-normal text-blue-500 ml-1">({rows.length})</span>
+                      </td>
+                    </tr>
+                    {rows.filter(row => !needOrder || row.quantity <= row.min_stock).map(row => renderRow(row))}
+                  </>
+                ))
+              ) : stock.filter(row => !needOrder || row.quantity <= row.min_stock).map(row => renderRow(row))}
             </tbody>
           </table>
         </div>

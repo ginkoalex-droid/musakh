@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchParts, fetchCategories, fetchMakes, fetchModelsForMake } from '../../api/parts'
 import { Plus, Package, Search, Car, Printer } from 'lucide-react'
@@ -10,6 +10,7 @@ export default function Parts() {
   const navigate = useNavigate()
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>('none')
 
   function toggleSelect(id: number) {
     setSelected(prev => {
@@ -49,6 +50,17 @@ export default function Parts() {
   })
 
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
+
+  const groupedParts = useMemo(() => {
+    if (groupBy === 'none') return null
+    const map = new Map<string, typeof parts>()
+    for (const p of parts) {
+      const key = (groupBy === 'category' ? p.category : p.brand) || '—'
+      if (!map.has(key)) map.set(key, [])
+      map.get(key)!.push(p)
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+  }, [parts, groupBy])
   const { data: makes = [] } = useQuery({ queryKey: ['makes'], queryFn: fetchMakes })
   const { data: models = [] } = useQuery({
     queryKey: ['models', make],
@@ -85,6 +97,15 @@ export default function Parts() {
           <option value="">{t('stock_all_categories')}</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
+        <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden text-xs">
+          <span className="px-2 py-1.5 text-gray-500 bg-gray-50">Группа:</span>
+          {(['none', 'category', 'brand'] as const).map(g => (
+            <button key={g} onClick={() => setGroupBy(g)}
+              className={`px-2 py-1.5 font-medium transition-colors ${groupBy === g ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+              {g === 'none' ? 'Нет' : g === 'category' ? 'Категория' : 'Бренд'}
+            </button>
+          ))}
+        </div>
         <select value={make} onChange={e => setMake(e.target.value)} className="input w-auto">
           <option value="">{t('filter_all_makes')}</option>
           {makes.map(m => <option key={m} value={m}>{m}</option>)}
@@ -128,6 +149,29 @@ export default function Parts() {
                     <div className="text-gray-400">{t('parts_no_results')}</div>
                   </td>
                 </tr>
+              ) : groupedParts ? (
+                groupedParts.map(([groupName, rows]) => (
+                  <>
+                    <tr key={`g-${groupName}`} className="bg-blue-50">
+                      <td colSpan={7} className="px-4 py-2 text-xs font-bold text-blue-700 uppercase tracking-wide">
+                        {groupName} <span className="font-normal text-blue-500 ml-1">({rows.length})</span>
+                      </td>
+                    </tr>
+                    {rows.map(p => (
+                      <tr key={p.id} className="hover:bg-gray-50">
+                        <td className="table-td">
+                          {p.barcodes.length > 0 ? <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} className="rounded" /> : <span className="text-gray-300 text-xs">—</span>}
+                        </td>
+                        <td className="table-td"><Link to={`/parts/${p.id}`} className="font-medium text-blue-700 hover:underline">{p.name}</Link></td>
+                        <td className="table-td hidden sm:table-cell text-gray-500">{p.brand || '—'}</td>
+                        <td className="table-td hidden md:table-cell">{p.category ? <span className="badge bg-gray-100 text-gray-600">{p.category}</span> : '—'}</td>
+                        <td className="table-td hidden lg:table-cell text-xs font-mono text-gray-500">{p.oem_numbers[0]?.oem_number || p.barcodes[0]?.barcode || '—'}</td>
+                        <td className="table-td hidden sm:table-cell text-gray-500">{p.location || '—'}</td>
+                        <td className="table-td text-right"><span className={`font-semibold ${p.stock_qty <= p.min_stock ? 'text-red-600' : 'text-gray-900'}`}>{p.stock_qty} {p.unit}</span></td>
+                      </tr>
+                    ))}
+                  </>
+                ))
               ) : parts.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50">
                   <td className="table-td">
