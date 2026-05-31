@@ -177,7 +177,7 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
               type="button"
               onMouseDown={e => {
                 e.preventDefault()
-                navigate(`/parts/new`, { state: { barcode: unknownBarcode } })
+                navigate(`/parts/new`, { state: { barcode: unknownBarcode, returnTo: window.location.pathname } })
                 setQuery('')
                 setUnknownBarcode(null)
                 setOpen(false)

@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories, fetchParts } from '../../api/parts'
 import api from '../../api/client'
-import { ArrowLeft, Plus, Trash2, ScanLine, Car } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, ScanLine, Car, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
 
@@ -19,6 +19,8 @@ export default function PartForm() {
   const { t } = useT()
   // Pre-fill barcode when coming from unknown scan
   const prefillBarcode = (location.state as any)?.barcode as string | undefined
+  const returnTo = (location.state as any)?.returnTo as string | undefined
+  const copyFrom = (location.state as any)?.copy as Record<string, any> | undefined
 
   const { data: existing } = useQuery({
     queryKey: ['part', id],
@@ -35,8 +37,15 @@ export default function PartForm() {
   const allCategories = Array.from(new Set([...DEFAULT_CATEGORIES, ...existingCategories]))
 
   const [form, setForm] = useState({
-    name: '', brand: '', category: '', unit: 'шт',
-    min_stock: 0, track_min_stock: false, default_issue_qty: 1, location: '', notes: '',
+    name: copyFrom?.name ?? '',
+    brand: copyFrom?.brand ?? '',
+    category: copyFrom?.category ?? '',
+    unit: copyFrom?.unit ?? 'шт',
+    min_stock: copyFrom?.min_stock ?? 0,
+    track_min_stock: copyFrom?.track_min_stock ?? false,
+    default_issue_qty: copyFrom?.default_issue_qty ?? 1,
+    location: copyFrom?.location ?? '',
+    notes: copyFrom?.notes ?? '',
   })
   const [barcodes, setBarcodes] = useState<string[]>([prefillBarcode || ''])
   const [oems, setOems] = useState<{ oem_number: string; brand: string }[]>([{ oem_number: '', brand: '' }])
@@ -108,7 +117,7 @@ export default function PartForm() {
           oem_numbers: oems.filter(o => o.oem_number.trim()),
         })
         toast.success(t('parts_created'))
-        navigate('/parts')
+        navigate(returnTo ?? '/parts')
       } else if (existing) {
         await updatePart(existing.id, form)
         toast.success(t('parts_saved'))
@@ -198,13 +207,33 @@ export default function PartForm() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="btn-secondary py-1.5 px-2">
+      <div className="flex items-center gap-3 flex-wrap">
+        <button onClick={() => navigate('/parts')} className="btn-secondary py-1.5 px-2">
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-900">
+        <h1 className="text-2xl font-bold text-gray-900 flex-1">
           {isNew ? t('parts_new_title') : (existing?.name || t('rec_loading'))}
         </h1>
+        {!isNew && existing && (
+          <button
+            onClick={() => navigate('/parts/new', { state: {
+              copy: {
+                name: existing.name + ' (копия)',
+                brand: existing.brand,
+                category: existing.category,
+                unit: existing.unit,
+                min_stock: existing.min_stock,
+                track_min_stock: existing.track_min_stock,
+                default_issue_qty: existing.default_issue_qty,
+                location: existing.location,
+                notes: existing.notes,
+              }
+            }})}
+            className="btn-secondary text-sm"
+          >
+            <Copy className="w-4 h-4" /> Копировать
+          </button>
+        )}
       </div>
 
       {!isNew && existing && (
