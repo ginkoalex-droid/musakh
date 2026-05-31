@@ -409,7 +409,9 @@ async def delete_order(
             stock_result = await db.execute(select(Stock).where(Stock.part_id == mv.part_id))
             stock = stock_result.scalar_one_or_none()
             if stock:
-                stock.quantity = round(max(0.0, float(stock.quantity) - float(mv.quantity)), 3)
+                # Allow negative: don't clamp to 0, preserves prior issues
+                stock.quantity = round(float(stock.quantity) - float(mv.quantity), 3)
+                stock.updated_at = datetime.utcnow()
             await db.delete(mv)
     await db.delete(order)
     await db.commit()
