@@ -306,7 +306,7 @@ export default function IssueForm() {
                       <input
                         type="number"
                         min="0"
-                        step="0.05"
+                        step="any"
                         className="input text-right w-20 text-red-700 font-semibold"
                         key={item.id + '-' + item.quantity}
                         defaultValue={item.quantity}

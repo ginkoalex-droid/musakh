@@ -16,12 +16,12 @@ export function parseQty(val: string): number {
 /** Decimal input step based on unit */
 export function qtyStep(unit: string): string {
   const u = (unit || '').toLowerCase()
-  if (['л', 'l'].includes(u)) return '0.05'           // litres: 50ml steps
-  if (['кг', 'kg', 'г', 'g', 'м', 'm'].includes(u)) return '0.001'
+  // For all fluid/weight/length units — use "any" to allow free decimal input
+  if (['л', 'l', 'кг', 'kg', 'г', 'g', 'м', 'm'].includes(u)) return 'any'
   return '1'
 }
 
-/** Min value based on unit — always 0 for fractional units so step grid starts correctly */
+/** Min value based on unit */
 export function qtyMin(unit: string): string {
   return qtyStep(unit) === '1' ? '1' : '0'
 }

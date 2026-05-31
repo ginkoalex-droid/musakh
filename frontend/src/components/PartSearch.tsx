@@ -52,10 +52,29 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
         setUnknownBarcode(null)
         select(part)
       } catch {
-        if (results.length === 1) {
-          select(results[0])
-        } else if (results.length === 0) {
+        // by-barcode failed — try search as fallback
+        let found = results
+        if (found.length === 0) {
+          // Results may not be ready yet (debounce) — search synchronously
+          try {
+            found = await fetchParts(val)
+          } catch {}
+        }
+        // Exact barcode match first
+        const exact = found.find(p =>
+          p.barcodes.some(b => b.barcode === val) ||
+          p.oem_numbers.some(o => o.oem_number === val)
+        )
+        if (exact) {
+          setUnknownBarcode(null)
+          select(exact)
+        } else if (found.length === 1) {
+          select(found[0])
+        } else if (found.length === 0) {
           setUnknownBarcode(val)
+          setOpen(true)
+        } else {
+          setResults(found)
           setOpen(true)
         }
       }
