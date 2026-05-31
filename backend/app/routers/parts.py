@@ -265,7 +265,9 @@ async def generate_barcode(
     _: User = Depends(get_current_user),
 ):
     """Generate an internal barcode DR-XXXXXX for a part."""
-    result = await db.execute(select(Part).where(Part.id == part_id))
+    result = await db.execute(
+        select(Part).options(selectinload(Part.barcodes)).where(Part.id == part_id)
+    )
     part = result.scalar_one_or_none()
     if not part:
         raise HTTPException(status_code=404, detail="Запчасть не найдена")
