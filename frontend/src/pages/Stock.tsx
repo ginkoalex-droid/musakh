@@ -58,6 +58,14 @@ export default function Stock() {
 
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
   const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>('none')
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  function toggleCollapse(key: string) {
+    setCollapsed(prev => {
+      const next = new Set(prev)
+      next.has(key) ? next.delete(key) : next.add(key)
+      return next
+    })
+  }
 
   // Group stock rows
   const groupedStock = useMemo(() => {
@@ -227,16 +235,23 @@ export default function Stock() {
               ) : stock.length === 0 ? (
                 <tr><td colSpan={7} className="table-td text-center text-gray-400 py-8">{t('stock_no_data')}</td></tr>
               ) : groupedStock ? (
-                groupedStock.map(([groupName, rows]) => (
-                  <>
-                    <tr key={`g-${groupName}`} className="bg-blue-50">
-                      <td colSpan={7} className="px-4 py-2 text-xs font-bold text-blue-700 uppercase tracking-wide">
-                        {groupName} <span className="font-normal text-blue-500 ml-1">({rows.length})</span>
-                      </td>
-                    </tr>
-                    {rows.filter(row => !needOrder || row.quantity <= row.min_stock).map(row => renderRow(row))}
-                  </>
-                ))
+                groupedStock.map(([groupName, rows]) => {
+                  const isCollapsed = collapsed.has(groupName)
+                  const visibleRows = rows.filter(row => !needOrder || row.quantity <= row.min_stock)
+                  return (
+                    <>
+                      <tr key={`g-${groupName}`} className="bg-blue-50 cursor-pointer select-none hover:bg-blue-100"
+                        onClick={() => toggleCollapse(groupName)}>
+                        <td colSpan={7} className="px-4 py-2 text-xs font-bold text-blue-700 uppercase tracking-wide">
+                          <span className="mr-2">{isCollapsed ? '▶' : '▼'}</span>
+                          {groupName}
+                          <span className="font-normal text-blue-500 ml-1">({visibleRows.length})</span>
+                        </td>
+                      </tr>
+                      {!isCollapsed && visibleRows.map(row => renderRow(row))}
+                    </>
+                  )
+                })
               ) : stock.filter(row => !needOrder || row.quantity <= row.min_stock).map(row => renderRow(row))}
             </tbody>
           </table>

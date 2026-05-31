@@ -11,6 +11,10 @@ export default function Parts() {
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>('none')
+  const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+  function toggleCollapse(key: string) {
+    setCollapsed(prev => { const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next })
+  }
 
   function toggleSelect(id: number) {
     setSelected(prev => {
@@ -150,14 +154,18 @@ export default function Parts() {
                   </td>
                 </tr>
               ) : groupedParts ? (
-                groupedParts.map(([groupName, rows]) => (
+                groupedParts.map(([groupName, rows]) => {
+                  const isCollapsed = collapsed.has(groupName)
+                  return (
                   <>
-                    <tr key={`g-${groupName}`} className="bg-blue-50">
+                    <tr key={`g-${groupName}`} className="bg-blue-50 cursor-pointer select-none hover:bg-blue-100"
+                      onClick={() => toggleCollapse(groupName)}>
                       <td colSpan={7} className="px-4 py-2 text-xs font-bold text-blue-700 uppercase tracking-wide">
+                        <span className="mr-2">{isCollapsed ? '▶' : '▼'}</span>
                         {groupName} <span className="font-normal text-blue-500 ml-1">({rows.length})</span>
                       </td>
                     </tr>
-                    {rows.map(p => (
+                    {!isCollapsed && rows.map(p => (
                       <tr key={p.id} className="hover:bg-gray-50">
                         <td className="table-td">
                           {p.barcodes.length > 0 ? <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} className="rounded" /> : <span className="text-gray-300 text-xs">—</span>}
@@ -171,7 +179,7 @@ export default function Parts() {
                       </tr>
                     ))}
                   </>
-                ))
+                )})
               ) : parts.map(p => (
                 <tr key={p.id} className="hover:bg-gray-50">
                   <td className="table-td">
