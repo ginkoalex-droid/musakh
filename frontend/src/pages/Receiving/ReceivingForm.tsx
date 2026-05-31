@@ -328,15 +328,37 @@ export default function ReceivingForm() {
           <div className="card p-6 space-y-4 border-2 border-blue-200">
             <h2 className="font-semibold text-blue-700 flex items-center gap-2"><Edit2 className="w-4 h-4" /> {t('rec_items_title')}</h2>
             <PartSearch onSelect={p => {
+              const defQty = p.default_issue_qty ?? 1
               const ex = editItems.find(i => i.part.id === p.id)
-              if (ex) setEditItems(prev => prev.map(i => i.part.id === p.id ? { ...i, quantity: i.quantity + 1 } : i))
-              else setEditItems(prev => [...prev, { part: p, quantity: 1, notes: '' }])
+              if (ex) setEditItems(prev => prev.map(i => i.part.id === p.id ? { ...i, quantity: Math.round((i.quantity + defQty) * 1000) / 1000 } : i))
+              else setEditItems(prev => [...prev, { part: p, quantity: defQty, notes: '' }])
             }} />
             {editItems.map((item, idx) => (
               <div key={idx} className="flex gap-2 items-center">
                 <span className="flex-1 text-sm font-medium">{item.part.name}</span>
-                <input type="number" min="1" className="input w-24 text-right" value={item.quantity}
-                  onChange={e => setEditItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: parseInt(e.target.value) || 1 } : it))} />
+                <div className="flex items-center gap-1">
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    className="input w-20 text-right"
+                    value={qtyDisplay[`edit-${idx}-${item.part.id}`] ?? String(item.quantity)}
+                    onChange={e => {
+                      const raw = e.target.value.replace(',', '.')
+                      setQtyDisplay(prev => ({ ...prev, [`edit-${idx}-${item.part.id}`]: raw }))
+                      const val = parseFloat(raw)
+                      if (!isNaN(val) && val > 0)
+                        setEditItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: val } : it))
+                    }}
+                    onBlur={e => {
+                      const raw = e.target.value.replace(',', '.')
+                      const val = parseFloat(raw)
+                      const final = (!isNaN(val) && val > 0) ? val : item.quantity
+                      setQtyDisplay(prev => ({ ...prev, [`edit-${idx}-${item.part.id}`]: String(final) }))
+                      setEditItems(prev => prev.map((it, i) => i === idx ? { ...it, quantity: final } : it))
+                    }}
+                  />
+                  <span className="text-xs text-gray-500">{item.part.unit}</span>
+                </div>
                 <button onClick={() => setEditItems(prev => prev.filter((_, i) => i !== idx))} className="p-1 hover:text-red-600">
                   <Trash2 className="w-4 h-4" />
                 </button>
