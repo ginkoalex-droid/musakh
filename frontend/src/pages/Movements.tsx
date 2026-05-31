@@ -39,6 +39,7 @@ export default function Movements() {
 
   const { data: movements = [], isLoading } = useQuery({
     queryKey: ['movements', from, to, userId, movType],
+    refetchInterval: 30_000,
     queryFn: () => fetchMovements({
       fromDate: from || undefined,
       toDate: to || undefined,

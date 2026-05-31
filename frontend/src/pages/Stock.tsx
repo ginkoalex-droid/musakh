@@ -42,6 +42,7 @@ export default function Stock() {
 
   const { data: stock = [], isLoading } = useQuery({
     queryKey: ['stock', category, debouncedSearch],
+    refetchInterval: 30_000,
     queryFn: async () => {
       if (debouncedSearch) {
         const { fetchParts } = await import('../api/parts')
