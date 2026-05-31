@@ -170,7 +170,15 @@ export default function Parts() {
                         <td className="table-td">
                           {p.barcodes.length > 0 ? <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} className="rounded" /> : <span className="text-gray-300 text-xs">—</span>}
                         </td>
-                        <td className="table-td"><Link to={`/parts/${p.id}`} className="font-medium text-blue-700 hover:underline">{p.name}</Link></td>
+                        <td className="table-td">
+                          <div className="flex items-center gap-1.5">
+                            <Link to={`/parts/${p.id}`} className="font-medium text-blue-700 hover:underline flex-1">{p.name}</Link>
+                            <button onClick={e => { e.preventDefault(); navigate('/parts/new', { state: { copy: { name: p.name, brand: p.brand, category: p.category, unit: p.unit, min_stock: p.min_stock, track_min_stock: p.track_min_stock, default_issue_qty: p.default_issue_qty, location: p.location } } }) }}
+                              className="shrink-0 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Копировать">
+                              <Copy className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </td>
                         <td className="table-td hidden sm:table-cell text-gray-500">{p.brand || '—'}</td>
                         <td className="table-td hidden md:table-cell">{p.category ? <span className="badge bg-gray-100 text-gray-600">{p.category}</span> : '—'}</td>
                         <td className="table-td hidden lg:table-cell text-xs font-mono text-gray-500">{p.oem_numbers[0]?.oem_number || p.barcodes[0]?.barcode || '—'}</td>
@@ -192,10 +200,10 @@ export default function Parts() {
                   </td>
                   <td className="table-td">
                     <div className="flex items-center gap-1.5">
-                      <Link to={`/parts/${p.id}`} className="font-medium text-blue-700 hover:underline">{p.name}</Link>
+                      <Link to={`/parts/${p.id}`} className="font-medium text-blue-700 hover:underline flex-1">{p.name}</Link>
                       <button
-                        onClick={() => navigate('/parts/new', { state: { copy: { name: p.name + ' (копия)', brand: p.brand, category: p.category, unit: p.unit, min_stock: p.min_stock, track_min_stock: p.track_min_stock, default_issue_qty: p.default_issue_qty, location: p.location } } })}
-                        className="p-0.5 text-gray-300 hover:text-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={e => { e.preventDefault(); navigate('/parts/new', { state: { copy: { name: p.name, brand: p.brand, category: p.category, unit: p.unit, min_stock: p.min_stock, track_min_stock: p.track_min_stock, default_issue_qty: p.default_issue_qty, location: p.location } } }) }}
+                        className="shrink-0 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
                         title="Копировать"
                       >
                         <Copy className="w-3.5 h-3.5" />
