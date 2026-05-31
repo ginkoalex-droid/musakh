@@ -375,11 +375,20 @@ export default function WorkOrders() {
           <div className="space-y-3">
             <div>
               <label className="label">{t('wo_number')} *</label>
-              <input className={`input font-mono text-lg ${woExists ? 'border-orange-400 bg-orange-50' : ''}`}
-                placeholder="12345" autoFocus
+              <input
+                id="wo-number-input"
+                className={`input font-mono text-lg ${woExists ? 'border-orange-400 bg-orange-50' : ''}`}
+                placeholder="12345 или сканируй штрихкод"
+                autoFocus
                 value={form.work_order_number}
                 onChange={e => handleWONumber(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter') handleCreate() }}
+                onKeyDown={e => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    // Move focus to next field instead of submitting
+                    document.querySelector<HTMLSelectElement>('#wo-worktype-select')?.focus()
+                  }
+                }}
               />
               {woExists && (
                 <p className="text-xs text-orange-600 mt-1 font-medium">
@@ -389,7 +398,7 @@ export default function WorkOrders() {
             </div>
             <div>
               <label className="label">Тип работы</label>
-              <select className="input" value={form.work_type}
+              <select id="wo-worktype-select" className="input" value={form.work_type}
                 onChange={e => setForm(f => ({ ...f, work_type: e.target.value }))}>
                 <option value="">—</option>
                 {WORK_TYPES.map(wt => <option key={wt} value={wt}>{wt}</option>)}

@@ -249,6 +249,51 @@ async def confirm_work_order(
         raise HTTPException(status_code=404, detail="ЗН не найден")
     if wo.is_confirmed:
         raise HTTPException(status_code=400, detail="Уже проведён")
+
+    # Auto-confirm all draft issue orders linked to this WO
+    from app.models import IssueOrder, IssueItem, Stock, StockMovement, MovementType
+    from sqlalchemy.orm import selectinload as _sl
+    issues_result = await db.execute(
+        select(IssueOrder)
+        .options(_sl(IssueOrder.items).selectinload(IssueItem.part))
+        .where(
+            IssueOrder.work_order_id == wo_id,
+            IssueOrder.is_confirmed == False,
+            IssueOrder.is_cancelled == False,
+        )
+    )
+    draft_issues = issues_result.scalars().all()
+
+    for issue in draft_issues:
+        for item in issue.items:
+            stock_result = await db.execute(select(Stock).where(Stock.part_id == item.part_id))
+            stock = stock_result.scalar_one_or_none()
+            if not stock:
+                stock = Stock(part_id=item.part_id, quantity=0)
+                db.add(stock)
+                await db.flush()
+
+            qty_before = round(float(stock.quantity), 3)
+            need_qty = round(float(item.quantity), 3)
+            stock.quantity = round(qty_before - need_qty, 3)
+            stock.updated_at = datetime.utcnow()
+
+            db.add(StockMovement(
+                part_id=item.part_id,
+                movement_type=MovementType.issue,
+                quantity=-need_qty,
+                quantity_before=qty_before,
+                quantity_after=round(float(stock.quantity), 3),
+                reference_type="issue_order",
+                reference_id=issue.id,
+                work_order_number=issue.work_order_number,
+                work_order_id=wo_id,
+                notes=item.notes,
+                created_by=current_user.id,
+            ))
+
+        issue.is_confirmed = True
+
     wo.is_confirmed = True
     await db.commit()
     result = await db.execute(select(WorkOrder).options(*_load_opts()).where(WorkOrder.id == wo.id))
