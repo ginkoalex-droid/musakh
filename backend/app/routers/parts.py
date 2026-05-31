@@ -130,6 +130,7 @@ async def get_by_barcode(
             selectinload(Barcode.part).options(
                 selectinload(Part.barcodes),
                 selectinload(Part.oem_numbers),
+                selectinload(Part.car_applications),
                 selectinload(Part.stock),
             )
         )
