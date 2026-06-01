@@ -273,6 +273,11 @@ export const he: Record<TranslationKey, string> = {
   role_readonly: 'צפייה בלבד',
 
   btn_copy: 'העתק',
+  add_new_brand: '+ מותג חדש...',
+  add_new_location: '+ מיקום חדש...',
+  add_new_category: '+ הוסף בעצמך...',
+  enter_category: 'הכנס קטגוריה...',
+  brand_placeholder: 'BMW, Honda, Michelin...',
   group_label: 'קיבוץ:',
   autosave_pending: 'שמירה אוטומטית בעוד 10 שנ...',
   autosave_saving: 'שומר...',

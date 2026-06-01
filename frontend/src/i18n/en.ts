@@ -273,6 +273,11 @@ export const en: Record<TranslationKey, string> = {
   role_readonly: 'Read only',
 
   btn_copy: 'Copy',
+  add_new_brand: '+ New brand...',
+  add_new_location: '+ New location...',
+  add_new_category: '+ Add custom...',
+  enter_category: 'Enter category...',
+  brand_placeholder: 'BMW, Honda, Michelin...',
   group_label: 'Group:',
   autosave_pending: 'Auto-saving in 10s...',
   autosave_saving: 'Saving...',

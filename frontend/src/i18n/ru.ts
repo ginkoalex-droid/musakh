@@ -284,6 +284,11 @@ export const ru = {
 
   // Misc hardcoded strings
   btn_copy: 'Копировать',
+  add_new_brand: '+ Новый бренд...',
+  add_new_location: '+ Новое место...',
+  add_new_category: '+ Добавить свою...',
+  enter_category: 'Введите категорию...',
+  brand_placeholder: 'BMW, Honda, Michelin...',
   group_label: 'Группа:',
   autosave_pending: 'Автосохранение через 10с...',
   autosave_saving: 'Сохраняю...',

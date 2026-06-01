@@ -303,15 +303,15 @@ export default function PartForm() {
                 >
                   <option value="">— {t('lbl_brand')} —</option>
                   {existingBrands.map(b => <option key={b} value={b}>{b}</option>)}
-                  <option value="__new__">+ Новый бренд...</option>
+                  <option value="__new__">{t('add_new_brand')}</option>
                 </select>
                 {(!form.brand || !existingBrands.includes(form.brand)) && (
-                  <input className="input" placeholder="BMW, Honda, Michelin..." value={form.brand}
+                  <input className="input" placeholder={t('brand_placeholder')} value={form.brand}
                     onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
                 )}
               </div>
             ) : (
-              <input className="input" placeholder="BMW, Honda, Michelin..." value={form.brand}
+              <input className="input" placeholder={t('brand_placeholder')} value={form.brand}
                 onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
             )}
           </div>
@@ -329,13 +329,13 @@ export default function PartForm() {
               {form.category && !allCategories.includes(form.category) && (
                 <option value="__custom__">{form.category}</option>
               )}
-              <option value="__custom__">+ {t('btn_add')} свою...</option>
+              <option value="__custom__">{t('add_new_category')}</option>
             </select>
             {/* Custom category input */}
             {(!form.category || !allCategories.includes(form.category)) && (
               <input
                 className="input mt-1"
-                placeholder="Введите категорию..."
+                placeholder={t('enter_category')}
                 value={form.category}
                 onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
               />
@@ -383,7 +383,7 @@ export default function PartForm() {
                 >
                   <option value="">— {t('lbl_location')} —</option>
                   {existingLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
-                  <option value="__custom__">+ Новое место...</option>
+                  <option value="__custom__">{t('add_new_location')}</option>
                 </select>
                 {(!form.location || !existingLocations.includes(form.location)) && (
                   <input className="input" placeholder={t('parts_shelf_placeholder')} value={form.location}
