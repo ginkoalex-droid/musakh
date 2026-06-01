@@ -447,7 +447,7 @@ function IssueItemsPreview({ issueId }: { issueId: number }) {
       {issue.items.map(item => (
         <div key={item.id} className="px-4 py-2 flex items-center justify-between">
           <div>
-            <span className="text-sm font-medium text-gray-900">{item.part_name}</span>
+            <Link to={`/parts/${item.part_id}`} className="text-sm font-medium text-blue-700 hover:underline">{item.part_name}</Link>
             <div className="flex gap-2 mt-0.5">
               {item.oem_number && (
                 <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1 rounded">{item.oem_number}</span>

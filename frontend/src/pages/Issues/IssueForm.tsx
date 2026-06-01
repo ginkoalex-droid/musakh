@@ -1,12 +1,11 @@
 import { useState, useRef, useEffect } from 'react'
-import { useParams, useNavigate, useLocation } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchIssueOrder, createIssueOrder, confirmIssueOrder,
   cancelIssueOrder, deleteIssueOrder, addIssueItem, removeIssueItem, updateIssueItemQty
 } from '../../api/issues'
 import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import PartSearch from '../../components/PartSearch'
 import type { Part } from '../../types'
 import toast from 'react-hot-toast'
@@ -303,7 +302,11 @@ export default function IssueForm() {
               {existing.items.map(item => (
                 <tr key={item.id}>
                   <td className="table-td">
-                    <div className="font-medium">{item.part_name}</div>
+                    {(isAdmin || isWarehouse) ? (
+                      <Link to={`/parts/${item.part_id}`} className="font-medium text-blue-700 hover:underline">{item.part_name}</Link>
+                    ) : (
+                      <div className="font-medium">{item.part_name}</div>
+                    )}
                     <div className="flex flex-wrap gap-2 mt-0.5">
                       {item.barcode && (
                         <span className="text-xs font-mono bg-blue-50 text-blue-700 px-1.5 py-0.5 rounded">▌{item.barcode}</span>
