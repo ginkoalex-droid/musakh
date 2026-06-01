@@ -4,6 +4,7 @@ import { fetchWorkOrders, fetchWOSummary, fetchMechanics, confirmWorkOrder, dele
 import { Plus, CheckCircle, Clock, Users, Trash2, Search, ChevronDown } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { WORK_TYPES, fetchWOModels } from '../../api/workOrders'
+import { canCloseWO } from '../../store/permissions'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
 import { canAdmin, canWarehouse } from '../../store/permissions'
@@ -37,6 +38,7 @@ export default function WorkOrders() {
   }, [])
   const me = getUser()
   const isWarehouse = me ? canWarehouse(me.role) : false
+  const canClose = me ? canCloseWO(me.role) : false
   const isAdmin = me ? canAdmin(me.role) : false
 
   const [period, setPeriod] = useState<Period>('month')
@@ -253,11 +255,11 @@ export default function WorkOrders() {
       </td>
       <td className="table-td">
         <div className="flex gap-1">
-          {!o.is_confirmed && isWarehouse && (
-            <button onClick={() => handleConfirm(o.id)} className="btn-success py-1 px-2 text-xs">
-              <CheckCircle className="w-3.5 h-3.5" />
-            </button>
-          )}
+                    {!o.is_confirmed && canClose && (
+                      <button onClick={() => handleConfirm(o.id)} className="btn-success py-1 px-2 text-xs">
+                        <CheckCircle className="w-3.5 h-3.5" />
+                      </button>
+                    )}
           {(isAdmin || !o.is_confirmed) && (
             <button onClick={() => handleDelete(o.id)} className="btn-secondary py-1 px-2 text-xs text-red-500">
               <Trash2 className="w-3.5 h-3.5" />

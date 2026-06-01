@@ -7,7 +7,7 @@ import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus, Edit2 } from 'luc
 import { WORK_TYPES } from '../../api/workOrders'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
-import { canAdmin, canWarehouse } from '../../store/permissions'
+import { canAdmin, canWarehouse, canCloseWO } from '../../store/permissions'
 import toast from 'react-hot-toast'
 
 export default function WorkOrderDetail() {
@@ -18,6 +18,7 @@ export default function WorkOrderDetail() {
   const me = getUser()
   const isAdmin = me ? canAdmin(me.role) : false
   const isWarehouse = me ? canWarehouse(me.role) : false
+  const canClose = me ? canCloseWO(me.role) : false
 
   const [editMechanics, setEditMechanics] = useState(false)
   const [noPartsModal, setNoPartsModal] = useState(false)
@@ -307,11 +308,13 @@ export default function WorkOrderDetail() {
 
       {/* Actions */}
       <div className="flex gap-3 justify-end">
-        {!wo.is_confirmed && isWarehouse && (
+        {!wo.is_confirmed && canClose && (
           <>
-            <button onClick={handleDelete} className="btn-secondary text-red-500">
-              <Trash2 className="w-4 h-4" /> {t('wo_delete_confirm').replace('?', '')}
-            </button>
+            {isWarehouse && (
+              <button onClick={handleDelete} className="btn-secondary text-red-500">
+                <Trash2 className="w-4 h-4" /> {t('wo_delete_confirm').replace('?', '')}
+              </button>
+            )}
             <button onClick={handleConfirmWithCheck} className="btn-success">
               <CheckCircle className="w-4 h-4" /> {t('wo_confirm_btn')}
             </button>
