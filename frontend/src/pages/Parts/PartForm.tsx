@@ -318,23 +318,30 @@ export default function PartForm() {
               </div>
             )}
           </div>
-          <div className="relative">
+          <div>
             <label className="label">{t('lbl_brand')}</label>
-            <input className="input" placeholder={t('brand_placeholder')} value={form.brand}
-              onChange={e => handleBrandInput(e.target.value)}
-              onFocus={() => form.brand && brandSugg.length > 0 && setShowBrandSugg(true)}
-              onBlur={() => setTimeout(() => setShowBrandSugg(false), 150)}
-              autoComplete="off"
-            />
-            {showBrandSugg && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto">
-                {brandSugg.map(b => (
-                  <button key={b} type="button" onMouseDown={() => { setForm(f => ({ ...f, brand: b })); setShowBrandSugg(false) }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 border-b border-gray-50 last:border-0">
-                    {b}
-                  </button>
-                ))}
-              </div>
+            <select className="input"
+              value={existingBrands.includes(form.brand) ? form.brand : (form.brand ? '__add__' : '')}
+              onChange={e => {
+                if (e.target.value === '__add__') setForm(f => ({ ...f, brand: '' }))
+                else setForm(f => ({ ...f, brand: e.target.value }))
+              }}
+            >
+              <option value="">{t('select_choose')}</option>
+              {existingBrands.map(b => <option key={b} value={b}>{b}</option>)}
+              <option value="__add__">{t('add_new_brand')}</option>
+            </select>
+            {form.brand === '' && existingBrands.length > 0 && (
+              <input className="input mt-1" placeholder={t('brand_placeholder')} autoFocus
+                onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
+            )}
+            {(!existingBrands.includes(form.brand) && form.brand !== '') && (
+              <input className="input mt-1" placeholder={t('brand_placeholder')} value={form.brand}
+                onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
+            )}
+            {existingBrands.length === 0 && (
+              <input className="input mt-1" placeholder={t('brand_placeholder')} value={form.brand}
+                onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
             )}
           </div>
           <div>
@@ -392,23 +399,31 @@ export default function PartForm() {
               {t('parts_track_min_stock')}
             </label>
           </div>
-          <div className="sm:col-span-2 relative">
+          <div className="sm:col-span-2">
             <label className="label">{t('lbl_location')}</label>
-            <input className="input" placeholder={t('parts_shelf_placeholder')} value={form.location}
-              onChange={e => handleLocationInput(e.target.value)}
-              onFocus={() => form.location && locationSugg.length > 0 && setShowLocationSugg(true)}
-              onBlur={() => setTimeout(() => setShowLocationSugg(false), 150)}
-              autoComplete="off"
-            />
-            {showLocationSugg && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-20 max-h-40 overflow-y-auto">
-                {locationSugg.map(loc => (
-                  <button key={loc} type="button" onMouseDown={() => { setForm(f => ({ ...f, location: loc })); setShowLocationSugg(false) }}
-                    className="w-full px-3 py-2 text-left text-sm hover:bg-blue-50 border-b border-gray-50 last:border-0">
-                    {loc}
-                  </button>
-                ))}
-              </div>
+            {existingLocations.length > 0 ? (
+              <>
+                <select className="input"
+                  value={existingLocations.includes(form.location) ? form.location : (form.location ? '__add__' : '')}
+                  onChange={e => {
+                    if (e.target.value === '__add__') setForm(f => ({ ...f, location: '' }))
+                    else setForm(f => ({ ...f, location: e.target.value }))
+                  }}
+                >
+                  <option value="">{t('select_choose')}</option>
+                  {existingLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                  <option value="__add__">{t('add_new_location')}</option>
+                </select>
+                {(form.location === '' || (!existingLocations.includes(form.location) && form.location !== '')) && (
+                  <input className="input mt-1" placeholder={t('parts_shelf_placeholder')}
+                    value={form.location}
+                    autoFocus={form.location === '' && existingLocations.length > 0}
+                    onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+                )}
+              </>
+            ) : (
+              <input className="input" placeholder={t('parts_shelf_placeholder')} value={form.location}
+                onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
             )}
           </div>
           <div className="sm:col-span-2">
