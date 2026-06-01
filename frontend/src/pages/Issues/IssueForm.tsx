@@ -17,7 +17,7 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useAutoSave } from '../../hooks/useAutoSave'
 import { qtyStep, qtyMin, fmtQty } from '../../utils/format'
 import KeyHints from '../../components/KeyHints'
-import { fetchWorkOrders } from '../../api/workOrders'
+import { fetchWorkOrders, fetchWorkOrder } from '../../api/workOrders'
 
 interface LineItem { part: Part; quantity: number; notes: string }
 
@@ -42,6 +42,13 @@ export default function IssueForm() {
   const routeLocation = useLocation()
   const preselectWoId = (routeLocation.state as any)?.preselect_wo_id as number | undefined
   const [selectedWOId, setSelectedWOId] = useState<number | ''>(preselectWoId || '')
+
+  // Load the pre-selected WO directly (it might be outside the current period filter)
+  const { data: preselectWO } = useQuery({
+    queryKey: ['wo-preselect', preselectWoId],
+    queryFn: () => fetchWorkOrder(preselectWoId!),
+    enabled: !!preselectWoId && isNew,
+  })
   const [manualWO, setManualWO] = useState('')
   const [customer, setCustomer] = useState('')
   const [reason, setReason] = useState('')
@@ -83,7 +90,8 @@ export default function IssueForm() {
     }
   }, [selectedWOId])
 
-  const selectedWO = openWorkOrders.find(wo => wo.id === selectedWOId)
+  // Use pre-loaded WO if coming from WO detail, otherwise find in list
+  const selectedWO = preselectWO ?? openWorkOrders.find(wo => wo.id === selectedWOId)
   const effectiveWONumber =
     issueType === 'wo' ? (selectedWO ? selectedWO.work_order_number : manualWO) :
     issueType === 'sale' ? t('issue_type_sale') :
