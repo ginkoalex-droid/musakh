@@ -302,7 +302,7 @@ export default function WorkOrders() {
           ))}
         </div>
         <select value={workTypeFilter} onChange={e => setWorkTypeFilter(e.target.value)} className="input w-auto">
-          <option value="">Все типы</option>
+          <option value="">{t('mov_all_types')}</option>
           {WORK_TYPES.map(wt => <option key={wt} value={wt}>{wt}</option>)}
         </select>
         <select value={mechFilter} onChange={e => setMechFilter(e.target.value ? parseInt(e.target.value) : '')} className="input w-auto">
@@ -401,7 +401,7 @@ export default function WorkOrders() {
               <input
                 id="wo-number-input"
                 className={`input font-mono text-lg ${woExists ? 'border-orange-400 bg-orange-50' : ''}`}
-                placeholder="12345 или сканируй штрихкод"
+                placeholder={`12345 ${t('wo_number_placeholder')}`}
                 autoFocus
                 value={form.work_order_number}
                 onChange={e => handleWONumber(e.target.value)}
@@ -480,14 +480,14 @@ export default function WorkOrders() {
             <div>
               <label className="label">{t('wo_repair_desc')} *</label>
               <input className={`input ${!form.notes.trim() ? 'border-orange-300' : ''}`}
-                placeholder="Замена масла, ТО, ремонт тормозов, диагностика..."
+                placeholder={t('wo_repair_placeholder')}
                 value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
             </div>
             <div>
               <label className="label">{t('wo_work_type_label')} *</label>
               <select id="wo-worktype-select" className={`input ${!form.work_type ? 'border-orange-300' : ''}`}
                 value={form.work_type} onChange={e => setForm(f => ({ ...f, work_type: e.target.value }))}>
-                <option value="">— выбери тип —</option>
+                <option value="">{t('wo_select_type')}</option>
                 {WORK_TYPES.map(wt => <option key={wt} value={wt}>{wt}</option>)}
               </select>
             </div>
