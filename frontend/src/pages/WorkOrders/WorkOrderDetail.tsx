@@ -20,6 +20,8 @@ export default function WorkOrderDetail() {
   const isWarehouse = me ? canWarehouse(me.role) : false
 
   const [editMechanics, setEditMechanics] = useState(false)
+  const [noPartsModal, setNoPartsModal] = useState(false)
+  const [noPartsConfirmed, setNoPartsConfirmed] = useState(false)
   const [mechForm, setMechForm] = useState({ mechanic_id_2: 0, mechanic_share: 50, work_type: '' })
   const [editNotes, setEditNotes] = useState(false)
   const [notesVal, setNotesVal] = useState('')
@@ -89,8 +91,20 @@ export default function WorkOrderDetail() {
     } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
   }
 
-  async function handleConfirm() {
-    if (!wo || !confirm(t('wo_confirm_title'))) return
+  async function handleConfirmWithCheck() {
+    if (!wo) return
+    // If no confirmed issues linked to this WO, show "no parts" modal first
+    const hasIssues = issues.some(i => i.is_confirmed && !i.is_cancelled)
+    if (!hasIssues) {
+      setNoPartsConfirmed(false)
+      setNoPartsModal(true)
+      return
+    }
+    await doConfirm()
+  }
+
+  async function doConfirm() {
+    if (!wo) return
     try {
       await confirmWorkOrder(wo.id)
       toast.success(t('wo_confirmed_toast'))
@@ -291,7 +305,7 @@ export default function WorkOrderDetail() {
             <button onClick={handleDelete} className="btn-secondary text-red-500">
               <Trash2 className="w-4 h-4" /> {t('wo_delete_confirm').replace('?', '')}
             </button>
-            <button onClick={handleConfirm} className="btn-success">
+            <button onClick={handleConfirmWithCheck} className="btn-success">
               <CheckCircle className="w-4 h-4" /> {t('wo_confirm_btn')}
             </button>
           </>
@@ -301,6 +315,50 @@ export default function WorkOrderDetail() {
             <Trash2 className="w-4 h-4" /> {t('btn_delete')}
           </button>
         )}
+      {/* No-parts confirmation modal */}
+      {noPartsModal && wo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
+          <div className="card w-full max-w-md p-6 space-y-5">
+            <div className="flex items-start gap-3">
+              <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center shrink-0">
+                <span className="text-orange-600 text-xl">⚠</span>
+              </div>
+              <div>
+                <h2 className="font-bold text-gray-900 text-lg">Запчасти не списаны</h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  К ЗН <span className="font-mono font-bold text-blue-700">{wo.work_order_number}</span> не привязано ни одного проведённого списания.
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-1">
+              <div><span className="text-gray-500">Механик:</span> <span className="font-semibold">{wo.mechanic_name}</span></div>
+              {wo.mechanic2_name && <div><span className="text-gray-500">+ </span><span className="font-semibold">{wo.mechanic2_name}</span></div>}
+              {wo.car_model && <div><span className="text-gray-500">Модель:</span> <span className="font-semibold">{wo.car_model}</span></div>}
+              {wo.notes && <div><span className="text-gray-500">Вид работы:</span> <span>{wo.notes}</span></div>}
+            </div>
+
+            <label className="flex items-start gap-3 cursor-pointer p-3 border-2 rounded-lg transition-colors hover:bg-blue-50 hover:border-blue-300"
+              style={{ borderColor: noPartsConfirmed ? '#2563eb' : '#e5e7eb', background: noPartsConfirmed ? '#eff6ff' : '' }}>
+              <input type="checkbox" className="mt-0.5 w-5 h-5 rounded accent-blue-600"
+                checked={noPartsConfirmed}
+                onChange={e => setNoPartsConfirmed(e.target.checked)} />
+              <span className="text-sm font-medium text-gray-800 leading-snug">
+                Подтверждаю, что запчасти не использовались при выполнении данного заказ-наряда
+              </span>
+            </label>
+
+            <div className="flex gap-3 justify-end">
+              <button className="btn-secondary" onClick={() => setNoPartsModal(false)}>Отмена</button>
+              <button className="btn-success" disabled={!noPartsConfirmed}
+                onClick={async () => { setNoPartsModal(false); await doConfirm() }}>
+                <CheckCircle className="w-4 h-4" /> Закрыть ЗН
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Edit mechanics modal */}
       {editMechanics && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">

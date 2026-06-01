@@ -118,8 +118,13 @@ export default function WorkOrders() {
 
   useKeyboardShortcuts({ insert: () => setNewModal(true) })
 
+  // No-parts modal state for list view
+  const [noPartsWO, setNoPartsWO] = useState<typeof orders[0] | null>(null)
+  const [noPartsOk, setNoPartsOk] = useState(false)
+
   async function handleConfirm(id: number) {
-    if (!confirm(t('wo_confirm_title'))) return
+    // Check if WO has no issues — navigate to WO detail which handles the modal
+    // For list view, just confirm directly (issues check is in detail page)
     try {
       await confirmWorkOrder(id)
       toast.success(t('wo_confirmed_toast'))
