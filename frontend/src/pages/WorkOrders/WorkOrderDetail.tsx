@@ -310,7 +310,7 @@ export default function WorkOrderDetail() {
       <div className="flex gap-3 justify-end">
         {!wo.is_confirmed && canClose && (
           <>
-            {isWarehouse && (
+            {isAdmin && (
               <button onClick={handleDelete} className="btn-secondary text-red-500">
                 <Trash2 className="w-4 h-4" /> {t('wo_delete_confirm').replace('?', '')}
               </button>
@@ -321,7 +321,7 @@ export default function WorkOrderDetail() {
           </>
         )}
         {wo.is_confirmed && isAdmin && (
-          <button onClick={handleDelete} className="btn-secondary text-red-500">
+          <button onClick={handleDelete} className="btn-secondary text-red-500" title="Admin only">
             <Trash2 className="w-4 h-4" /> {t('btn_delete')}
           </button>
         )}

@@ -12,7 +12,7 @@ import type { Part } from '../../types'
 import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
-import { canAdmin, canWarehouse } from '../../store/permissions'
+import { canAdmin, canWarehouse, canCloseWO } from '../../store/permissions'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useAutoSave } from '../../hooks/useAutoSave'
 import { qtyStep, qtyMin, fmtQty } from '../../utils/format'
@@ -30,6 +30,7 @@ export default function IssueForm() {
   const me = getUser()
   const isAdmin = me ? canAdmin(me.role) : false
   const isWarehouse = me ? canWarehouse(me.role) : false
+  const isMechanic = me?.role === 'mechanic'
 
   const { data: existing } = useQuery({
     queryKey: ['issue-order', id],
@@ -433,8 +434,8 @@ export default function IssueForm() {
       <div className="card p-6 space-y-4">
         <h2 className="font-semibold text-gray-700">{t('issue_data_title')}</h2>
         <div className="grid sm:grid-cols-2 gap-4">
-          {/* Issue type selector */}
-          <div className="sm:col-span-2">
+          {/* Issue type selector — mechanic can only issue to WO */}
+          {!isMechanic && <div className="sm:col-span-2">
             <label className="label">{t('issue_type')}</label>
             <div className="flex gap-2">
               {(['wo', 'sale', 'other'] as IssueType[]).map(type => (
@@ -449,7 +450,7 @@ export default function IssueForm() {
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
 
           {/* WO selector — hidden when pre-selected from WO detail */}
           {issueType === 'wo' && !preselectWoId && <div className="sm:col-span-2">

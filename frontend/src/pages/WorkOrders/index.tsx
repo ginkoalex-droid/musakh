@@ -260,11 +260,11 @@ export default function WorkOrders() {
                         <CheckCircle className="w-3.5 h-3.5" />
                       </button>
                     )}
-          {(isAdmin || !o.is_confirmed) && (
-            <button onClick={() => handleDelete(o.id)} className="btn-secondary py-1 px-2 text-xs text-red-500">
-              <Trash2 className="w-3.5 h-3.5" />
-            </button>
-          )}
+                    {isAdmin && (
+                      <button onClick={() => handleDelete(o.id)} className="btn-secondary py-1 px-2 text-xs text-red-500">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
         </div>
       </td>
     </tr>
