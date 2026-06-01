@@ -222,7 +222,7 @@ export default function Stock() {
           {t('stock_need_order')}
         </label>
         <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden text-xs">
-          <span className="px-2 py-1.5 text-gray-500 bg-gray-50">Группа:</span>
+          <span className="px-2 py-1.5 text-gray-500 bg-gray-50">{t('group_label')}</span>
           {(['none', 'category', 'brand'] as const).map(g => (
             <button key={g} onClick={() => setGroupBy(g)}
               className={`px-2 py-1.5 font-medium transition-colors ${groupBy === g ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>

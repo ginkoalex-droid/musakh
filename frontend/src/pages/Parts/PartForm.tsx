@@ -231,7 +231,7 @@ export default function PartForm() {
             }})}
             className="btn-secondary text-sm"
           >
-            <Copy className="w-4 h-4" /> Копировать
+            <Copy className="w-4 h-4" /> {t('btn_copy')}
           </button>
         )}
       </div>

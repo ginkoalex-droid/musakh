@@ -323,12 +323,12 @@ export default function WorkOrderDetail() {
               <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center shrink-0">
                 <span className="text-orange-600 text-xl">⚠</span>
               </div>
-              <div>
-                <h2 className="font-bold text-gray-900 text-lg">Запчасти не списаны</h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  К ЗН <span className="font-mono font-bold text-blue-700">{wo.work_order_number}</span> не привязано ни одного проведённого списания.
-                </p>
-              </div>
+            <div>
+              <h2 className="font-bold text-gray-900 text-lg">{t('wo_no_parts_title')}</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                {t('lbl_work_order')}: <span className="font-mono font-bold text-blue-700">{wo.work_order_number}</span> — {t('wo_no_parts_desc')}
+              </p>
+            </div>
             </div>
 
             <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-1">
@@ -344,15 +344,15 @@ export default function WorkOrderDetail() {
                 checked={noPartsConfirmed}
                 onChange={e => setNoPartsConfirmed(e.target.checked)} />
               <span className="text-sm font-medium text-gray-800 leading-snug">
-                Подтверждаю, что запчасти не использовались при выполнении данного заказ-наряда
+                {t('wo_no_parts_confirm_text')}
               </span>
             </label>
 
             <div className="flex gap-3 justify-end">
-              <button className="btn-secondary" onClick={() => setNoPartsModal(false)}>Отмена</button>
+              <button className="btn-secondary" onClick={() => setNoPartsModal(false)}>{t('btn_cancel')}</button>
               <button className="btn-success" disabled={!noPartsConfirmed}
                 onClick={async () => { setNoPartsModal(false); await doConfirm() }}>
-                <CheckCircle className="w-4 h-4" /> Закрыть ЗН
+                <CheckCircle className="w-4 h-4" /> {t('wo_close_anyway')}
               </button>
             </div>
           </div>
@@ -365,7 +365,7 @@ export default function WorkOrderDetail() {
           <div className="card w-full max-w-sm p-6 space-y-4">
             <h2 className="font-semibold text-gray-900">Изменить механиков</h2>
             <div>
-              <label className="label">Тип работы</label>
+              <label className="label">{t('wo_work_type_label')}</label>
               <select className="input" value={mechForm.work_type}
                 onChange={e => setMechForm(f => ({ ...f, work_type: e.target.value }))}>
                 <option value="">—</option>
@@ -373,7 +373,7 @@ export default function WorkOrderDetail() {
               </select>
             </div>
             <div>
-              <label className="label">Второй механик</label>
+              <label className="label">{t('wo_second_mechanic')}</label>
               <select className="input" value={mechForm.mechanic_id_2}
                 onChange={e => setMechForm(f => ({ ...f, mechanic_id_2: parseInt(e.target.value) || 0 }))}>
                 <option value={0}>— нет —</option>

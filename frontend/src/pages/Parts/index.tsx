@@ -102,7 +102,7 @@ export default function Parts() {
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden text-xs">
-          <span className="px-2 py-1.5 text-gray-500 bg-gray-50">Группа:</span>
+          <span className="px-2 py-1.5 text-gray-500 bg-gray-50">{t('group_label')}</span>
           {(['none', 'category', 'brand'] as const).map(g => (
             <button key={g} onClick={() => setGroupBy(g)}
               className={`px-2 py-1.5 font-medium transition-colors ${groupBy === g ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
@@ -174,7 +174,7 @@ export default function Parts() {
                           <div className="flex items-center gap-1.5">
                             <Link to={`/parts/${p.id}`} className="font-medium text-blue-700 hover:underline flex-1">{p.name}</Link>
                             <button onClick={e => { e.preventDefault(); navigate('/parts/new', { state: { copy: { name: p.name, brand: p.brand, category: p.category, unit: p.unit, min_stock: p.min_stock, track_min_stock: p.track_min_stock, default_issue_qty: p.default_issue_qty, location: p.location } } }) }}
-                              className="shrink-0 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title="Копировать">
+                              className="shrink-0 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded" title={t('btn_copy')}>
                               <Copy className="w-3.5 h-3.5" />
                             </button>
                           </div>
@@ -204,7 +204,7 @@ export default function Parts() {
                       <button
                         onClick={e => { e.preventDefault(); navigate('/parts/new', { state: { copy: { name: p.name, brand: p.brand, category: p.category, unit: p.unit, min_stock: p.min_stock, track_min_stock: p.track_min_stock, default_issue_qty: p.default_issue_qty, location: p.location } } }) }}
                         className="shrink-0 p-1 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        title="Копировать"
+                        title={t('btn_copy')}
                       >
                         <Copy className="w-3.5 h-3.5" />
                       </button>

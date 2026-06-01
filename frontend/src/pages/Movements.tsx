@@ -144,13 +144,13 @@ export default function Movements() {
               onClick={() => setViewMode('list')}
               className={`px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'list' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
             >
-              Операции
+              {t('mov_view_list')}
             </button>
             <button
               onClick={() => setViewMode('summary')}
               className={`px-3 py-1.5 text-sm font-medium transition-colors ${viewMode === 'summary' ? 'bg-blue-600 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'}`}
             >
-              По позициям
+              {t('mov_view_summary')}
             </button>
           </div>
           <button onClick={exportExcel} className="btn-secondary">

@@ -277,6 +277,22 @@ export const ru = {
   role_mechanic: 'Механик',
   role_readonly: 'Только просмотр',
 
+  // Misc hardcoded strings
+  btn_copy: 'Копировать',
+  group_label: 'Группа:',
+  autosave_pending: 'Автосохранение через 10с...',
+  autosave_saving: 'Сохраняю...',
+  autosave_saved: '✓ Сохранено',
+  mov_view_list: 'Операции',
+  mov_view_summary: 'По позициям',
+  wo_second_mechanic: 'Второй механик (необязательно)',
+  wo_repair_desc: 'Вид ремонта',
+  wo_work_type_label: 'Тип работы',
+  wo_no_parts_title: 'Запчасти не списаны',
+  wo_no_parts_desc: 'К ЗН нет ни одного проведённого списания.',
+  wo_no_parts_confirm_text: 'Подтверждаю, что запчасти не использовались при выполнении данного заказ-наряда',
+  wo_close_anyway: 'Закрыть ЗН',
+
   // Errors
   err_no_part: 'Выберите запчасть',
   err_no_qty: 'Укажите количество',

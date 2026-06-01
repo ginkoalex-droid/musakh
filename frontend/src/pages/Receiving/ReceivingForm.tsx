@@ -474,13 +474,13 @@ export default function ReceivingForm() {
 
       <div className="flex justify-end gap-3 items-center">
         {autoSaveStatus === 'pending' && items.length > 0 && (
-          <span className="text-xs text-gray-400">Автосохранение через 10с...</span>
+          <span className="text-xs text-gray-400">{t('autosave_pending')}</span>
         )}
         {autoSaveStatus === 'saving' && (
-          <span className="text-xs text-blue-500">Сохраняю...</span>
+          <span className="text-xs text-blue-500">{t('autosave_saving')}</span>
         )}
         {autoSaveStatus === 'saved' && (
-          <span className="text-xs text-green-600">✓ Сохранено</span>
+          <span className="text-xs text-green-600">{t('autosave_saved')}</span>
         )}
         <button className="btn-secondary" onClick={() => navigate('/receiving')}>{t('btn_cancel')}</button>
         <button className="btn-primary" onClick={handleSave} disabled={loading || items.length === 0}>

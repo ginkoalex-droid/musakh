@@ -146,8 +146,8 @@ export default function WorkOrders() {
     if (!form.work_order_number.trim()) { toast.error(t('err_no_name')); return }
     if (!form.mechanic_id) { toast.error(t('wo_mechanic') + ' обязательно'); return }
     if (!form.car_model.trim()) { toast.error('Модель обязательно'); return }
-    if (!form.work_type) { toast.error('Тип работы обязательно'); return }
-    if (!form.notes.trim()) { toast.error('Примечание (вид ремонта) обязательно'); return }
+    if (!form.work_type) { toast.error(t('wo_work_type_label') + ' ' + t('err_generic').toLowerCase()); return }
+    if (!form.notes.trim()) { toast.error(t('wo_repair_desc') + ' ' + t('err_generic').toLowerCase()); return }
     if (woExists) { toast.error(`ЗН ${form.work_order_number} уже существует`); return }
     setLoading(true)
     try {
@@ -428,7 +428,7 @@ export default function WorkOrders() {
               </select>
             </div>
             <div>
-              <label className="label">Второй механик (необязательно)</label>
+              <label className="label">{t('wo_second_mechanic')}</label>
               <select className="input" value={form.mechanic_id_2}
                 onChange={e => setForm(f => ({ ...f, mechanic_id_2: parseInt(e.target.value) || 0 }))}>
                 <option value={0}>—</option>
@@ -478,13 +478,13 @@ export default function WorkOrders() {
               </div>
             </div>
             <div>
-              <label className="label">Вид ремонта *</label>
+              <label className="label">{t('wo_repair_desc')} *</label>
               <input className={`input ${!form.notes.trim() ? 'border-orange-300' : ''}`}
                 placeholder="Замена масла, ТО, ремонт тормозов, диагностика..."
                 value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} />
             </div>
             <div>
-              <label className="label">Тип работы *</label>
+              <label className="label">{t('wo_work_type_label')} *</label>
               <select id="wo-worktype-select" className={`input ${!form.work_type ? 'border-orange-300' : ''}`}
                 value={form.work_type} onChange={e => setForm(f => ({ ...f, work_type: e.target.value }))}>
                 <option value="">— выбери тип —</option>
