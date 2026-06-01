@@ -109,6 +109,17 @@ async def list_models_for_make(
     return [row[0] for row in result.all()]
 
 
+@router.get("/locations", response_model=list[str])
+async def list_locations(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(Part.location).where(Part.location.isnot(None), Part.location != '').distinct().order_by(Part.location)
+    )
+    return [row[0] for row in result.all()]
+
+
 @router.get("/categories", response_model=list[str])
 async def list_categories(
     db: AsyncSession = Depends(get_db),

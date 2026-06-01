@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories, fetchParts } from '../../api/parts'
+import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories, fetchParts, fetchLocations } from '../../api/parts'
 import api from '../../api/client'
 import { ArrowLeft, Plus, Trash2, ScanLine, Car, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -32,6 +32,11 @@ export default function PartForm() {
   const { data: existingCategories = [] } = useQuery({
     queryKey: ['categories'],
     queryFn: fetchCategories,
+  })
+
+  const { data: existingLocations = [] } = useQuery({
+    queryKey: ['locations'],
+    queryFn: fetchLocations,
   })
 
   // Merge hardcoded defaults with existing DB categories, deduplicated
@@ -343,8 +348,28 @@ export default function PartForm() {
           </div>
           <div className="sm:col-span-2">
             <label className="label">{t('lbl_location')}</label>
-            <input className="input" placeholder={t('parts_shelf_placeholder')} value={form.location}
-              onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+            {existingLocations.length > 0 ? (
+              <div className="space-y-1">
+                <select
+                  className="input"
+                  value={existingLocations.includes(form.location) ? form.location : (form.location ? '__custom__' : '')}
+                  onChange={e => {
+                    if (e.target.value !== '__custom__') setForm(f => ({ ...f, location: e.target.value }))
+                  }}
+                >
+                  <option value="">— {t('lbl_location')} —</option>
+                  {existingLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
+                  <option value="__custom__">+ Новое место...</option>
+                </select>
+                {(!form.location || !existingLocations.includes(form.location)) && (
+                  <input className="input" placeholder={t('parts_shelf_placeholder')} value={form.location}
+                    onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+                )}
+              </div>
+            ) : (
+              <input className="input" placeholder={t('parts_shelf_placeholder')} value={form.location}
+                onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
+            )}
           </div>
           <div className="sm:col-span-2">
             <label className="label">{t('lbl_notes')}</label>
