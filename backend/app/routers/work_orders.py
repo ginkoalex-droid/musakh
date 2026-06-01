@@ -317,8 +317,11 @@ async def update_work_order(
     wo = result.scalar_one_or_none()
     if not wo:
         raise HTTPException(status_code=404, detail="ЗН не найден")
-    # Allow updating mechanic assignments even on confirmed WOs (warehouse+admin)
-    if current_user.role not in (UserRole.admin, UserRole.warehouse):
+    # Confirmed WO — only admin can edit
+    if wo.is_confirmed and current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Проведённый ЗН может изменять только администратор")
+    # Open WO — admin or mechanic
+    if not wo.is_confirmed and current_user.role not in (UserRole.admin, UserRole.mechanic):
         raise HTTPException(status_code=403, detail="Недостаточно прав")
     for k, v in data.model_dump().items():
         if v is not None:

@@ -171,7 +171,7 @@ export default function WorkOrderDetail() {
               <span className="badge bg-purple-100 text-purple-700">{wo.work_type}</span>
             )}
           </div>
-          {canClose && (
+          {(wo.is_confirmed ? isAdmin : canClose) && (
             <button onClick={() => {
               setMechForm({
                 mechanic_id: wo.mechanic_id,
@@ -217,7 +217,7 @@ export default function WorkOrderDetail() {
         )}
           <div className="sm:col-span-2">
             <label className="text-gray-500 text-xs font-medium block mb-1">{t('lbl_notes')}</label>
-            {canClose ? (
+            {(wo.is_confirmed ? isAdmin : canClose) ? (
               <div className="flex gap-2">
                 <input
                   className="input flex-1"
