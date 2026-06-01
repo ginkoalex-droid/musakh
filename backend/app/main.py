@@ -1,10 +1,31 @@
+from datetime import datetime, timezone
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.encoders import jsonable_encoder
+import json
 
 from app.database import engine, Base
 from app.routers import auth, parts, suppliers, receiving, issues, stock, export, work_orders
 
 app = FastAPI(title="Garage Inventory", version="1.0.0")
+
+# Ensure all naive datetimes are serialized as UTC (with Z suffix)
+from fastapi.responses import JSONResponse
+from typing import Any
+
+class UTCJSONResponse(JSONResponse):
+    def render(self, content: Any) -> bytes:
+        def fix_dates(obj):
+            if isinstance(obj, dict):
+                return {k: fix_dates(v) for k, v in obj.items()}
+            if isinstance(obj, list):
+                return [fix_dates(i) for i in obj]
+            if isinstance(obj, datetime) and obj.tzinfo is None:
+                return obj.isoformat() + 'Z'
+            return obj
+        return json.dumps(fix_dates(jsonable_encoder(content)), ensure_ascii=False).encode('utf-8')
+
+app.router.default_response_class = UTCJSONResponse
 
 app.add_middleware(
     CORSMiddleware,
