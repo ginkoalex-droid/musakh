@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchMovements } from '../api/stock'
 import { ArrowDown, ArrowUp, Settings, RotateCcw, Download } from 'lucide-react'
@@ -27,11 +27,26 @@ function getPeriodDates(period: Period): { from: string; to: string } {
 export default function Movements() {
   const { t } = useT()
 
-  const [period, setPeriod] = useState<Period>('month')
-  const [customFrom, setCustomFrom] = useState('')
-  const [customTo, setCustomTo] = useState('')
-  const [userId, setUserId] = useState('')
-  const [movType, setMovType] = useState('')
+  // Restore last used filters from localStorage
+  const saved = (() => { try { return JSON.parse(localStorage.getItem('movements_filters') || '{}') } catch { return {} } })()
+
+  const [period, setPeriodState] = useState<Period>(saved.period || 'month')
+  const [customFrom, setCustomFrom] = useState(saved.customFrom || '')
+  const [customTo, setCustomTo] = useState(saved.customTo || '')
+  const [userId, setUserId] = useState(saved.userId || '')
+  const [movType, setMovType] = useState(saved.movType || '')
+  const [viewMode, setViewModeState] = useState<'list' | 'summary'>(saved.viewMode || 'list')
+
+  function setPeriod(v: Period) { setPeriodState(v); save({ period: v }) }
+  function setViewMode(v: 'list' | 'summary') { setViewModeState(v); save({ viewMode: v }) }
+
+  function save(patch: Record<string, string>) {
+    const current = (() => { try { return JSON.parse(localStorage.getItem('movements_filters') || '{}') } catch { return {} } })()
+    localStorage.setItem('movements_filters', JSON.stringify({ ...current, ...patch }))
+  }
+
+  // Save filter changes
+  useEffect(() => { save({ period, customFrom, customTo, userId, movType, viewMode }) }, [period, customFrom, customTo, userId, movType, viewMode])
 
   const { from, to } = period === 'custom'
     ? { from: customFrom, to: customTo }
@@ -70,7 +85,6 @@ export default function Movements() {
     { key: 'custom', label: t('mov_period_custom') },
   ]
 
-  const [viewMode, setViewMode] = useState<'list' | 'summary'>('list')
 
   // Summary stats — count only, no quantity sum (mixed units)
   const stats = useMemo(() => {
@@ -194,11 +208,11 @@ export default function Movements() {
 
         {/* Employee + type filters */}
         <div className="flex flex-wrap gap-3">
-          <select value={userId} onChange={e => setUserId(e.target.value)} className="input w-auto">
+          <select value={userId} onChange={e => { setUserId(e.target.value); save({ userId: e.target.value }) }} className="input w-auto">
             <option value="">{t('mov_all_employees')}</option>
             {users.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
-          <select value={movType} onChange={e => setMovType(e.target.value)} className="input w-auto">
+          <select value={movType} onChange={e => { setMovType(e.target.value); save({ movType: e.target.value }) }} className="input w-auto">
             <option value="">{t('mov_all_types')}</option>
             <option value="receiving">{t('mov_type_receiving')}</option>
             <option value="issue">{t('mov_type_issue')}</option>
