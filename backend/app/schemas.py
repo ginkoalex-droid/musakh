@@ -210,7 +210,7 @@ class MechanicOut(MechanicCreate):
 
 # ── Work Orders ────────────────────────────────────────────────────────────────
 
-WORK_TYPES = ['טיפול – Service', 'שיפוץ – Repair', 'פרואקט – Project', 'תעונה – Accident', 'חשמל – Electrical', 'ריקולת – Recall']
+WORK_TYPES = ['טיפול – Service', 'שיפוץ – Repair', 'התקנה – Installation', 'אבחון – Diagnostics', 'אחריות – Warranty', 'פרואקט – Project', 'תעונה – Accident', 'חשמל – Electrical', 'ריקולת – Recall']
 
 
 class WorkOrderCreate(BaseModel):
