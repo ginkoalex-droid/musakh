@@ -32,6 +32,7 @@ export default function Movements() {
   // Restore last used filters from localStorage
   const saved = (() => { try { return JSON.parse(localStorage.getItem('movements_filters') || '{}') } catch { return {} } })()
 
+  const [partFilter, setPartFilter] = useState<{ id: number; name: string } | null>(null)
   const [period, setPeriodState] = useState<Period>(saved.period || 'month')
   const [customFrom, setCustomFrom] = useState(saved.customFrom || '')
   const [customTo, setCustomTo] = useState(saved.customTo || '')
@@ -55,13 +56,14 @@ export default function Movements() {
     : getPeriodDates(period)
 
   const { data: movements = [], isLoading } = useQuery({
-    queryKey: ['movements', from, to, userId, movType],
+    queryKey: ['movements', from, to, userId, movType, partFilter?.id],
     refetchInterval: 30_000,
     queryFn: () => fetchMovements({
       fromDate: from || undefined,
       toDate: to || undefined,
       userId: userId ? parseInt(userId) : undefined,
       movementType: movType || undefined,
+      partId: partFilter?.id,
     }),
   })
 
@@ -133,6 +135,11 @@ export default function Movements() {
 
   const [summaryCollapsed, setSummaryCollapsed] = useState<Set<string>>(new Set())
 
+  function showPartMovements(partId: number, partName: string) {
+    setPartFilter({ id: partId, name: partName })
+    setViewMode('list')
+  }
+
   function refLabel(mv: (typeof movements)[0]): string {
     if (mv.reference_type === 'receiving_order' && mv.reference_id) {
       return `${t('rec_title')} #${mv.reference_id}`
@@ -174,6 +181,16 @@ export default function Movements() {
           </button>
         </div>
       </div>
+
+      {/* Active part filter badge */}
+      {partFilter && viewMode === 'list' && (
+        <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-lg border border-blue-200 text-sm">
+          <span className="text-blue-700 font-medium">📦 {partFilter.name}</span>
+          <button onClick={() => setPartFilter(null)} className="ml-auto text-xs text-blue-400 hover:text-blue-700 px-2 py-0.5 rounded hover:bg-blue-100">
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Filters */}
       <div className="card p-4 space-y-3">
@@ -270,9 +287,10 @@ export default function Movements() {
                         </td>
                       </tr>
                       {!bgCollapsed && bg.categories.map(cat => cat.parts.map(row => (
-                        <tr key={row.part_id} className="hover:bg-gray-50">
+                        <tr key={row.part_id} className="hover:bg-blue-50 cursor-pointer"
+                          onClick={() => showPartMovements(row.part_id, row.part_name)}>
                           <td className="table-td pl-8">
-                            <div className="font-medium text-sm">{row.part_name}</div>
+                            <div className="font-medium text-sm text-blue-700">{row.part_name}</div>
                           </td>
                           <td className="table-td text-right font-semibold text-green-700">
                             {row.received > 0 ? <span>+{row.received} <span className="text-xs font-normal text-gray-400">{u(row.unit)}</span></span> : <span className="text-gray-300">—</span>}
