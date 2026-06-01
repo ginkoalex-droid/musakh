@@ -7,7 +7,7 @@ import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus, Edit2 } from 'luc
 import { WORK_TYPES } from '../../api/workOrders'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
-import { canAdmin, canWarehouse, canCloseWO } from '../../store/permissions'
+import { canAdmin, canWarehouse, canManageWO } from '../../store/permissions'
 import toast from 'react-hot-toast'
 
 export default function WorkOrderDetail() {
@@ -18,7 +18,7 @@ export default function WorkOrderDetail() {
   const me = getUser()
   const isAdmin = me ? canAdmin(me.role) : false
   const isWarehouse = me ? canWarehouse(me.role) : false
-  const canClose = me ? canCloseWO(me.role) : false
+  const canClose = me ? canManageWO(me.role) : false
 
   const [editMechanics, setEditMechanics] = useState(false)
   const [noPartsModal, setNoPartsModal] = useState(false)
@@ -171,7 +171,7 @@ export default function WorkOrderDetail() {
               <span className="badge bg-purple-100 text-purple-700">{wo.work_type}</span>
             )}
           </div>
-          {isWarehouse && (
+          {canClose && (
             <button onClick={() => {
               setMechForm({
                 mechanic_id: wo.mechanic_id,

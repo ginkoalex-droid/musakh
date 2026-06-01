@@ -115,26 +115,28 @@ export default function Users() {
               <span className={`badge ${roleBadgeColor[role]}`}>{getRoleLabel(role)}</span>
               <ul className="text-xs text-gray-500 space-y-0.5 mt-1">
                 {role === 'admin' && <>
-                  <li>✓ {t('nav_stock')}</li>
-                  <li>✓ {t('nav_receiving')}</li>
-                  <li>✓ {t('nav_parts')}</li>
-                  <li>✓ {t('stock_issue')}</li>
+                  <li>✓ Всё без ограничений</li>
+                  <li>✓ Удаление ЗН</li>
+                  <li>✓ Отмена проводок</li>
                   <li>✓ {t('nav_users')}</li>
+                  <li>✓ Корректировки склада</li>
                 </>}
                 {role === 'warehouse' && <>
                   <li>✓ {t('nav_stock')} + корректировки</li>
                   <li>✓ {t('nav_receiving')}</li>
                   <li>✓ {t('nav_parts')}</li>
-                  <li>✓ {t('stock_issue')}</li>
-                  <li>— Отмена проводки</li>
+                  <li>✓ Списание (ЗН, продажа, другое)</li>
+                  <li>✓ {t('nav_workorders')} — просмотр</li>
+                  <li>— Создать/закрыть/редактировать ЗН</li>
+                  <li>— Удаление, отмена проводок</li>
                 </>}
                 {role === 'mechanic' && <>
-                  <li>✓ {t('nav_stock')} (просмотр)</li>
-                  <li>✓ {t('nav_workorders')}</li>
-                  <li>✓ {t('stock_issue')}</li>
-                  <li>— {t('nav_receiving')}</li>
-                  <li>— {t('stock_adjust')}</li>
-                  <li>— Удаление/отмена</li>
+                  <li>✓ Склад и движения (просмотр)</li>
+                  <li>✓ {t('nav_workorders')} — открыть/закрыть</li>
+                  <li>✓ Списание только на ЗН</li>
+                  <li>— Продажа/другое</li>
+                  <li>— Приёмка, справочники</li>
+                  <li>— Корректировки, удаление</li>
                 </>}
               </ul>
             </div>

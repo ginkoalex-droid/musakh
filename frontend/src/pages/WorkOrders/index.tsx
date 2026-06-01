@@ -4,7 +4,7 @@ import { fetchWorkOrders, fetchWOSummary, fetchMechanics, confirmWorkOrder, dele
 import { Plus, CheckCircle, Clock, Users, Trash2, Search, ChevronDown } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { WORK_TYPES, fetchWOModels } from '../../api/workOrders'
-import { canCloseWO } from '../../store/permissions'
+import { canManageWO } from '../../store/permissions'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
 import { canAdmin, canWarehouse } from '../../store/permissions'
@@ -38,7 +38,7 @@ export default function WorkOrders() {
   }, [])
   const me = getUser()
   const isWarehouse = me ? canWarehouse(me.role) : false
-  const canClose = me ? canCloseWO(me.role) : false
+  const canClose = me ? canManageWO(me.role) : false
   const isAdmin = me ? canAdmin(me.role) : false
 
   const [period, setPeriod] = useState<Period>('month')
@@ -278,7 +278,7 @@ export default function WorkOrders() {
           <button onClick={() => setGroupBy(g => !g)} className={`btn-secondary ${groupBy ? 'bg-blue-50 border-blue-300' : ''}`}>
             <Users className="w-4 h-4" /> {groupBy ? 'Список' : 'По механику'}
           </button>
-          {isWarehouse && (
+          {canClose && (
             <button onClick={() => setNewModal(true)} className="btn-primary">
               <Plus className="w-4 h-4" /> {t('wo_new')}
             </button>
