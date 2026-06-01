@@ -236,16 +236,16 @@ export default function Movements() {
       {viewMode === 'summary' && (
         <div className="card overflow-hidden">
           <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 text-sm font-semibold text-gray-600">
-            Итого за период: {partSummary.length} позиций
+            {t('mov_summary_total')}: {partSummary.length} {t('mov_positions')}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr>
                   <th className="table-th">{t('lbl_name')}</th>
-                  <th className="table-th text-right text-green-700">Приход ↓</th>
-                  <th className="table-th text-right text-red-600">Расход ↑</th>
-                  <th className="table-th text-right">Итого</th>
+                  <th className="table-th text-right text-green-700">{t('mov_col_received')}</th>
+                  <th className="table-th text-right text-red-600">{t('mov_col_issued')}</th>
+                  <th className="table-th text-right">{t('mov_col_total')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
