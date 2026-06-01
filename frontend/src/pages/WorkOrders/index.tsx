@@ -190,6 +190,19 @@ export default function WorkOrders() {
     { key: 'custom', label: t('mov_period_custom') },
   ]
 
+  function formatDuration(from: string, to?: string): string {
+    const start = new Date(from)
+    const end = to ? new Date(to) : new Date()
+    const mins = Math.round((end.getTime() - start.getTime()) / 60000)
+    if (mins < 60) return `${mins}м`
+    const h = Math.floor(mins / 60)
+    const m = mins % 60
+    if (h < 24) return m > 0 ? `${h}ч ${m}м` : `${h}ч`
+    const d = Math.floor(h / 24)
+    const rh = h % 24
+    return rh > 0 ? `${d}д ${rh}ч` : `${d}д`
+  }
+
   const WORow = ({ o }: { o: typeof orders[0] }) => (
     <tr className="hover:bg-gray-50">
       <td className="table-td">
@@ -206,11 +219,27 @@ export default function WorkOrders() {
           )}
         </td>
       )}
-      <td className="table-td text-gray-500 text-sm">{new Date(o.date).toLocaleDateString('ru-RU')}</td>
-      <td className="table-td hidden sm:table-cell text-gray-500 text-sm">
-        {[o.car_plate, o.car_make, o.car_model].filter(Boolean).join(' ')}
-      </td>
-      <td className="table-td hidden md:table-cell text-gray-500 text-sm">{o.notes || '—'}</td>
+      <td className="table-td text-gray-500 text-sm whitespace-nowrap">
+                    {new Date(o.date).toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit' })}
+                    <div className="text-xs text-gray-400">{new Date(o.date).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' })}</div>
+                  </td>
+                  <td className="table-td hidden sm:table-cell text-gray-500 text-sm">
+                    {[o.car_plate, o.car_model].filter(Boolean).join(' ')}
+                    {o.notes && <div className="text-xs text-gray-400 line-clamp-1">{o.notes}</div>}
+                  </td>
+                  <td className="table-td hidden lg:table-cell text-gray-500 text-sm whitespace-nowrap">
+                    {o.confirmed_at ? (
+                      <>
+                        <div>{new Date(o.confirmed_at).toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit' })}</div>
+                        <div className="text-xs text-gray-400">{new Date(o.confirmed_at).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' })}</div>
+                      </>
+                    ) : '—'}
+                  </td>
+                  <td className="table-td hidden md:table-cell">
+                    <span className={`text-sm font-mono font-semibold ${o.is_confirmed ? 'text-green-600' : 'text-orange-500'}`}>
+                      {formatDuration(o.date, o.confirmed_at)}
+                    </span>
+                  </td>
       <td className="table-td">
         {o.is_confirmed ? (
           <span className="badge bg-green-100 text-green-700 flex items-center gap-1 w-fit">
@@ -351,7 +380,8 @@ export default function WorkOrders() {
                       <th className="table-th">{t('wo_number')}</th>
                       <th className="table-th">{t('lbl_date')}</th>
                       <th className="table-th hidden sm:table-cell">{t('wo_car')}</th>
-                      <th className="table-th hidden md:table-cell">{t('lbl_notes')}</th>
+                      <th className="table-th hidden lg:table-cell">Закрыт</th>
+                      <th className="table-th hidden md:table-cell">Время</th>
                       <th className="table-th">{t('lbl_status')}</th>
                       <th className="table-th w-20" />
                     </tr></thead>

@@ -241,6 +241,7 @@ class WorkOrderOut(BaseModel):
     car_model: Optional[str] = None
     notes: Optional[str] = None
     is_confirmed: bool
+    confirmed_at: Optional[datetime] = None
     created_by_name: str
     created_at: datetime
 

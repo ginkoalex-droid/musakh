@@ -92,6 +92,7 @@ def _wo_to_out(wo: WorkOrder) -> WorkOrderOut:
         car_model=wo.car_model,
         notes=wo.notes,
         is_confirmed=wo.is_confirmed,
+        confirmed_at=wo.confirmed_at,
         created_by_name=wo.created_by_user.name,
         created_at=wo.created_at,
     )
@@ -295,6 +296,7 @@ async def confirm_work_order(
         issue.is_confirmed = True
 
     wo.is_confirmed = True
+    wo.confirmed_at = datetime.utcnow()
     await db.commit()
     result = await db.execute(select(WorkOrder).options(*_load_opts()).where(WorkOrder.id == wo.id))
     return _wo_to_out(result.scalar_one())

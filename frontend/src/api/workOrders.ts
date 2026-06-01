@@ -36,6 +36,7 @@ export interface WorkOrder {
   car_model?: string
   notes?: string
   is_confirmed: boolean
+  confirmed_at?: string
   created_by_name: string
   created_at: string
 }
