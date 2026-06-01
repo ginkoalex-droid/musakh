@@ -443,8 +443,8 @@ export default function IssueForm() {
             </div>
           </div>
 
-          {/* WO selector */}
-          {issueType === 'wo' && <div className="sm:col-span-2">
+          {/* WO selector — hidden when pre-selected from WO detail */}
+          {issueType === 'wo' && !preselectWoId && <div className="sm:col-span-2">
             <label className="label">{t('issue_wo_label')}</label>
             <div className="space-y-2">
               {/* Period + search filters above the select */}
