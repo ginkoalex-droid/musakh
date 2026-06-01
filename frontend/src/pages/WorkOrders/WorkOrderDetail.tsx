@@ -239,7 +239,7 @@ export default function WorkOrderDetail() {
               </span>
             )}
           </h2>
-          <Link to={`/issues/new`} className="btn-danger py-1.5 text-sm">
+          <Link to="/issues/new" state={{ preselect_wo_id: wo.id }} className="btn-danger py-1.5 text-sm">
             <Plus className="w-3.5 h-3.5" /> {t('issue_new')}
           </Link>
         </div>
