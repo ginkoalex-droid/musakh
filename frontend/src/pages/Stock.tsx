@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, Fragment } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchStock, adjustStock, issueParts, exportStock, exportMovements } from '../api/stock'
 import { fetchCategories } from '../api/parts'
@@ -33,12 +33,12 @@ export default function Stock() {
 
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const searchTimer = useState<ReturnType<typeof setTimeout>>()[0]
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>()
 
   function handleSearch(val: string) {
     setSearch(val)
-    clearTimeout(searchTimer as any)
-    setTimeout(() => setDebouncedSearch(val), 300)
+    clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => setDebouncedSearch(val), 300)
   }
 
   const { data: stock = [], isLoading } = useQuery({
@@ -102,7 +102,7 @@ export default function Stock() {
 
   async function handleAdjust() {
     if (!adjustModal) return
-    const qty = parseInt(adjustQty)
+    const qty = parseFloat(adjustQty)
     if (isNaN(qty) || qty < 0) { toast.error(t('err_invalid_qty')); return }
     if (!adjustNote.trim()) { toast.error(t('err_no_reason')); return }
     setLoading(true)
@@ -260,7 +260,7 @@ export default function Stock() {
                   const isCollapsed = collapsed.has(group.name)
                   const totalCount = group.rows?.length ?? (group.subs?.reduce((s, sub) => s + sub.rows.length, 0) ?? 0)
                   return (
-                    <>
+                    <Fragment key={`grp-${group.name}`}>
                       {/* Brand / Category header */}
                       <tr key={`g-${group.name}`} className="bg-blue-600 cursor-pointer select-none hover:bg-blue-700"
                         onClick={() => toggleCollapse(group.name)}>
@@ -276,7 +276,7 @@ export default function Stock() {
                               const subKey = `${group.name}::${sub.name}`
                               const subCollapsed = collapsed.has(subKey)
                               return (
-                                <>
+                                <Fragment key={`sub-${subKey}`}>
                                   <tr key={`sg-${subKey}`} className="bg-blue-50 cursor-pointer select-none hover:bg-blue-100"
                                     onClick={e => { e.stopPropagation(); toggleCollapse(subKey) }}>
                                     <td colSpan={7} className="px-8 py-1.5 text-xs font-semibold text-blue-700 uppercase tracking-wide">
@@ -285,11 +285,11 @@ export default function Stock() {
                                     </td>
                                   </tr>
                                   {!subCollapsed && sub.rows.map(row => renderRow(row))}
-                                </>
+                                </Fragment>
                               )
                             })
                       )}
-                    </>
+                    </Fragment>
                   )
                 })
               ) : stock.filter(row => !needOrder || row.quantity <= row.min_stock).map(row => renderRow(row))}
@@ -334,7 +334,7 @@ export default function Stock() {
             <div>
               <label className="label">{t('lbl_quantity')} *</label>
               <input type="number" min="1" max={issuePart?.stock_qty} className="input" value={issueQty}
-                onChange={e => setIssueQty(parseInt(e.target.value) || 1)} />
+                onChange={e => setIssueQty(parseFloat(e.target.value) || 0)} />
             </div>
             <div>
               <label className="label">{t('stock_work_order_required')}</label>

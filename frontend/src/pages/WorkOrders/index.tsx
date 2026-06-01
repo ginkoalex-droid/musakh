@@ -48,12 +48,12 @@ export default function WorkOrders() {
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
-  const searchTimer = useState<ReturnType<typeof setTimeout>>()[0]
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>()
 
   function handleSearch(val: string) {
     setSearch(val)
-    clearTimeout(searchTimer as any)
-    setTimeout(() => setDebouncedSearch(val), 300)
+    clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => setDebouncedSearch(val), 300)
   }
 
   const [woExists, setWoExists] = useState(false)
