@@ -22,7 +22,7 @@ export default function WorkOrderDetail() {
   const [editMechanics, setEditMechanics] = useState(false)
   const [noPartsModal, setNoPartsModal] = useState(false)
   const [noPartsConfirmed, setNoPartsConfirmed] = useState(false)
-  const [mechForm, setMechForm] = useState({ mechanic_id_2: 0, mechanic_share: 50, work_type: '' })
+  const [mechForm, setMechForm] = useState({ mechanic_id: 0, mechanic_id_2: 0, mechanic_share: 50, work_type: '' })
   const [editNotes, setEditNotes] = useState(false)
   const [notesVal, setNotesVal] = useState('')
 
@@ -49,7 +49,7 @@ export default function WorkOrderDetail() {
     try {
       await updateWorkOrder(wo.id, {
         work_order_number: wo.work_order_number,
-        mechanic_id: wo.mechanic_id,
+        mechanic_id: mechForm.mechanic_id || wo.mechanic_id,
         mechanic_id_2: mechForm.mechanic_id_2 || undefined,
         mechanic_share: mechForm.mechanic_id_2 ? mechForm.mechanic_share : 100,
         work_type: mechForm.work_type || wo.work_type || undefined,
@@ -173,6 +173,7 @@ export default function WorkOrderDetail() {
           {isWarehouse && (
             <button onClick={() => {
               setMechForm({
+                mechanic_id: wo.mechanic_id,
                 mechanic_id_2: wo.mechanic_id_2 || 0,
                 mechanic_share: wo.mechanic_share || 50,
                 work_type: wo.work_type || '',
@@ -183,6 +184,12 @@ export default function WorkOrderDetail() {
             </button>
           )}
         </div>
+        {wo.mechanic2_name && (
+          <div>
+            <span className="text-gray-500">Доля:</span>
+            <span className="ml-2">{wo.mechanic_share}% / {100 - wo.mechanic_share}%</span>
+          </div>
+        )}
         {wo.car_plate && (
           <div>
             <span className="text-gray-500">{t('wo_car_plate')}:</span>
@@ -375,6 +382,15 @@ export default function WorkOrderDetail() {
           <div className="card w-full max-w-sm p-6 space-y-4">
             <h2 className="font-semibold text-gray-900">Изменить механиков</h2>
             <div>
+              <label className="label">{t('wo_mechanic')} *</label>
+              <select className="input" value={mechForm.mechanic_id}
+                onChange={e => setMechForm(f => ({ ...f, mechanic_id: parseInt(e.target.value) }))}>
+                {activeMechanics.map(m => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
+              </select>
+            </div>
+            <div>
               <label className="label">{t('wo_work_type_label')}</label>
               <select className="input" value={mechForm.work_type}
                 onChange={e => setMechForm(f => ({ ...f, work_type: e.target.value }))}>
@@ -387,7 +403,7 @@ export default function WorkOrderDetail() {
               <select className="input" value={mechForm.mechanic_id_2}
                 onChange={e => setMechForm(f => ({ ...f, mechanic_id_2: parseInt(e.target.value) || 0 }))}>
                 <option value={0}>— нет —</option>
-                {activeMechanics.filter(m => m.id !== wo.mechanic_id).map(m => (
+                {activeMechanics.filter(m => m.id !== mechForm.mechanic_id).map(m => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
               </select>
@@ -395,7 +411,7 @@ export default function WorkOrderDetail() {
             {mechForm.mechanic_id_2 > 0 && (
               <div>
                 <label className="label">
-                  Доля {wo.mechanic_name}: {mechForm.mechanic_share}% / {mechanics.find(m => m.id === mechForm.mechanic_id_2)?.name}: {100 - mechForm.mechanic_share}%
+                  Доля {mechanics.find(m => m.id === mechForm.mechanic_id)?.name || wo.mechanic_name}: {mechForm.mechanic_share}% / {mechanics.find(m => m.id === mechForm.mechanic_id_2)?.name}: {100 - mechForm.mechanic_share}%
                 </label>
                 <input type="range" min="10" max="90" step="10" className="w-full"
                   value={mechForm.mechanic_share}
