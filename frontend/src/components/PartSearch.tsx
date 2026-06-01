@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
+import { useUnit } from '../utils/useUnit'
 import { Search, Plus } from 'lucide-react'
 import { fetchParts, fetchPartByBarcode } from '../api/parts'
 import { useNavigate } from 'react-router-dom'
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function PartSearch({ onSelect, placeholder = 'Поиск...', autoFocus }: Props) {
+  const u = useUnit()
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<Part[]>([])
   const [loading, setLoading] = useState(false)
@@ -150,7 +152,7 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
                   </span>
                 )}
                 <span className={`font-medium ${p.stock_qty <= p.min_stock ? 'text-red-500' : 'text-green-600'}`}>
-                  {p.stock_qty} {p.unit}
+                  {p.stock_qty} {u(p.unit)}
                 </span>
               </div>
             </button>

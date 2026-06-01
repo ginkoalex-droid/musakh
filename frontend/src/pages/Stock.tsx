@@ -6,6 +6,7 @@ import { AlertTriangle, Download, Settings, Minus, Search } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useMemo } from 'react'
 import { fmtQty } from '../utils/format'
+import { useUnit } from '../utils/useUnit'
 import Modal from '../components/Modal'
 import PartSearch from '../components/PartSearch'
 import type { Part, StockRow } from '../types'
@@ -18,6 +19,7 @@ export default function Stock() {
   const qc = useQueryClient()
   const { t } = useT()
   const me = getUser()
+  const u = useUnit()
   const isWarehouse = me ? canWarehouse(me.role) : false
   const [needOrder, setNeedOrder] = useState(false)
   const [category, setCategory] = useState('')
@@ -170,7 +172,7 @@ export default function Stock() {
         <td className="table-td hidden lg:table-cell text-gray-500">{row.category || '—'}</td>
         <td className="table-td hidden lg:table-cell text-gray-500">{row.location || '—'}</td>
         <td className="table-td text-right font-semibold">
-          <span className={qtyClass}>{fmtQty(row.quantity)} {row.unit}</span>
+          <span className={qtyClass}>{fmtQty(row.quantity)} {u(row.unit)}</span>
         </td>
         <td className="table-td text-right hidden sm:table-cell text-gray-400">{row.min_stock}</td>
         <td className="table-td text-center">

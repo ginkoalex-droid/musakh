@@ -6,8 +6,9 @@ import api from '../../api/client'
 import { ArrowLeft, Plus, Trash2, ScanLine, Car, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
+import { translateUnit } from '../../utils/units'
 
-const UNITS = ['шт', 'л', 'кг', 'м', 'компл', 'пара', 'набор']
+const UNITS = ['шт', 'л', 'кг', 'г', 'м', 'компл', 'пара', 'набор']
 const DEFAULT_CATEGORIES = ['Filters', 'Brakes', 'Suspension', 'Engine', 'Transmission', 'Electrical', 'Wheels & Tyres', 'Chain & Sprockets', 'Exhaust', 'Body & Fairings', 'Oils & Fluids', 'Consumables', 'Other']
 
 export default function PartForm() {
@@ -16,7 +17,7 @@ export default function PartForm() {
   const navigate = useNavigate()
   const location = useLocation()
   const qc = useQueryClient()
-  const { t } = useT()
+  const { t, lang } = useT()
   // Pre-fill barcode when coming from unknown scan
   const prefillBarcode = (location.state as any)?.barcode as string | undefined
   const returnTo = (location.state as any)?.returnTo as string | undefined
@@ -314,7 +315,7 @@ export default function PartForm() {
           <div>
             <label className="label">{t('lbl_unit')}</label>
             <select className="input" value={form.unit} onChange={e => setForm(f => ({ ...f, unit: e.target.value }))}>
-              {UNITS.map(u => <option key={u} value={u}>{u}</option>)}
+              {UNITS.map(u => <option key={u} value={u}>{translateUnit(u, lang)}</option>)}
             </select>
           </div>
           <div>

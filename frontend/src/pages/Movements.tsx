@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchMovements } from '../api/stock'
 import { ArrowDown, ArrowUp, Settings, RotateCcw, Download } from 'lucide-react'
+import { useUnit } from '../utils/useUnit'
 import { Link } from 'react-router-dom'
 import type { MovementType } from '../types'
 import { useT } from '../i18n'
@@ -26,6 +27,7 @@ function getPeriodDates(period: Period): { from: string; to: string } {
 
 export default function Movements() {
   const { t } = useT()
+  const u = useUnit()
 
   // Restore last used filters from localStorage
   const saved = (() => { try { return JSON.parse(localStorage.getItem('movements_filters') || '{}') } catch { return {} } })()
@@ -273,14 +275,14 @@ export default function Movements() {
                             <div className="font-medium text-sm">{row.part_name}</div>
                           </td>
                           <td className="table-td text-right font-semibold text-green-700">
-                            {row.received > 0 ? <span>+{row.received} <span className="text-xs font-normal text-gray-400">{row.unit}</span></span> : <span className="text-gray-300">—</span>}
+                            {row.received > 0 ? <span>+{row.received} <span className="text-xs font-normal text-gray-400">{u(row.unit)}</span></span> : <span className="text-gray-300">—</span>}
                           </td>
                           <td className="table-td text-right font-semibold text-red-600">
-                            {row.issued > 0 ? <span>-{row.issued} <span className="text-xs font-normal text-gray-400">{row.unit}</span></span> : <span className="text-gray-300">—</span>}
+                            {row.issued > 0 ? <span>-{row.issued} <span className="text-xs font-normal text-gray-400">{u(row.unit)}</span></span> : <span className="text-gray-300">—</span>}
                           </td>
                           <td className="table-td text-right font-semibold">
                             <span className={row.net > 0 ? 'text-green-600' : row.net < 0 ? 'text-red-600' : 'text-gray-400'}>
-                              {row.net > 0 ? '+' : ''}{row.net} {row.unit}
+                              {row.net > 0 ? '+' : ''}{row.net} {u(row.unit)}
                             </span>
                           </td>
                         </tr>
