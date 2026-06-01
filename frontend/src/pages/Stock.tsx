@@ -1,8 +1,8 @@
 import { useState, useRef, Fragment } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchStock, adjustStock, issueParts, exportStock, exportMovements } from '../api/stock'
+import { fetchStock, adjustStock, issueParts, exportStock, exportMovements, searchUnified } from '../api/stock'
 import { fetchCategories } from '../api/parts'
-import { AlertTriangle, Download, Settings, Minus, Search } from 'lucide-react'
+import { AlertTriangle, Download, Settings, Minus, Search, BookOpen } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useMemo } from 'react'
 import { fmtQty } from '../utils/format'
@@ -48,11 +48,7 @@ export default function Stock() {
     refetchInterval: 30_000,
     queryFn: async () => {
       if (debouncedSearch) {
-        const { fetchParts } = await import('../api/parts')
-        const parts = await fetchParts(debouncedSearch, category || undefined)
-        const partIds = new Set(parts.map(p => p.id))
-        const allStock = await fetchStock(false)
-        return allStock.filter(s => partIds.has(s.part_id))
+        return searchUnified(debouncedSearch)
       }
       return fetchStock(false, category || undefined)
     },
@@ -160,6 +156,11 @@ export default function Stock() {
             {isLow && <span className="ml-1.5 inline-block w-2 h-2 rounded-full bg-yellow-400 align-middle" />}
           </Link>
           {row.brand && <div className="text-xs text-gray-400 mt-0.5">{row.brand}</div>}
+          {row.in_catalog_only && (
+            <div className="flex items-center gap-1 text-xs text-purple-600 mt-0.5">
+              <BookOpen className="w-3 h-3" /> Только в справочнике
+            </div>
+          )}
         </td>
         <td className="table-td hidden md:table-cell">
           <div className="flex flex-wrap gap-1">

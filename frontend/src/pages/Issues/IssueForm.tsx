@@ -11,7 +11,7 @@ import type { Part } from '../../types'
 import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
-import { canAdmin, canWarehouse, canCloseWO } from '../../store/permissions'
+import { canAdmin, canWarehouse, canCloseWO, canManageWO } from '../../store/permissions'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import { useAutoSave } from '../../hooks/useAutoSave'
 import { qtyStep, qtyMin, fmtQty } from '../../utils/format'
@@ -30,6 +30,8 @@ export default function IssueForm() {
   const isAdmin = me ? canAdmin(me.role) : false
   const isWarehouse = me ? canWarehouse(me.role) : false
   const isMechanic = me?.role === 'mechanic'
+  // Warehouse can only issue sale/other, not linked to WO (admin and mechanic can link to WO)
+  const warehouseOnly = isWarehouse && !isAdmin && !canManageWO(me?.role ?? 'readonly')
 
   const { data: existing } = useQuery({
     queryKey: ['issue-order', id],
@@ -38,7 +40,9 @@ export default function IssueForm() {
   })
 
   type IssueType = 'wo' | 'sale' | 'other'
-  const [issueType, setIssueType] = useState<IssueType>('wo')
+  // Warehouse defaults to 'sale', mechanic/admin defaults to 'wo'
+  const defaultIssueType: IssueType = (me?.role === 'warehouse') ? 'sale' : 'wo'
+  const [issueType, setIssueType] = useState<IssueType>(defaultIssueType)
   const routeLocation = useLocation()
   const preselectWoId = (routeLocation.state as any)?.preselect_wo_id as number | undefined
   const [selectedWOId, setSelectedWOId] = useState<number | ''>(preselectWoId || '')
@@ -437,11 +441,16 @@ export default function IssueForm() {
       <div className="card p-6 space-y-4">
         <h2 className="font-semibold text-gray-700">{t('issue_data_title')}</h2>
         <div className="grid sm:grid-cols-2 gap-4">
-          {/* Issue type selector — mechanic can only issue to WO */}
+          {/* Issue type selector */}
+          {/* Mechanic: no selector, always WO */}
+          {/* Warehouse: only sale/other */}
+          {/* Admin: all types */}
           {!isMechanic && <div className="sm:col-span-2">
             <label className="label">{t('issue_type')}</label>
             <div className="flex gap-2">
-              {(['wo', 'sale', 'other'] as IssueType[]).map(type => (
+              {(['wo', 'sale', 'other'] as IssueType[])
+                .filter(type => warehouseOnly ? type !== 'wo' : true)
+                .map(type => (
                 <button key={type} type="button"
                   onClick={() => setIssueType(type)}
                   className={`px-3 py-2 rounded-lg text-sm font-medium border transition-colors ${

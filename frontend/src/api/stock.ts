@@ -9,6 +9,11 @@ export const fetchStock = async (lowOnly?: boolean, category?: string): Promise<
   return res.data
 }
 
+export const searchUnified = async (q: string): Promise<StockRow[]> => {
+  const res = await api.get('/stock/search', { params: { q } })
+  return res.data
+}
+
 export interface MovementFilters {
   partId?: number
   userId?: number

@@ -2,10 +2,10 @@ from datetime import datetime, timedelta
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, desc
-from sqlalchemy.orm import selectinload
+from sqlalchemy import select, desc, or_
+from sqlalchemy.orm import selectinload, outerjoin
 from app.database import get_db
-from app.models import Stock, Part, StockMovement, MovementType, User, UserRole
+from app.models import Stock, Part, StockMovement, MovementType, User, UserRole, Barcode, OemNumber
 from app.schemas import StockRow, StockAdjustment, IssueRequest, MovementOut
 from app.auth import get_current_user
 
@@ -65,18 +65,85 @@ async def list_stock(
             quantity=qty,
             min_stock=part.min_stock,
             track_min_stock=part.track_min_stock,
-            is_low=is_low,
+            is_low=bool(is_low),
             first_oem=part.oem_numbers[0].oem_number if part.oem_numbers else None,
             first_barcode=part.barcodes[0].barcode if part.barcodes else None,
             car_labels=[
                 f"{c.make}{' ' + c.model if c.model else ''}"
                 for c in part.car_applications
             ],
+            in_catalog_only=False,
         ))
 
     if low_only:
         items = [i for i in items if i.is_low]
 
+    return items
+
+
+@router.get("/search", response_model=list[StockRow])
+async def unified_search(
+    q: str = Query("", min_length=0),
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Search parts across both stock and catalog. Parts without stock entries are included."""
+    if not q.strip():
+        return []
+    qlike = f"%{q.strip().lower()}%"
+
+    # Search in parts + their barcodes/OEM numbers
+    stmt = (
+        select(Part)
+        .outerjoin(Part.barcodes)
+        .outerjoin(Part.oem_numbers)
+        .options(
+            selectinload(Part.stock),
+            selectinload(Part.barcodes),
+            selectinload(Part.oem_numbers),
+            selectinload(Part.car_applications),
+        )
+        .where(
+            or_(
+                Part.name.ilike(qlike),
+                Part.brand.ilike(qlike),
+                Part.category.ilike(qlike),
+                Barcode.barcode.ilike(qlike),
+                OemNumber.oem_number.ilike(qlike),
+            )
+        )
+        .distinct()
+        .order_by(Part.name)
+    )
+    result = await db.execute(stmt)
+    parts = result.scalars().all()
+
+    items = []
+    for part in parts:
+        stock = part.stock
+        qty = float(stock.quantity) if stock else 0.0
+        is_low = part.track_min_stock and qty <= part.min_stock
+        items.append(StockRow(
+            part_id=part.id,
+            part_name=part.name,
+            part_brand=part.brand,
+            part_unit=part.unit,
+            brand=part.brand,
+            category=part.category,
+            unit=part.unit,
+            location=part.location,
+            quantity=qty,
+            min_stock=part.min_stock,
+            track_min_stock=part.track_min_stock,
+            is_low=bool(is_low),
+            first_oem=part.oem_numbers[0].oem_number if part.oem_numbers else None,
+            first_barcode=part.barcodes[0].barcode if part.barcodes else None,
+            car_labels=[
+                f"{c.make}{' ' + c.model if c.model else ''}"
+                for c in part.car_applications
+            ],
+            in_catalog_only=(stock is None),
+        ))
     return items
 
 

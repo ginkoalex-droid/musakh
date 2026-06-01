@@ -203,9 +203,21 @@ export default function WorkOrderDetail() {
             <span className="ml-2">{wo.car_make} {wo.car_model}</span>
           </div>
         )}
+        {wo.car_mileage && (
+          <div>
+            <span className="text-gray-500">Пробег:</span>
+            <span className="font-semibold ml-2">{wo.car_mileage.toLocaleString()} км</span>
+          </div>
+        )}
+        {wo.client_phone && (
+          <div>
+            <span className="text-gray-500">Телефон:</span>
+            <a href={`tel:${wo.client_phone}`} className="font-semibold ml-2 text-blue-600">{wo.client_phone}</a>
+          </div>
+        )}
           <div className="sm:col-span-2">
             <label className="text-gray-500 text-xs font-medium block mb-1">{t('lbl_notes')}</label>
-            {isWarehouse ? (
+            {canClose ? (
               <div className="flex gap-2">
                 <input
                   className="input flex-1"
@@ -240,9 +252,11 @@ export default function WorkOrderDetail() {
               </span>
             )}
           </h2>
-          <Link to="/issues/new" state={{ preselect_wo_id: wo.id }} className="btn-danger py-1.5 text-sm">
-            <Plus className="w-3.5 h-3.5" /> {t('issue_new')}
-          </Link>
+          {canClose && !wo.is_confirmed && (
+            <Link to="/issues/new" state={{ preselect_wo_id: wo.id }} className="btn-danger py-1.5 text-sm">
+              <Plus className="w-3.5 h-3.5" /> {t('issue_new')}
+            </Link>
+          )}
         </div>
 
         {issues.length === 0 ? (
@@ -273,8 +287,8 @@ export default function WorkOrderDetail() {
                     )}
                   </div>
                   <div className="flex gap-2">
-                    {/* Draft: confirm + delete */}
-                    {!issue.is_confirmed && !issue.is_cancelled && (<>
+                    {/* Draft: confirm + delete — only mechanic/admin, not warehouse */}
+                    {!issue.is_confirmed && !issue.is_cancelled && canClose && (<>
                       <button onClick={() => handleDeleteIssue(issue.id)}
                         className="btn-secondary py-1 px-2 text-xs text-red-500">
                         <Trash2 className="w-3.5 h-3.5" />
@@ -342,10 +356,10 @@ export default function WorkOrderDetail() {
             </div>
 
             <div className="bg-gray-50 rounded-lg p-4 text-sm space-y-1">
-              <div><span className="text-gray-500">Механик:</span> <span className="font-semibold">{wo.mechanic_name}</span></div>
+              <div><span className="text-gray-500">{t('wo_mechanic_label')}:</span> <span className="font-semibold">{wo.mechanic_name}</span></div>
               {wo.mechanic2_name && <div><span className="text-gray-500">+ </span><span className="font-semibold">{wo.mechanic2_name}</span></div>}
-              {wo.car_model && <div><span className="text-gray-500">Модель:</span> <span className="font-semibold">{wo.car_model}</span></div>}
-              {wo.notes && <div><span className="text-gray-500">Вид работы:</span> <span>{wo.notes}</span></div>}
+              {wo.car_model && <div><span className="text-gray-500">{t('wo_model_label')}:</span> <span className="font-semibold">{wo.car_model}</span></div>}
+              {wo.notes && <div><span className="text-gray-500">{t('wo_repair_type_label')}:</span> <span>{wo.notes}</span></div>}
             </div>
 
             <label className="flex items-start gap-3 cursor-pointer p-3 border-2 rounded-lg transition-colors hover:bg-blue-50 hover:border-blue-300"
@@ -383,7 +397,7 @@ export default function WorkOrderDetail() {
       {editMechanics && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="card w-full max-w-sm p-6 space-y-4">
-            <h2 className="font-semibold text-gray-900">Изменить механиков</h2>
+            <h2 className="font-semibold text-gray-900">{t('wo_edit_mechanics_title')}</h2>
             <div>
               <label className="label">{t('wo_mechanic')} *</label>
               <select className="input" value={mechForm.mechanic_id}
@@ -405,7 +419,7 @@ export default function WorkOrderDetail() {
               <label className="label">{t('wo_second_mechanic')}</label>
               <select className="input" value={mechForm.mechanic_id_2}
                 onChange={e => setMechForm(f => ({ ...f, mechanic_id_2: parseInt(e.target.value) || 0 }))}>
-                <option value={0}>— нет —</option>
+                <option value={0}>{t('wo_no_second_mech')}</option>
                 {activeMechanics.filter(m => m.id !== mechForm.mechanic_id).map(m => (
                   <option key={m.id} value={m.id}>{m.name}</option>
                 ))}
@@ -414,7 +428,7 @@ export default function WorkOrderDetail() {
             {mechForm.mechanic_id_2 > 0 && (
               <div>
                 <label className="label">
-                  Доля {mechanics.find(m => m.id === mechForm.mechanic_id)?.name || wo.mechanic_name}: {mechForm.mechanic_share}% / {mechanics.find(m => m.id === mechForm.mechanic_id_2)?.name}: {100 - mechForm.mechanic_share}%
+                  {t('wo_share_label')}: {mechanics.find(m => m.id === mechForm.mechanic_id)?.name || wo.mechanic_name} {mechForm.mechanic_share}% / {mechanics.find(m => m.id === mechForm.mechanic_id_2)?.name} {100 - mechForm.mechanic_share}%
                 </label>
                 <input type="range" min="10" max="90" step="10" className="w-full"
                   value={mechForm.mechanic_share}

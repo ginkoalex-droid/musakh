@@ -1,7 +1,8 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchWorkOrders, fetchWOSummary, fetchMechanics, confirmWorkOrder, deleteWorkOrder, createWorkOrder } from '../../api/workOrders'
-import { Plus, CheckCircle, Clock, Users, Trash2, Search, ChevronDown } from 'lucide-react'
+import { fetchIssueOrders } from '../../api/issues'
+import { Plus, CheckCircle, Clock, Users, Trash2, Search, ChevronDown, AlertTriangle } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { WORK_TYPES, fetchWOModels } from '../../api/workOrders'
 import { canManageWO } from '../../store/permissions'
@@ -67,7 +68,8 @@ export default function WorkOrders() {
   const [form, setForm] = useState({
     work_order_number: '', work_type: '', mechanic_id: 0,
     mechanic_id_2: 0, mechanic_share: 100,
-    car_plate: '', car_make: '', car_model: '', notes: ''
+    car_plate: '', car_make: '', car_model: '',
+    car_mileage: '', client_phone: '', notes: ''
   })
 
   function handleWONumber(val: string) {
@@ -123,16 +125,42 @@ export default function WorkOrders() {
   // No-parts modal state for list view
   const [noPartsWO, setNoPartsWO] = useState<typeof orders[0] | null>(null)
   const [noPartsOk, setNoPartsOk] = useState(false)
+  const [closingId, setClosingId] = useState<number | null>(null)
 
-  async function handleConfirm(id: number) {
-    // Check if WO has no issues — navigate to WO detail which handles the modal
-    // For list view, just confirm directly (issues check is in detail page)
+  async function handleConfirm(woId: number) {
+    const wo = orders.find(o => o.id === woId)
+    if (!wo) return
+
+    // Check work type — required
+    if (!wo.work_type) {
+      toast.error('Укажите тип работы перед закрытием ЗН')
+      return
+    }
+
+    // Check if there are confirmed issues linked to this WO
+    try {
+      const issues = await fetchIssueOrders({ work_order_id: woId })
+      const hasConfirmedIssues = issues.some(i => i.is_confirmed)
+      if (!hasConfirmedIssues) {
+        // Show "no parts" confirmation modal
+        setNoPartsWO(wo)
+        setNoPartsOk(false)
+        return
+      }
+    } catch { /* if fails — proceed */ }
+
+    await doConfirm(woId)
+  }
+
+  async function doConfirm(id: number) {
+    setClosingId(id)
     try {
       await confirmWorkOrder(id)
       toast.success(t('wo_confirmed_toast'))
       qc.invalidateQueries({ queryKey: ['work-orders'] })
       qc.invalidateQueries({ queryKey: ['wo-summary'] })
     } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
+    finally { setClosingId(null) }
   }
 
   async function handleDelete(id: number) {
@@ -162,13 +190,15 @@ export default function WorkOrders() {
         car_plate: form.car_plate || undefined,
         car_make: form.car_make || undefined,
         car_model: form.car_model || undefined,
+        car_mileage: form.car_mileage ? parseInt(form.car_mileage) : undefined,
+        client_phone: form.client_phone || undefined,
         notes: form.notes || undefined,
       })
       toast.success(t('wo_created_toast'))
       qc.invalidateQueries({ queryKey: ['work-orders'] })
       qc.invalidateQueries({ queryKey: ['wo-summary'] })
       setNewModal(false)
-      setForm({ work_order_number: '', work_type: '', mechanic_id: 0, mechanic_id_2: 0, mechanic_share: 100, car_plate: '', car_make: '', car_model: '', notes: '' })
+      setForm({ work_order_number: '', work_type: '', mechanic_id: 0, mechanic_id_2: 0, mechanic_share: 100, car_plate: '', car_make: '', car_model: '', car_mileage: '', client_phone: '', notes: '' })
     } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
     finally { setLoading(false) }
   }
@@ -346,15 +376,15 @@ export default function WorkOrders() {
       {orders.length > 0 && (
         <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 text-sm">
           <div className="flex items-center gap-2">
-            <span className="text-gray-500">Всего ЗН:</span>
+            <span className="text-gray-500">{t('wo_total')}:</span>
             <span className="font-bold text-gray-900 text-lg">{orders.length}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-500">Закрыто:</span>
+            <span className="text-gray-500">{t('wo_closed')}:</span>
             <span className="font-bold text-green-600 text-lg">{orders.filter(o => o.is_confirmed).length}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-gray-500">Открыто:</span>
+            <span className="text-gray-500">{t('wo_open')}:</span>
             <span className="font-bold text-orange-500 text-lg">{orders.filter(o => !o.is_confirmed).length}</span>
           </div>
           {summary.length > 0 && (
@@ -410,8 +440,8 @@ export default function WorkOrders() {
                       <th className="table-th">{t('wo_number')}</th>
                       <th className="table-th">{t('lbl_date')}</th>
                       <th className="table-th hidden sm:table-cell">{t('wo_car')}</th>
-                      <th className="table-th hidden lg:table-cell">Закрыт</th>
-                      <th className="table-th hidden md:table-cell">Время</th>
+                      <th className="table-th hidden lg:table-cell">{t('wo_col_closed')}</th>
+                      <th className="table-th hidden md:table-cell">{t('wo_col_time')}</th>
                       <th className="table-th">{t('lbl_status')}</th>
                       <th className="table-th w-20" />
                     </tr></thead>
@@ -513,6 +543,18 @@ export default function WorkOrders() {
                 <input className="input font-mono" value={form.car_plate}
                   onChange={e => setForm(f => ({ ...f, car_plate: e.target.value }))} />
               </div>
+              <div>
+                <label className="label">Пробег (км)</label>
+                <input className="input" type="number" min="0" placeholder="12500"
+                  value={form.car_mileage}
+                  onChange={e => setForm(f => ({ ...f, car_mileage: e.target.value }))} />
+              </div>
+              <div className="col-span-2">
+                <label className="label">Телефон клиента</label>
+                <input className="input" type="tel" placeholder="+972 50 000 0000"
+                  value={form.client_phone}
+                  onChange={e => setForm(f => ({ ...f, client_phone: e.target.value }))} />
+              </div>
               <div className="relative">
                 <label className="label">{t('lbl_model')} *</label>
                 <input className={`input ${!form.car_model.trim() ? 'border-orange-300' : ''}`}
@@ -554,6 +596,40 @@ export default function WorkOrders() {
             <div className="flex gap-2 justify-end pt-2">
               <button className="btn-secondary" onClick={() => setNewModal(false)}>{t('btn_cancel')}</button>
               <button className="btn-primary" onClick={handleCreate} disabled={loading}>{t('btn_save')}</button>
+            </div>
+          </div>
+        </Modal>
+      )}
+
+      {/* No-parts confirmation modal */}
+      {noPartsWO && (
+        <Modal title={t('wo_no_parts_title')} onClose={() => setNoPartsWO(null)}>
+          <div className="space-y-4">
+            <div className="flex items-start gap-3 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+              <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-yellow-800">{t('wo_number')} {noPartsWO.work_order_number} — {noPartsWO.car_model}</p>
+                <p className="text-sm text-yellow-700 mt-1">{t('wo_no_parts_desc')}</p>
+              </div>
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <input type="checkbox" checked={noPartsOk} onChange={e => setNoPartsOk(e.target.checked)}
+                className="w-4 h-4 rounded accent-blue-600" />
+              <span className="text-sm font-medium text-gray-700">{t('wo_no_parts_confirm')}</span>
+            </label>
+            <div className="flex gap-2 justify-end">
+              <button className="btn-secondary" onClick={() => setNoPartsWO(null)}>{t('btn_cancel')}</button>
+              <button
+                className="btn-success"
+                disabled={!noPartsOk || closingId === noPartsWO.id}
+                onClick={async () => {
+                  const id = noPartsWO.id
+                  setNoPartsWO(null)
+                  await doConfirm(id)
+                }}
+              >
+                <CheckCircle className="w-4 h-4" /> {t('wo_no_parts_btn')}
+              </button>
             </div>
           </div>
         </Modal>

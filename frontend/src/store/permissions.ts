@@ -20,6 +20,16 @@ export function canManageWO(role: UserRole): boolean {
   return role === 'admin' || role === 'mechanic'
 }
 
+/** Warehouse + Admin + Mechanic: can view WO list (read-only for warehouse) */
+export function canViewWO(role: UserRole): boolean {
+  return role === 'admin' || role === 'mechanic' || role === 'warehouse'
+}
+
+/** Warehouse + Admin: can create non-WO issues (sale, other) */
+export function canIssueNonWO(role: UserRole): boolean {
+  return role === 'admin' || role === 'warehouse'
+}
+
 /** Alias for backward compat */
 export const canCloseWO = canManageWO
 

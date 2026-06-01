@@ -34,6 +34,8 @@ export interface WorkOrder {
   car_plate?: string
   car_make?: string
   car_model?: string
+  car_mileage?: number
+  client_phone?: string
   notes?: string
   is_confirmed: boolean
   confirmed_at?: string

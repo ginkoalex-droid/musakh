@@ -118,6 +118,8 @@ export interface Movement {
 export interface StockRow {
   part_id: number
   part_name: string
+  part_brand?: string
+  part_unit?: string
   brand?: string
   category?: string
   unit: string
@@ -129,4 +131,5 @@ export interface StockRow {
   first_oem?: string
   first_barcode?: string
   car_labels: string[]
+  in_catalog_only?: boolean
 }

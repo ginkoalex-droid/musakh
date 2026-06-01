@@ -223,6 +223,8 @@ class WorkOrderCreate(BaseModel):
     car_plate: Optional[str] = None
     car_make: Optional[str] = None
     car_model: Optional[str] = None
+    car_mileage: Optional[int] = None
+    client_phone: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -239,6 +241,8 @@ class WorkOrderOut(BaseModel):
     car_plate: Optional[str] = None
     car_make: Optional[str] = None
     car_model: Optional[str] = None
+    car_mileage: Optional[int] = None
+    client_phone: Optional[str] = None
     notes: Optional[str] = None
     is_confirmed: bool
     confirmed_at: Optional[datetime] = None
@@ -323,6 +327,8 @@ class IssueOrderList(BaseModel):
 class StockRow(BaseModel):
     part_id: int
     part_name: str
+    part_brand: Optional[str] = None
+    part_unit: Optional[str] = None
     brand: Optional[str] = None
     category: Optional[str] = None
     unit: str
@@ -334,6 +340,7 @@ class StockRow(BaseModel):
     first_oem: Optional[str] = None
     first_barcode: Optional[str] = None
     car_labels: list[str] = []
+    in_catalog_only: bool = False
 
     model_config = {"from_attributes": True}
 

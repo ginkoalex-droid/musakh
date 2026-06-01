@@ -41,9 +41,13 @@ export interface IssueOrderList {
   created_at: string
 }
 
-export const fetchIssueOrders = async (workOrderId?: number): Promise<IssueOrderList[]> => {
+export const fetchIssueOrders = async (filters?: { work_order_id?: number } | number): Promise<IssueOrderList[]> => {
   const params: Record<string, number> = {}
-  if (workOrderId) params.work_order_id = workOrderId
+  if (typeof filters === 'number') {
+    if (filters) params.work_order_id = filters
+  } else if (filters?.work_order_id) {
+    params.work_order_id = filters.work_order_id
+  }
   const res = await api.get('/issues', { params })
   return res.data
 }

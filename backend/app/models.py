@@ -170,6 +170,8 @@ class WorkOrder(Base):
     car_plate: Mapped[str | None] = mapped_column(String(20))
     car_make: Mapped[str | None] = mapped_column(String(100))
     car_model: Mapped[str | None] = mapped_column(String(100))
+    car_mileage: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    client_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
     notes: Mapped[str | None] = mapped_column(Text)
     is_confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
