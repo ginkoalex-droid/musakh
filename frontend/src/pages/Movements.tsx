@@ -80,12 +80,12 @@ export default function Movements() {
   }, [movements])
 
   // Summary by part_id: group by exact part, show in/out totals with unit
-  type PartSummary = { part_id: number; part_name: string; unit: string; received: number; issued: number; net: number }
+  type PartSummary = { part_id: number; part_name: string; part_brand?: string; unit: string; received: number; issued: number; net: number }
   const partSummary = useMemo((): PartSummary[] => {
     const map = new Map<number, PartSummary>()
     for (const mv of movements) {
       const key = mv.part_id
-      if (!map.has(key)) map.set(key, { part_id: key, part_name: mv.part_name, unit: mv.part_unit || 'шт', received: 0, issued: 0, net: 0 })
+      if (!map.has(key)) map.set(key, { part_id: key, part_name: mv.part_name, part_brand: mv.part_brand, unit: mv.part_unit || 'шт', received: 0, issued: 0, net: 0 })
       const entry = map.get(key)!
       if (mv.movement_type === 'receiving') entry.received = Math.round((entry.received + Math.abs(Number(mv.quantity))) * 1000) / 1000
       else if (mv.movement_type === 'issue') entry.issued = Math.round((entry.issued + Math.abs(Number(mv.quantity))) * 1000) / 1000
@@ -218,7 +218,10 @@ export default function Movements() {
                   <tr><td colSpan={4} className="table-td text-center text-gray-400 py-8">{t('mov_no_data')}</td></tr>
                 ) : partSummary.map(row => (
                   <tr key={row.part_id} className="hover:bg-gray-50">
-                    <td className="table-td font-medium">{row.part_name}</td>
+                    <td className="table-td">
+                      <div className="font-medium">{row.part_name}</div>
+                      {row.part_brand && <div className="text-xs text-gray-400">{row.part_brand}</div>}
+                    </td>
                     <td className="table-td text-right font-semibold text-green-700">
                       {row.received > 0 ? <span>+{row.received} <span className="text-xs font-normal text-gray-400">{row.unit}</span></span> : <span className="text-gray-300">—</span>}
                     </td>
@@ -272,7 +275,8 @@ export default function Movements() {
                     </td>
                     <td className="table-td font-medium text-sm">{mv.created_by_name}</td>
                     <td className="table-td max-w-[160px]">
-                      <span className="line-clamp-2 text-sm">{mv.part_name}</span>
+                      <div className="text-sm font-medium line-clamp-1">{mv.part_name}</div>
+                      {mv.part_brand && <div className="text-xs text-gray-400">{mv.part_brand}</div>}
                     </td>
                     <td className="table-td">
                       <span className={`badge ${cfg.color} flex items-center gap-1 w-fit`}>

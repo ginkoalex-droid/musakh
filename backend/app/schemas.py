@@ -356,6 +356,7 @@ class MovementOut(BaseModel):
     id: int
     part_id: int
     part_name: str
+    part_brand: Optional[str] = None
     part_unit: str = "шт"
     movement_type: MovementType
     quantity: float
