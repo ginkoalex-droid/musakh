@@ -342,6 +342,34 @@ export default function WorkOrders() {
         </select>
       </div>
 
+      {/* Overall totals for period */}
+      {orders.length > 0 && (
+        <div className="flex flex-wrap gap-4 p-4 bg-gray-50 rounded-xl border border-gray-200 text-sm">
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Всего ЗН:</span>
+            <span className="font-bold text-gray-900 text-lg">{orders.length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Закрыто:</span>
+            <span className="font-bold text-green-600 text-lg">{orders.filter(o => o.is_confirmed).length}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-gray-500">Открыто:</span>
+            <span className="font-bold text-orange-500 text-lg">{orders.filter(o => !o.is_confirmed).length}</span>
+          </div>
+          {summary.length > 0 && (
+            <div className="flex items-center gap-2 border-l border-gray-300 pl-4">
+              <span className="text-gray-500">По механикам:</span>
+              {summary.map(s => (
+                <span key={s.mechanic_id} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
+                  {s.mechanic_name}: <strong>{s.confirmed}</strong>/{s.total}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Summary cards */}
       {summary.length > 0 && (
         <div>
