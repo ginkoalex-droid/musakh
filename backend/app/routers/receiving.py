@@ -46,14 +46,10 @@ def _order_to_out(order: ReceivingOrder) -> ReceivingOrderOut:
         )
         for i in order.items
     ]
-    # Resolve cancelled_by name via separate query if needed
+    # Resolve cancelled_by name (loaded via relationship if available)
     cancelled_by_name = None
-    if order.cancelled_by:
-        from app.models import User as UserModel
-        cb_result = await db.execute(select(UserModel).where(UserModel.id == order.cancelled_by))
-        cb_user = cb_result.scalar_one_or_none()
-        if cb_user:
-            cancelled_by_name = cb_user.name
+    if hasattr(order, 'cancelled_by_user_rel') and order.cancelled_by_user_rel:
+        cancelled_by_name = order.cancelled_by_user_rel.name
     return ReceivingOrderOut(
         id=order.id,
         supplier_id=order.supplier_id,
