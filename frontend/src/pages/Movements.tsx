@@ -81,8 +81,10 @@ export default function Movements() {
 
   // Summary by part_id: group by exact part, show in/out totals with unit
   type PartSummary = { part_id: number; part_name: string; part_brand?: string; unit: string; received: number; issued: number; net: number }
-  const partSummary = useMemo((): PartSummary[] => {
-    const map = new Map<number, PartSummary>()
+  type BrandGroup = { brand: string; categories: { category: string; parts: PartSummary[] }[] }
+
+  const { partSummary, brandGroups } = useMemo(() => {
+    const map = new Map<number, PartSummary & { category?: string }>()
     for (const mv of movements) {
       const key = mv.part_id
       if (!map.has(key)) map.set(key, { part_id: key, part_name: mv.part_name, part_brand: mv.part_brand, unit: mv.part_unit || 'шт', received: 0, issued: 0, net: 0 })
@@ -91,8 +93,29 @@ export default function Movements() {
       else if (mv.movement_type === 'issue') entry.issued = Math.round((entry.issued + Math.abs(Number(mv.quantity))) * 1000) / 1000
       entry.net = Math.round((entry.received - entry.issued) * 1000) / 1000
     }
-    return Array.from(map.values()).sort((a, b) => a.part_name.localeCompare(b.part_name))
+    const parts = Array.from(map.values()).sort((a, b) => a.part_name.localeCompare(b.part_name))
+
+    // Build brand → category groups
+    const brandMap = new Map<string, Map<string, PartSummary[]>>()
+    for (const p of parts) {
+      const brand = p.part_brand || '—'
+      const cat = '—' // category not in movement data; group only by brand for now
+      if (!brandMap.has(brand)) brandMap.set(brand, new Map())
+      const catMap = brandMap.get(brand)!
+      if (!catMap.has(cat)) catMap.set(cat, [])
+      catMap.get(cat)!.push(p)
+    }
+    const groups: BrandGroup[] = Array.from(brandMap.entries())
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .map(([brand, catMap]) => ({
+        brand,
+        categories: Array.from(catMap.entries()).map(([category, ps]) => ({ category, parts: ps }))
+      }))
+
+    return { partSummary: parts, brandGroups: groups }
   }, [movements])
+
+  const [summaryCollapsed, setSummaryCollapsed] = useState<Set<string>>(new Set())
 
   function refLabel(mv: (typeof movements)[0]): string {
     if (mv.reference_type === 'receiving_order' && mv.reference_id) {
@@ -214,27 +237,43 @@ export default function Movements() {
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
                   <tr><td colSpan={4} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
-                ) : partSummary.length === 0 ? (
+                ) : brandGroups.length === 0 ? (
                   <tr><td colSpan={4} className="table-td text-center text-gray-400 py-8">{t('mov_no_data')}</td></tr>
-                ) : partSummary.map(row => (
-                  <tr key={row.part_id} className="hover:bg-gray-50">
-                    <td className="table-td">
-                      <div className="font-medium">{row.part_name}</div>
-                      {row.part_brand && <div className="text-xs text-gray-400">{row.part_brand}</div>}
-                    </td>
-                    <td className="table-td text-right font-semibold text-green-700">
-                      {row.received > 0 ? <span>+{row.received} <span className="text-xs font-normal text-gray-400">{row.unit}</span></span> : <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="table-td text-right font-semibold text-red-600">
-                      {row.issued > 0 ? <span>-{row.issued} <span className="text-xs font-normal text-gray-400">{row.unit}</span></span> : <span className="text-gray-300">—</span>}
-                    </td>
-                    <td className="table-td text-right font-semibold">
-                      <span className={row.net > 0 ? 'text-green-600' : row.net < 0 ? 'text-red-600' : 'text-gray-400'}>
-                        {row.net > 0 ? '+' : ''}{row.net} {row.unit}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                ) : brandGroups.map(bg => {
+                  const bgCollapsed = summaryCollapsed.has(bg.brand)
+                  const bgTotal = bg.categories.reduce((s, c) => s + c.parts.length, 0)
+                  return (
+                    <>
+                      {/* Brand header */}
+                      <tr key={`bg-${bg.brand}`}
+                        className="bg-blue-600 cursor-pointer select-none hover:bg-blue-700"
+                        onClick={() => setSummaryCollapsed(prev => { const n = new Set(prev); n.has(bg.brand) ? n.delete(bg.brand) : n.add(bg.brand); return n })}>
+                        <td colSpan={4} className="px-4 py-2 text-xs font-bold text-white uppercase tracking-wide">
+                          <span className="mr-2">{bgCollapsed ? '▶' : '▼'}</span>
+                          {bg.brand} <span className="font-normal opacity-75 ml-1">({bgTotal})</span>
+                        </td>
+                      </tr>
+                      {!bgCollapsed && bg.categories.map(cat => cat.parts.map(row => (
+                        <tr key={row.part_id} className="hover:bg-gray-50">
+                          <td className="table-td pl-8">
+                            <div className="font-medium text-sm">{row.part_name}</div>
+                          </td>
+                          <td className="table-td text-right font-semibold text-green-700">
+                            {row.received > 0 ? <span>+{row.received} <span className="text-xs font-normal text-gray-400">{row.unit}</span></span> : <span className="text-gray-300">—</span>}
+                          </td>
+                          <td className="table-td text-right font-semibold text-red-600">
+                            {row.issued > 0 ? <span>-{row.issued} <span className="text-xs font-normal text-gray-400">{row.unit}</span></span> : <span className="text-gray-300">—</span>}
+                          </td>
+                          <td className="table-td text-right font-semibold">
+                            <span className={row.net > 0 ? 'text-green-600' : row.net < 0 ? 'text-red-600' : 'text-gray-400'}>
+                              {row.net > 0 ? '+' : ''}{row.net} {row.unit}
+                            </span>
+                          </td>
+                        </tr>
+                      )))}
+                    </>
+                  )
+                })}
               </tbody>
             </table>
           </div>
