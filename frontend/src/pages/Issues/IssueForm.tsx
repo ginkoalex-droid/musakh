@@ -398,6 +398,30 @@ export default function IssueForm() {
         <h1 className="text-2xl font-bold text-gray-900">{t('issue_new')}</h1>
       </div>
 
+      {/* Selected WO — prominent header when WO is selected */}
+      {selectedWO && (
+        <div className="card p-4 border-l-4 border-blue-600 bg-blue-50">
+          <div className="flex items-center justify-between flex-wrap gap-2">
+            <div>
+              <div className="flex items-center gap-3 flex-wrap">
+                <span className="font-mono font-bold text-2xl text-blue-800">{selectedWO.work_order_number}</span>
+                <span className="badge bg-blue-100 text-blue-700 font-semibold text-sm">{selectedWO.mechanic_name}</span>
+                {selectedWO.mechanic2_name && <span className="badge bg-blue-100 text-blue-600 text-sm">+ {selectedWO.mechanic2_name}</span>}
+              </div>
+              <div className="text-xs text-blue-600 mt-1 flex flex-wrap gap-3">
+                {selectedWO.car_plate && <span>📋 {selectedWO.car_plate}</span>}
+                {(selectedWO.car_make || selectedWO.car_model) && <span>{selectedWO.car_make} {selectedWO.car_model}</span>}
+                {selectedWO.work_type && <span className="badge bg-purple-100 text-purple-700">{selectedWO.work_type}</span>}
+              </div>
+            </div>
+            <button type="button" onClick={() => setSelectedWOId('')}
+              className="text-blue-400 hover:text-blue-700 text-sm px-2 py-1 rounded hover:bg-blue-100">
+              ✕ {t('btn_cancel')}
+            </button>
+          </div>
+        </div>
+      )}
+
       <div className="card p-6 space-y-4">
         <h2 className="font-semibold text-gray-700">{t('issue_data_title')}</h2>
         <div className="grid sm:grid-cols-2 gap-4">
@@ -470,25 +494,6 @@ export default function IssueForm() {
                   value={manualWO} onChange={e => setManualWO(e.target.value)} />
               )}
 
-              {/* Selected WO — bold prominent display */}
-              {selectedWO && (
-                <div className="p-3 bg-blue-600 text-white rounded-lg flex items-center justify-between gap-3">
-                  <div>
-                    <div className="font-mono font-bold text-xl leading-tight">{selectedWO.work_order_number}</div>
-                    <div className="text-blue-100 text-sm mt-0.5 flex flex-wrap gap-3">
-                      <span className="font-semibold text-white">{selectedWO.mechanic_name}</span>
-                      {selectedWO.car_plate && <span>{selectedWO.car_plate}</span>}
-                      {(selectedWO.car_make || selectedWO.car_model) && (
-                        <span>{selectedWO.car_make} {selectedWO.car_model}</span>
-                      )}
-                    </div>
-                  </div>
-                  <button type="button" onClick={() => setSelectedWOId('')}
-                    className="text-blue-200 hover:text-white text-sm px-2 py-1 rounded hover:bg-blue-700 shrink-0">
-                    ✕
-                  </button>
-                </div>
-              )}
             </div>
           </div>}
 
