@@ -302,7 +302,7 @@ export default function IssueForm() {
               {existing.items.map(item => (
                 <tr key={item.id}>
                   <td className="table-td">
-                    {(isAdmin || isWarehouse) ? (
+                    {(isAdmin || isWarehouse) && !isMechanic ? (
                       <Link to={`/parts/${item.part_id}`} className="font-medium text-blue-700 hover:underline">{item.part_name}</Link>
                     ) : (
                       <div className="font-medium">{item.part_name}</div>

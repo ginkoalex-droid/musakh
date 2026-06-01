@@ -435,6 +435,8 @@ export default function WorkOrderDetail() {
 
 // Sub-component to show items of a specific issue
 function IssueItemsPreview({ issueId }: { issueId: number }) {
+  const me = getUser()
+  const canViewPart = me?.role === 'admin' || me?.role === 'warehouse'
   const { data: issue } = useQuery({
     queryKey: ['issue-order', String(issueId)],
     queryFn: () => fetchIssueOrder(issueId),
@@ -447,7 +449,11 @@ function IssueItemsPreview({ issueId }: { issueId: number }) {
       {issue.items.map(item => (
         <div key={item.id} className="px-4 py-2 flex items-center justify-between">
           <div>
-            <Link to={`/parts/${item.part_id}`} className="text-sm font-medium text-blue-700 hover:underline">{item.part_name}</Link>
+            {canViewPart ? (
+              <Link to={`/parts/${item.part_id}`} className="text-sm font-medium text-blue-700 hover:underline">{item.part_name}</Link>
+            ) : (
+              <span className="text-sm font-medium text-gray-900">{item.part_name}</span>
+            )}
             <div className="flex gap-2 mt-0.5">
               {item.oem_number && (
                 <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1 rounded">{item.oem_number}</span>
