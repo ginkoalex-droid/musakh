@@ -66,32 +66,9 @@ export default function PartForm() {
   const [newOemBrand, setNewOemBrand] = useState('')
   const [newCarMake, setNewCarMake] = useState('')
   const [newCarModel, setNewCarModel] = useState('')
-  const [brandSugg, setBrandSugg] = useState<string[]>([])
-  const [showBrandSugg, setShowBrandSugg] = useState(false)
-  const [locationSugg, setLocationSugg] = useState<string[]>([])
-  const [showLocationSugg, setShowLocationSugg] = useState(false)
+  const [addingBrand, setAddingBrand] = useState(false)
+  const [addingLocation, setAddingLocation] = useState(false)
 
-  function handleBrandInput(val: string) {
-    setForm(f => ({ ...f, brand: val }))
-    if (val.length >= 1) {
-      const s = existingBrands.filter(b => b.toLowerCase().includes(val.toLowerCase()))
-      setBrandSugg(s)
-      setShowBrandSugg(s.length > 0 && !existingBrands.some(b => b.toLowerCase() === val.toLowerCase()))
-    } else {
-      setShowBrandSugg(false)
-    }
-  }
-
-  function handleLocationInput(val: string) {
-    setForm(f => ({ ...f, location: val }))
-    if (val.length >= 1) {
-      const s = existingLocations.filter(l => l.toLowerCase().includes(val.toLowerCase()))
-      setLocationSugg(s)
-      setShowLocationSugg(s.length > 0 && !existingLocations.some(l => l.toLowerCase() === val.toLowerCase()))
-    } else {
-      setShowLocationSugg(false)
-    }
-  }
 
   // Autocomplete for name field
   const [nameSuggestions, setNameSuggestions] = useState<typeof fetchParts extends (...args: any[]) => Promise<infer R> ? R : never>([])
@@ -320,40 +297,40 @@ export default function PartForm() {
           </div>
           <div>
             <label className="label">{t('lbl_brand')}</label>
-            <select className="input"
-              value={existingBrands.includes(form.brand) ? form.brand : (form.brand ? '__add__' : '')}
-              onChange={e => {
-                if (e.target.value === '__add__') setForm(f => ({ ...f, brand: '' }))
-                else setForm(f => ({ ...f, brand: e.target.value }))
-              }}
-            >
-              <option value="">{t('select_choose')}</option>
-              {existingBrands.map(b => <option key={b} value={b}>{b}</option>)}
-              <option value="__add__">{t('add_new_brand')}</option>
-            </select>
-            {form.brand === '' && existingBrands.length > 0 && (
-              <input className="input mt-1" placeholder={t('brand_placeholder')} autoFocus
-                onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
-            )}
-            {(!existingBrands.includes(form.brand) && form.brand !== '') && (
-              <input className="input mt-1" placeholder={t('brand_placeholder')} value={form.brand}
-                onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
-            )}
-            {existingBrands.length === 0 && (
-              <input className="input mt-1" placeholder={t('brand_placeholder')} value={form.brand}
+            {existingBrands.length > 0 ? (
+              <>
+                <select className="input"
+                  value={addingBrand ? '__add__' : (form.brand || '')}
+                  onChange={e => {
+                    if (e.target.value === '__add__') { setAddingBrand(true); setForm(f => ({ ...f, brand: '' })) }
+                    else { setAddingBrand(false); setForm(f => ({ ...f, brand: e.target.value })) }
+                  }}
+                >
+                  <option value="">{t('select_choose')}</option>
+                  {existingBrands.map(b => <option key={b} value={b}>{b}</option>)}
+                  <option value="__add__">{t('add_new_brand')}</option>
+                </select>
+                {addingBrand && (
+                  <input className="input mt-1" placeholder={t('brand_placeholder')} autoFocus
+                    value={form.brand}
+                    onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
+                )}
+              </>
+            ) : (
+              <input className="input" placeholder={t('brand_placeholder')} value={form.brand}
                 onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
             )}
           </div>
           <div>
             <label className="label">{t('lbl_category')}</label>
             <select
-              className="input"
-              value={allCategories.includes(form.category) ? form.category : '__custom__'}
-              onChange={e => {
-                if (e.target.value !== '__custom__') setForm(f => ({ ...f, category: e.target.value }))
-              }}
-            >
-              <option value="">—</option>
+                  className="input"
+                  value={allCategories.includes(form.category) ? form.category : (form.category ? '__custom__' : '')}
+                  onChange={e => {
+                    if (e.target.value !== '__custom__') setForm(f => ({ ...f, category: e.target.value }))
+                  }}
+                >
+                  <option value="">{t('select_choose')}</option>
               {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
               {form.category && !allCategories.includes(form.category) && (
                 <option value="__custom__">{form.category}</option>
@@ -404,20 +381,19 @@ export default function PartForm() {
             {existingLocations.length > 0 ? (
               <>
                 <select className="input"
-                  value={existingLocations.includes(form.location) ? form.location : (form.location ? '__add__' : '')}
+                  value={addingLocation ? '__add__' : (form.location || '')}
                   onChange={e => {
-                    if (e.target.value === '__add__') setForm(f => ({ ...f, location: '' }))
-                    else setForm(f => ({ ...f, location: e.target.value }))
+                    if (e.target.value === '__add__') { setAddingLocation(true); setForm(f => ({ ...f, location: '' })) }
+                    else { setAddingLocation(false); setForm(f => ({ ...f, location: e.target.value })) }
                   }}
                 >
                   <option value="">{t('select_choose')}</option>
                   {existingLocations.map(loc => <option key={loc} value={loc}>{loc}</option>)}
                   <option value="__add__">{t('add_new_location')}</option>
                 </select>
-                {(form.location === '' || (!existingLocations.includes(form.location) && form.location !== '')) && (
-                  <input className="input mt-1" placeholder={t('parts_shelf_placeholder')}
+                {addingLocation && (
+                  <input className="input mt-1" placeholder={t('parts_shelf_placeholder')} autoFocus
                     value={form.location}
-                    autoFocus={form.location === '' && existingLocations.length > 0}
                     onChange={e => setForm(f => ({ ...f, location: e.target.value }))} />
                 )}
               </>
