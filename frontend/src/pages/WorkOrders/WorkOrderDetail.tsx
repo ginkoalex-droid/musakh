@@ -348,12 +348,22 @@ export default function WorkOrderDetail() {
               </span>
             </label>
 
-            <div className="flex gap-3 justify-end">
-              <button className="btn-secondary" onClick={() => setNoPartsModal(false)}>{t('btn_cancel')}</button>
-              <button className="btn-success" disabled={!noPartsConfirmed}
-                onClick={async () => { setNoPartsModal(false); await doConfirm() }}>
-                <CheckCircle className="w-4 h-4" /> {t('wo_close_anyway')}
-              </button>
+            <div className="flex gap-3 justify-between items-center">
+              <Link
+                to="/issues/new"
+                state={{ preselect_wo_id: wo.id }}
+                onClick={() => setNoPartsModal(false)}
+                className="btn-danger text-sm"
+              >
+                <Plus className="w-4 h-4" /> {t('issue_new')}
+              </Link>
+              <div className="flex gap-2">
+                <button className="btn-secondary" onClick={() => setNoPartsModal(false)}>{t('btn_cancel')}</button>
+                <button className="btn-success" disabled={!noPartsConfirmed}
+                  onClick={async () => { setNoPartsModal(false); await doConfirm() }}>
+                  <CheckCircle className="w-4 h-4" /> {t('wo_close_anyway')}
+                </button>
+              </div>
             </div>
           </div>
         </div>

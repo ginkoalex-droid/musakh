@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchIssueOrder, createIssueOrder, confirmIssueOrder,
@@ -39,7 +39,9 @@ export default function IssueForm() {
 
   type IssueType = 'wo' | 'sale' | 'other'
   const [issueType, setIssueType] = useState<IssueType>('wo')
-  const [selectedWOId, setSelectedWOId] = useState<number | ''>('')
+  const routeLocation = useLocation()
+  const preselectWoId = (routeLocation.state as any)?.preselect_wo_id as number | undefined
+  const [selectedWOId, setSelectedWOId] = useState<number | ''>(preselectWoId || '')
   const [manualWO, setManualWO] = useState('')
   const [customer, setCustomer] = useState('')
   const [reason, setReason] = useState('')
