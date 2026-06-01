@@ -67,6 +67,7 @@ export default function PartForm() {
   const [newCarMake, setNewCarMake] = useState('')
   const [newCarModel, setNewCarModel] = useState('')
   const [addingBrand, setAddingBrand] = useState(false)
+  const [addingCategory, setAddingCategory] = useState(false)
   const [addingLocation, setAddingLocation] = useState(false)
 
 
@@ -325,23 +326,21 @@ export default function PartForm() {
             <label className="label">{t('lbl_category')}</label>
             <select
                   className="input"
-                  value={allCategories.includes(form.category) ? form.category : (form.category ? '__custom__' : '')}
+                  value={addingCategory ? '__custom__' : (form.category || '')}
                   onChange={e => {
-                    if (e.target.value !== '__custom__') setForm(f => ({ ...f, category: e.target.value }))
+                    if (e.target.value === '__custom__') { setAddingCategory(true); setForm(f => ({ ...f, category: '' })) }
+                    else { setAddingCategory(false); setForm(f => ({ ...f, category: e.target.value })) }
                   }}
                 >
                   <option value="">{t('select_choose')}</option>
               {allCategories.map(c => <option key={c} value={c}>{c}</option>)}
-              {form.category && !allCategories.includes(form.category) && (
-                <option value="__custom__">{form.category}</option>
-              )}
               <option value="__custom__">{t('add_new_category')}</option>
             </select>
-            {/* Custom category input */}
-            {(!form.category || !allCategories.includes(form.category)) && (
+            {addingCategory && (
               <input
                 className="input mt-1"
                 placeholder={t('enter_category')}
+                autoFocus
                 value={form.category}
                 onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
               />
