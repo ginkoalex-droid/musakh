@@ -40,6 +40,11 @@ export const fetchPartByBarcode = async (barcode: string): Promise<Part> => {
   return res.data
 }
 
+export const fetchBrands = async (): Promise<string[]> => {
+  const res = await api.get('/parts/brands')
+  return res.data
+}
+
 export const fetchLocations = async (): Promise<string[]> => {
   const res = await api.get('/parts/locations')
   return res.data

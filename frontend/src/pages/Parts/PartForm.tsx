@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories, fetchParts, fetchLocations } from '../../api/parts'
+import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories, fetchParts, fetchLocations, fetchBrands } from '../../api/parts'
 import api from '../../api/client'
 import { ArrowLeft, Plus, Trash2, ScanLine, Car, Copy } from 'lucide-react'
 import toast from 'react-hot-toast'
@@ -37,6 +37,11 @@ export default function PartForm() {
   const { data: existingLocations = [] } = useQuery({
     queryKey: ['locations'],
     queryFn: fetchLocations,
+  })
+
+  const { data: existingBrands = [] } = useQuery({
+    queryKey: ['brands'],
+    queryFn: fetchBrands,
   })
 
   // Merge hardcoded defaults with existing DB categories, deduplicated
@@ -289,7 +294,26 @@ export default function PartForm() {
           </div>
           <div>
             <label className="label">{t('lbl_brand')}</label>
-            <input className="input" value={form.brand} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
+            {existingBrands.length > 0 ? (
+              <div className="space-y-1">
+                <select
+                  className="input"
+                  value={existingBrands.includes(form.brand) ? form.brand : (form.brand ? '__new__' : '')}
+                  onChange={e => { if (e.target.value !== '__new__') setForm(f => ({ ...f, brand: e.target.value })) }}
+                >
+                  <option value="">— {t('lbl_brand')} —</option>
+                  {existingBrands.map(b => <option key={b} value={b}>{b}</option>)}
+                  <option value="__new__">+ Новый бренд...</option>
+                </select>
+                {(!form.brand || !existingBrands.includes(form.brand)) && (
+                  <input className="input" placeholder="BMW, Honda, Michelin..." value={form.brand}
+                    onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
+                )}
+              </div>
+            ) : (
+              <input className="input" placeholder="BMW, Honda, Michelin..." value={form.brand}
+                onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} />
+            )}
           </div>
           <div>
             <label className="label">{t('lbl_category')}</label>
