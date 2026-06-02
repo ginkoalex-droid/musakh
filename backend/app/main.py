@@ -3,13 +3,18 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.encoders import jsonable_encoder
 import json
+import re
 
 from app.database import engine, Base
 from app.routers import auth, parts, suppliers, receiving, issues, stock, export, work_orders
 
 app = FastAPI(title="Garage Inventory", version="1.0.0")
 
-# Ensure all naive datetimes are serialized as UTC (with Z suffix)
+# Ensure all naive datetimes are serialized as UTC (with Z suffix).
+# NOTE: jsonable_encoder converts datetime → string BEFORE fix_dates runs,
+# so we must handle both datetime objects AND plain ISO strings without TZ.
+_ISO_RE = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')
+
 from fastapi.responses import JSONResponse
 from typing import Any
 
@@ -20,8 +25,13 @@ class UTCJSONResponse(JSONResponse):
                 return {k: fix_dates(v) for k, v in obj.items()}
             if isinstance(obj, list):
                 return [fix_dates(i) for i in obj]
+            # datetime object without timezone → append Z
             if isinstance(obj, datetime) and obj.tzinfo is None:
                 return obj.isoformat() + 'Z'
+            # string that looks like naive ISO datetime → append Z
+            if isinstance(obj, str) and _ISO_RE.match(obj):
+                if not obj.endswith('Z') and '+' not in obj[10:] and '-' not in obj[20:]:
+                    return obj + 'Z'
             return obj
         return json.dumps(fix_dates(jsonable_encoder(content)), ensure_ascii=False).encode('utf-8')
 
