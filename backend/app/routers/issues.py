@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.database import get_db
 from app.models import (
     IssueOrder, IssueItem, Part, User, Stock, StockMovement, MovementType, UserRole,
-    Barcode, OemNumber, WorkOrder
+    Barcode, OemNumber, WorkOrder, CarApplication
 )
 from app.schemas import (
     IssueOrderCreate, IssueOrderOut, IssueOrderList, IssueItemOut, IssueItemCreate
@@ -262,6 +262,28 @@ async def confirm_order(
         ))
 
     order.is_confirmed = True
+
+    # Auto-add car application for each part based on WO car model
+    if order.work_order_id:
+        wo_result = await db.execute(select(WorkOrder).where(WorkOrder.id == order.work_order_id))
+        wo = wo_result.scalar_one_or_none()
+        if wo and wo.car_model and wo.car_model.strip():
+            car_model = wo.car_model.strip().upper()
+            for item in order.items:
+                # Check if this model is already registered for this part
+                existing_app = await db.execute(
+                    select(CarApplication).where(
+                        CarApplication.part_id == item.part_id,
+                        CarApplication.model == car_model,
+                    )
+                )
+                if not existing_app.scalar_one_or_none():
+                    db.add(CarApplication(
+                        part_id=item.part_id,
+                        make='',
+                        model=car_model,
+                    ))
+
     await db.commit()
 
     result = await db.execute(select(IssueOrder).options(*_load_opts()).where(IssueOrder.id == order.id))

@@ -475,8 +475,10 @@ export default function WorkOrders() {
                                 {o.work_order_number}
                               </Link>
                               {o.work_type && <span className="badge bg-purple-100 text-purple-700 text-xs">{o.work_type}</span>}
-                              {role === 'secondary' && (
-                                <span className="badge bg-orange-100 text-orange-700 text-xs">{share}%</span>
+                              {o.mechanic_id_2 && (
+                                <span className={`badge text-xs ${role === 'primary' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                                  {share}%
+                                </span>
                               )}
                             </div>
                           </td>
