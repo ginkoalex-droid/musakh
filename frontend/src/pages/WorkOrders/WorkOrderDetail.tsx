@@ -205,13 +205,13 @@ export default function WorkOrderDetail() {
         )}
         {wo.car_mileage && (
           <div>
-            <span className="text-gray-500">Пробег:</span>
-            <span className="font-semibold ml-2">{wo.car_mileage.toLocaleString()} км</span>
+            <span className="text-gray-500">{t('wo_mileage')}:</span>
+            <span className="font-semibold ml-2">{wo.car_mileage.toLocaleString()}</span>
           </div>
         )}
         {wo.client_phone && (
           <div>
-            <span className="text-gray-500">Телефон:</span>
+            <span className="text-gray-500">{t('wo_client_phone')}:</span>
             <a href={`tel:${wo.client_phone}`} className="font-semibold ml-2 text-blue-600">{wo.client_phone}</a>
           </div>
         )}

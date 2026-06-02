@@ -324,7 +324,7 @@ export default function WorkOrders() {
           <input
             type="text"
             className="input pl-9"
-            placeholder="Поиск по номеру ЗН, госномеру, марке, модели..."
+            placeholder={t('wo_search_placeholder')}
             value={search}
             onChange={e => handleSearch(e.target.value)}
           />
@@ -389,7 +389,7 @@ export default function WorkOrders() {
           </div>
           {summary.length > 0 && (
             <div className="flex items-center gap-2 border-l border-gray-300 pl-4">
-              <span className="text-gray-500">По механикам:</span>
+              <span className="text-gray-500">{t('wo_by_mechanics')}:</span>
               {summary.map(s => (
                 <span key={s.mechanic_id} className="text-xs bg-blue-50 text-blue-700 px-2 py-1 rounded-full">
                   {s.mechanic_name}: <strong>{s.confirmed}</strong>/{s.total}
@@ -544,13 +544,13 @@ export default function WorkOrders() {
                   onChange={e => setForm(f => ({ ...f, car_plate: e.target.value }))} />
               </div>
               <div>
-                <label className="label">Пробег (км)</label>
-                <input className="input" type="number" min="0" placeholder="12500"
+                <label className="label">{t('wo_mileage')}</label>
+                <input className="input" type="number" min="0" placeholder={t('wo_mileage_ph')}
                   value={form.car_mileage}
                   onChange={e => setForm(f => ({ ...f, car_mileage: e.target.value }))} />
               </div>
               <div className="col-span-2">
-                <label className="label">Телефон клиента</label>
+                <label className="label">{t('wo_client_phone')}</label>
                 <input className="input" type="tel" placeholder="+972 50 000 0000"
                   value={form.client_phone}
                   onChange={e => setForm(f => ({ ...f, client_phone: e.target.value }))} />
