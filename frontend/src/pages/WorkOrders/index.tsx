@@ -205,13 +205,24 @@ export default function WorkOrders() {
     finally { setLoading(false) }
   }
 
-  // Group orders by mechanic
+  // Group orders by mechanic — WO with 2 mechanics appears in BOTH groups
+  type GroupEntry = { order: typeof orders[0]; role: 'primary' | 'secondary'; share: number }
   const grouped = useMemo(() => {
     if (!groupBy) return null
-    const map = new Map<number, typeof orders>()
+    const map = new Map<number, { name: string; entries: GroupEntry[] }>()
+
+    const ensure = (id: number, name: string) => {
+      if (!map.has(id)) map.set(id, { name, entries: [] })
+    }
+
     for (const o of orders) {
-      if (!map.has(o.mechanic_id)) map.set(o.mechanic_id, [])
-      map.get(o.mechanic_id)!.push(o)
+      ensure(o.mechanic_id, o.mechanic_name)
+      map.get(o.mechanic_id)!.entries.push({ order: o, role: 'primary', share: o.mechanic_share })
+
+      if (o.mechanic_id_2 && o.mechanic2_name) {
+        ensure(o.mechanic_id_2, o.mechanic2_name)
+        map.get(o.mechanic_id_2)!.entries.push({ order: o, role: 'secondary', share: 100 - o.mechanic_share })
+      }
     }
     return map
   }, [orders, groupBy])
@@ -431,15 +442,17 @@ export default function WorkOrders() {
       {grouped ? (
         // Grouped view
         <div className="space-y-4">
-          {Array.from(grouped.entries()).map(([mechId, mechOrders]) => {
-            const name = mechOrders[0]?.mechanic_name || ''
-            const closed = mechOrders.filter(o => o.is_confirmed).length
+          {Array.from(grouped.entries()).map(([mechId, { name, entries }]) => {
+            // Fractional count: each WO weighted by this mechanic's share
+            const totalFrac = entries.reduce((s, e) => s + e.share / 100, 0)
+            const closedFrac = entries.filter(e => e.order.is_confirmed).reduce((s, e) => s + e.share / 100, 0)
+            const fmtFrac = (n: number) => Number.isInteger(Math.round(n * 10) / 10) ? n.toFixed(0) : n.toFixed(1)
             return (
               <div key={mechId} className="card overflow-hidden">
                 <div className="px-6 py-3 bg-blue-50 border-b border-blue-100 flex items-center justify-between">
                   <span className="font-semibold text-blue-900">{name}</span>
                   <span className="text-sm text-blue-700">
-                    {t('wo_total')}: <strong>{mechOrders.length}</strong> · {t('wo_closed')}: <strong className="text-green-600">{closed}</strong>
+                    {t('wo_total')}: <strong>{fmtFrac(totalFrac)}</strong> · {t('wo_closed')}: <strong className="text-green-600">{fmtFrac(closedFrac)}</strong>
                   </span>
                 </div>
                 <div className="overflow-x-auto">
@@ -454,7 +467,61 @@ export default function WorkOrders() {
                       <th className="table-th w-20" />
                     </tr></thead>
                     <tbody className="divide-y divide-gray-100">
-                      {mechOrders.map(o => <WORow key={o.id} o={o} />)}
+                      {entries.map(({ order: o, role, share }) => (
+                        <tr key={`${o.id}-${role}`} className="hover:bg-gray-50">
+                          <td className="table-td">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Link to={`/work-orders/${o.id}`} className="font-mono font-semibold text-blue-700 hover:underline">
+                                {o.work_order_number}
+                              </Link>
+                              {o.work_type && <span className="badge bg-purple-100 text-purple-700 text-xs">{o.work_type}</span>}
+                              {role === 'secondary' && (
+                                <span className="badge bg-orange-100 text-orange-700 text-xs">{share}%</span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="table-td text-gray-500 text-sm whitespace-nowrap">
+                            {new Date(o.date).toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit' })}
+                            <div className="text-xs text-gray-400">{new Date(o.date).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' })}</div>
+                          </td>
+                          <td className="table-td hidden sm:table-cell text-gray-500 text-sm">
+                            {[o.car_plate, o.car_model].filter(Boolean).join(' ')}
+                            {o.notes && <div className="text-xs text-gray-400 line-clamp-1">{o.notes}</div>}
+                          </td>
+                          <td className="table-td hidden lg:table-cell text-gray-500 text-sm whitespace-nowrap">
+                            {o.confirmed_at ? (
+                              <>
+                                <div>{new Date(o.confirmed_at).toLocaleDateString('ru-RU', { day:'2-digit', month:'2-digit' })}</div>
+                                <div className="text-xs text-gray-400">{new Date(o.confirmed_at).toLocaleTimeString('ru-RU', { hour:'2-digit', minute:'2-digit' })}</div>
+                              </>
+                            ) : '—'}
+                          </td>
+                          <td className="table-td hidden md:table-cell">
+                            <span className={`text-sm font-mono font-semibold ${o.is_confirmed ? 'text-green-600' : 'text-orange-500'}`}>
+                              {formatDuration(o.date, o.confirmed_at)}
+                            </span>
+                          </td>
+                          <td className="table-td">
+                            {o.is_confirmed
+                              ? <span className="badge bg-green-100 text-green-700 flex items-center gap-1 w-fit"><CheckCircle className="w-3 h-3" /> {t('wo_confirmed')}</span>
+                              : <span className="badge bg-blue-100 text-blue-700 flex items-center gap-1 w-fit"><Clock className="w-3 h-3" /> {t('wo_open')}</span>}
+                          </td>
+                          <td className="table-td">
+                            <div className="flex gap-1">
+                              {!o.is_confirmed && canClose && (
+                                <button onClick={() => handleConfirm(o.id)} disabled={closingId === o.id} className="btn-success py-1 px-2 text-xs">
+                                  <CheckCircle className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                              {isAdmin && (
+                                <button onClick={() => handleDelete(o.id)} className="btn-secondary py-1 px-2 text-xs text-red-500">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
