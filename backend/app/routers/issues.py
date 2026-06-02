@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
 from app.database import get_db
@@ -270,11 +270,11 @@ async def confirm_order(
         if wo and wo.car_model and wo.car_model.strip():
             car_model = wo.car_model.strip().upper()
             for item in order.items:
-                # Check if this model is already registered for this part
+                # Case-insensitive duplicate check
                 existing_app = await db.execute(
                     select(CarApplication).where(
                         CarApplication.part_id == item.part_id,
-                        CarApplication.model == car_model,
+                        func.upper(CarApplication.model) == car_model,
                     )
                 )
                 if not existing_app.scalar_one_or_none():
