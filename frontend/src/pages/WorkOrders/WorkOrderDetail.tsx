@@ -51,8 +51,9 @@ export default function WorkOrderDetail() {
       await updateWorkOrder(wo.id, {
         work_order_number: wo.work_order_number,
         mechanic_id: mechForm.mechanic_id || wo.mechanic_id,
-        mechanic_id_2: mechForm.mechanic_id_2 || undefined,
-        mechanic_share: mechForm.mechanic_id_2 ? mechForm.mechanic_share : 100,
+        // Explicitly pass null when second mechanic is cleared — backend handles null as "remove"
+        mechanic_id_2: mechForm.mechanic_id_2 > 0 ? mechForm.mechanic_id_2 : null,
+        mechanic_share: mechForm.mechanic_id_2 > 0 ? mechForm.mechanic_share : 100,
         work_type: mechForm.work_type || wo.work_type || undefined,
         car_model: mechForm.car_model || wo.car_model || undefined,
         car_plate: mechForm.car_plate || wo.car_plate || undefined,

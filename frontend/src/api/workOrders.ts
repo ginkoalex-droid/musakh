@@ -27,7 +27,7 @@ export interface WorkOrder {
   work_type?: string
   mechanic_id: number
   mechanic_name: string
-  mechanic_id_2?: number
+  mechanic_id_2?: number | null
   mechanic2_name?: string
   mechanic_share: number
   date: string

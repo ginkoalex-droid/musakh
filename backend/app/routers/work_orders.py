@@ -341,9 +341,19 @@ async def update_work_order(
     # Open WO — admin or mechanic
     if not wo.is_confirmed and current_user.role not in (UserRole.admin, UserRole.mechanic):
         raise HTTPException(status_code=403, detail="Недостаточно прав")
-    for k, v in data.model_dump().items():
+    d = data.model_dump()
+    for k, v in d.items():
         if v is not None:
             setattr(wo, k, v)
+    # Explicitly allow clearing nullable fields (e.g. removing second mechanic)
+    nullable_clearable = ['mechanic_id_2', 'car_plate', 'car_make', 'car_model',
+                          'car_mileage', 'client_phone', 'notes', 'work_type']
+    for k in nullable_clearable:
+        if k in d and d[k] is None:
+            setattr(wo, k, None)
+    # Reset share to 100% when second mechanic is removed
+    if d.get('mechanic_id_2') is None:
+        wo.mechanic_share = 100
     await db.commit()
     result = await db.execute(select(WorkOrder).options(*_load_opts()).where(WorkOrder.id == wo.id))
     return _wo_to_out(result.scalar_one())
