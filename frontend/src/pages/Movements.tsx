@@ -1,7 +1,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchMovements } from '../api/stock'
-import { ArrowDown, ArrowUp, Settings, RotateCcw, Download } from 'lucide-react'
+import { fetchMovements, fetchStock } from '../api/stock'
+import { ArrowDown, ArrowUp, Settings, RotateCcw, Download, AlertTriangle } from 'lucide-react'
 import { useUnit } from '../utils/useUnit'
 import { Link } from 'react-router-dom'
 import type { MovementType } from '../types'
@@ -67,6 +67,20 @@ export default function Movements() {
     }),
   })
 
+  // Summary always uses ALL types (ignores movType filter) — to show complete picture
+  const { data: summaryMovements = [] } = useQuery({
+    queryKey: ['movements-summary', from, to, userId, partFilter?.id],
+    refetchInterval: 30_000,
+    queryFn: () => fetchMovements({
+      fromDate: from || undefined,
+      toDate: to || undefined,
+      userId: userId ? parseInt(userId) : undefined,
+      partId: partFilter?.id,
+      limit: 2000,
+    }),
+    enabled: viewMode === 'summary',
+  })
+
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
     queryFn: async () => { const r = await api.get('/auth/users'); return r.data as { id: number; name: string }[] },
@@ -97,19 +111,43 @@ export default function Movements() {
     return { total: movements.length, incoming, issued }
   }, [movements])
 
+  // Fetch current stock for balance column
+  const { data: stockData = [] } = useQuery({ queryKey: ['stock'], queryFn: () => fetchStock(false) })
+  const stockMap = useMemo(() => {
+    const m = new Map<number, number>()
+    for (const s of stockData) m.set(s.part_id, s.quantity)
+    return m
+  }, [stockData])
+
   // Summary by part_id: group by exact part, show in/out totals with unit
-  type PartSummary = { part_id: number; part_name: string; part_brand?: string; unit: string; received: number; issued: number; net: number }
+  type PartSummary = { part_id: number; part_name: string; part_brand?: string; unit: string; received: number; issued: number; adjusted: number; net: number; balance: number }
   type BrandGroup = { brand: string; categories: { category: string; parts: PartSummary[] }[] }
 
   const { partSummary, brandGroups } = useMemo(() => {
     const map = new Map<number, PartSummary & { category?: string }>()
-    for (const mv of movements) {
+    for (const mv of summaryMovements) {
       const key = mv.part_id
-      if (!map.has(key)) map.set(key, { part_id: key, part_name: mv.part_name, part_brand: mv.part_brand, unit: mv.part_unit || 'шт', received: 0, issued: 0, net: 0 })
+      if (!map.has(key)) map.set(key, { part_id: key, part_name: mv.part_name, part_brand: mv.part_brand, unit: mv.part_unit || 'шт', received: 0, issued: 0, adjusted: 0, net: 0, balance: 0 })
       const entry = map.get(key)!
-      if (mv.movement_type === 'receiving') entry.received = Math.round((entry.received + Math.abs(Number(mv.quantity))) * 1000) / 1000
-      else if (mv.movement_type === 'issue') entry.issued = Math.round((entry.issued + Math.abs(Number(mv.quantity))) * 1000) / 1000
+      const qty = Number(mv.quantity)
+      if (mv.movement_type === 'receiving') {
+        entry.received = Math.round((entry.received + Math.abs(qty)) * 1000) / 1000
+      } else if (mv.movement_type === 'issue' || mv.movement_type === 'cancellation') {
+        // cancellation reverses an issue — treat as negative issue (reduces issued count)
+        if (mv.movement_type === 'issue') entry.issued = Math.round((entry.issued + Math.abs(qty)) * 1000) / 1000
+        else entry.issued = Math.round((entry.issued - Math.abs(qty)) * 1000) / 1000
+      } else if (mv.movement_type === 'adjustment') {
+        // adjustment: positive → extra incoming, negative → extra outgoing
+        if (qty >= 0) entry.received = Math.round((entry.received + qty) * 1000) / 1000
+        else entry.issued = Math.round((entry.issued + Math.abs(qty)) * 1000) / 1000
+      } else if (mv.movement_type === 'return') {
+        entry.received = Math.round((entry.received + Math.abs(qty)) * 1000) / 1000
+      }
       entry.net = Math.round((entry.received - entry.issued) * 1000) / 1000
+    }
+    // Fill in current stock balance
+    for (const entry of map.values()) {
+      entry.balance = stockMap.get(entry.part_id) ?? 0
     }
     const parts = Array.from(map.values()).sort((a, b) => a.part_name.localeCompare(b.part_name))
 
@@ -254,8 +292,16 @@ export default function Movements() {
       {/* Summary view */}
       {viewMode === 'summary' && (
         <div className="card overflow-hidden">
-          <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 text-sm font-semibold text-gray-600">
-            {t('mov_summary_total')}: {partSummary.length} {t('mov_positions')}
+          <div className="px-6 py-3 bg-gray-50 border-b border-gray-100 flex flex-wrap items-center justify-between gap-2">
+            <span className="text-sm font-semibold text-gray-600">
+              {t('mov_summary_total')}: {partSummary.length} {t('mov_positions')}
+            </span>
+            {movType && (
+              <span className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                <AlertTriangle className="w-3.5 h-3.5" />
+                Сводка показывает все типы движений (фильтр по типу не применяется)
+              </span>
+            )}
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -265,13 +311,14 @@ export default function Movements() {
                   <th className="table-th text-right text-green-700">{t('mov_col_received')}</th>
                   <th className="table-th text-right text-red-600">{t('mov_col_issued')}</th>
                   <th className="table-th text-right">{t('mov_col_total')}</th>
+                  <th className="table-th text-right text-blue-700">{t('mov_col_balance')}</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {isLoading ? (
-                  <tr><td colSpan={4} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
+                  <tr><td colSpan={5} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
                 ) : brandGroups.length === 0 ? (
-                  <tr><td colSpan={4} className="table-td text-center text-gray-400 py-8">{t('mov_no_data')}</td></tr>
+                  <tr><td colSpan={5} className="table-td text-center text-gray-400 py-8">{t('mov_no_data')}</td></tr>
                 ) : brandGroups.map(bg => {
                   const bgCollapsed = summaryCollapsed.has(bg.brand)
                   const bgTotal = bg.categories.reduce((s, c) => s + c.parts.length, 0)
@@ -281,7 +328,7 @@ export default function Movements() {
                       <tr key={`bg-${bg.brand}`}
                         className="bg-blue-600 cursor-pointer select-none hover:bg-blue-700"
                         onClick={() => setSummaryCollapsed(prev => { const n = new Set(prev); n.has(bg.brand) ? n.delete(bg.brand) : n.add(bg.brand); return n })}>
-                        <td colSpan={4} className="px-4 py-2 text-xs font-bold text-white uppercase tracking-wide">
+                        <td colSpan={5} className="px-4 py-2 text-xs font-bold text-white uppercase tracking-wide">
                           <span className="mr-2">{bgCollapsed ? '▶' : '▼'}</span>
                           {bg.brand} <span className="font-normal opacity-75 ml-1">({bgTotal})</span>
                         </td>
@@ -300,8 +347,11 @@ export default function Movements() {
                           </td>
                           <td className="table-td text-right font-semibold">
                             <span className={row.net > 0 ? 'text-green-600' : row.net < 0 ? 'text-red-600' : 'text-gray-400'}>
-                              {row.net > 0 ? '+' : ''}{row.net} {u(row.unit)}
+                              {row.net > 0 ? '+' : ''}{row.net} <span className="text-xs font-normal text-gray-400">{u(row.unit)}</span>
                             </span>
+                          </td>
+                          <td className="table-td text-right font-semibold text-blue-700">
+                            {row.balance} <span className="text-xs font-normal text-gray-400">{u(row.unit)}</span>
                           </td>
                         </tr>
                       )))}

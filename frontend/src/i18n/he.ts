@@ -193,6 +193,7 @@ export const he: Record<TranslationKey, string> = {
   mov_total: 'סה"כ',
   mov_summary_total: 'סה"כ לתקופה',
   mov_col_received: 'כניסות ↓',
+  mov_col_balance: 'יתרה',
   mov_col_issued: 'יציאות ↑',
   mov_col_total: 'מאזן',
   mov_positions: 'פריטים',

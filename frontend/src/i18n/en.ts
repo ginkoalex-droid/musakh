@@ -195,6 +195,7 @@ export const en: Record<TranslationKey, string> = {
   mov_col_received: 'In ↓',
   mov_col_issued: 'Out ↑',
   mov_col_total: 'Net',
+  mov_col_balance: 'Balance',
   mov_positions: 'items',
   mov_type_receiving: 'Receiving',
   mov_type_issue: 'Issue',

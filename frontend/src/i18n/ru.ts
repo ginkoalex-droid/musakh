@@ -201,6 +201,7 @@ export const ru = {
   mov_col_received: 'Приход ↓',
   mov_col_issued: 'Расход ↑',
   mov_col_total: 'Итого',
+  mov_col_balance: 'Остаток',
   mov_positions: 'позиций',
   mov_type_receiving: 'Приход',
   mov_type_issue: 'Списание',
