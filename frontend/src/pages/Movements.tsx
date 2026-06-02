@@ -55,19 +55,27 @@ export default function Movements() {
     ? { from: customFrom, to: customTo }
     : getPeriodDates(period)
 
-  // In summary mode — ignore type filter so all movements are visible
-  const effectiveMovType = viewMode === 'summary' ? undefined : (movType || undefined)
-
   const { data: movements = [], isLoading } = useQuery({
-    queryKey: ['movements', from, to, userId, effectiveMovType, partFilter?.id, viewMode],
+    queryKey: ['movements', from, to, userId, movType, partFilter?.id],
     refetchInterval: 30_000,
     queryFn: () => fetchMovements({
       fromDate: from || undefined,
       toDate: to || undefined,
       userId: userId ? parseInt(userId) : undefined,
-      movementType: effectiveMovType,
+      movementType: movType || undefined,
       partId: partFilter?.id,
-      limit: 2000,
+    }),
+  })
+
+  // Summary uses ALL types — separate query without type filter
+  const { data: allMovements = [], isLoading: allLoading } = useQuery({
+    queryKey: ['movements-all', from, to, userId, partFilter?.id],
+    refetchInterval: 30_000,
+    queryFn: () => fetchMovements({
+      fromDate: from || undefined,
+      toDate: to || undefined,
+      userId: userId ? parseInt(userId) : undefined,
+      partId: partFilter?.id,
     }),
   })
 
@@ -115,7 +123,7 @@ export default function Movements() {
 
   const { partSummary, brandGroups } = useMemo(() => {
     const map = new Map<number, PartSummary & { category?: string }>()
-    for (const mv of movements) {
+    for (const mv of allMovements) {
       const key = mv.part_id
       if (!map.has(key)) map.set(key, { part_id: key, part_name: mv.part_name, part_brand: mv.part_brand, unit: mv.part_unit || 'шт', received: 0, issued: 0, adjusted: 0, net: 0, balance: 0 })
       const entry = map.get(key)!
@@ -159,7 +167,7 @@ export default function Movements() {
       }))
 
     return { partSummary: parts, brandGroups: groups }
-  }, [movements, stockMap])
+  }, [allMovements, stockMap])
 
   const [summaryCollapsed, setSummaryCollapsed] = useState<Set<string>>(new Set())
 
@@ -305,7 +313,7 @@ export default function Movements() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {isLoading ? (
+                {allLoading ? (
                   <tr><td colSpan={5} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
                 ) : brandGroups.length === 0 ? (
                   <tr><td colSpan={5} className="table-td text-center text-gray-400 py-8">{t('mov_no_data')}</td></tr>

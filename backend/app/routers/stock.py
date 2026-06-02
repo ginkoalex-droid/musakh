@@ -278,7 +278,7 @@ async def list_movements(
     from_date: Optional[str] = Query(None, description="ISO date YYYY-MM-DD"),
     to_date: Optional[str] = Query(None, description="ISO date YYYY-MM-DD"),
     movement_type: Optional[str] = None,
-    limit: int = Query(200, le=1000),
+    limit: int = Query(500, le=5000),
     offset: int = 0,
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
