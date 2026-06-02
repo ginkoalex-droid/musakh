@@ -197,6 +197,10 @@ export default function IssueForm() {
       qc.invalidateQueries({ queryKey: ['issue-order', id] })
       qc.invalidateQueries({ queryKey: ['stock'] })
       qc.invalidateQueries({ queryKey: ['movements'] })
+      // If linked to a WO — go back to that WO after confirming
+      if (existing.work_order_id) {
+        navigate(`/work-orders/${existing.work_order_id}`)
+      }
     } catch (err: any) {
       toast.error(err.response?.data?.detail || t('err_generic'))
     } finally {
