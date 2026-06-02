@@ -349,6 +349,28 @@ async def update_work_order(
     return _wo_to_out(result.scalar_one())
 
 
+@router.post("/api/work-orders/{wo_id}/reopen", response_model=WorkOrderOut)
+async def reopen_work_order(
+    wo_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Reopen a confirmed WO — admin only."""
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Только администратор")
+    result = await db.execute(select(WorkOrder).options(*_load_opts()).where(WorkOrder.id == wo_id))
+    wo = result.scalar_one_or_none()
+    if not wo:
+        raise HTTPException(status_code=404, detail="ЗН не найден")
+    if not wo.is_confirmed:
+        raise HTTPException(status_code=400, detail="ЗН уже открыт")
+    wo.is_confirmed = False
+    wo.confirmed_at = None
+    await db.commit()
+    result = await db.execute(select(WorkOrder).options(*_load_opts()).where(WorkOrder.id == wo.id))
+    return _wo_to_out(result.scalar_one())
+
+
 @router.delete("/api/work-orders/{wo_id}")
 async def delete_work_order(
     wo_id: int,

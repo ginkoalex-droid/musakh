@@ -123,6 +123,11 @@ export const confirmWorkOrder = async (id: number): Promise<WorkOrder> => {
   return res.data
 }
 
+export const reopenWorkOrder = async (id: number): Promise<WorkOrder> => {
+  const res = await api.post(`/work-orders/${id}/reopen`)
+  return res.data
+}
+
 export const updateWorkOrder = async (id: number, data: Partial<WorkOrder>): Promise<WorkOrder> => {
   const res = await api.put(`/work-orders/${id}`, data)
   return res.data

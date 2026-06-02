@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchWorkOrder, confirmWorkOrder, deleteWorkOrder, updateWorkOrder, fetchMechanics } from '../../api/workOrders'
+import { fetchWorkOrder, confirmWorkOrder, reopenWorkOrder, deleteWorkOrder, updateWorkOrder, fetchMechanics } from '../../api/workOrders'
 import { fetchIssueOrders, fetchIssueOrder, confirmIssueOrder, deleteIssueOrder } from '../../api/issues'
 import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus, Edit2 } from 'lucide-react'
 import { WORK_TYPES } from '../../api/workOrders'
@@ -23,7 +23,7 @@ export default function WorkOrderDetail() {
   const [editMechanics, setEditMechanics] = useState(false)
   const [noPartsModal, setNoPartsModal] = useState(false)
   const [noPartsConfirmed, setNoPartsConfirmed] = useState(false)
-  const [mechForm, setMechForm] = useState({ mechanic_id: 0, mechanic_id_2: 0, mechanic_share: 50, work_type: '' })
+  const [mechForm, setMechForm] = useState({ mechanic_id: 0, mechanic_id_2: 0, mechanic_share: 50, work_type: '', car_model: '', car_plate: '' })
   const [editNotes, setEditNotes] = useState(false)
   const [notesVal, setNotesVal] = useState('')
 
@@ -54,8 +54,10 @@ export default function WorkOrderDetail() {
         mechanic_id_2: mechForm.mechanic_id_2 || undefined,
         mechanic_share: mechForm.mechanic_id_2 ? mechForm.mechanic_share : 100,
         work_type: mechForm.work_type || wo.work_type || undefined,
+        car_model: mechForm.car_model || wo.car_model || undefined,
+        car_plate: mechForm.car_plate || wo.car_plate || undefined,
       })
-      toast.success('Обновлено')
+      toast.success(t('btn_save'))
       setEditMechanics(false)
       qc.invalidateQueries({ queryKey: ['work-order', id] })
       qc.invalidateQueries({ queryKey: ['wo-summary'] })
@@ -122,6 +124,17 @@ export default function WorkOrderDetail() {
     } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
   }
 
+  async function handleReopen() {
+    if (!wo || !confirm(t('wo_reopen_confirm'))) return
+    try {
+      await reopenWorkOrder(wo.id)
+      toast.success(t('wo_reopened_toast'))
+      qc.invalidateQueries({ queryKey: ['work-order', id] })
+      qc.invalidateQueries({ queryKey: ['work-orders'] })
+      qc.invalidateQueries({ queryKey: ['wo-summary'] })
+    } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
+  }
+
   if (!wo) return <div className="text-center py-16 text-gray-400">{t('rec_loading')}</div>
 
   const totalParts = issues.reduce((s, i) => s + i.total_qty, 0)
@@ -178,6 +191,8 @@ export default function WorkOrderDetail() {
                 mechanic_id_2: wo.mechanic_id_2 || 0,
                 mechanic_share: wo.mechanic_share || 50,
                 work_type: wo.work_type || '',
+                car_model: wo.car_model || '',
+                car_plate: wo.car_plate || '',
               })
               setEditMechanics(true)
             }} className="btn-secondary py-1.5 px-2">
@@ -335,9 +350,14 @@ export default function WorkOrderDetail() {
           </>
         )}
         {wo.is_confirmed && isAdmin && (
-          <button onClick={handleDelete} className="btn-secondary text-red-500" title="Admin only">
-            <Trash2 className="w-4 h-4" /> {t('btn_delete')}
-          </button>
+          <>
+            <button onClick={handleReopen} className="btn-secondary text-orange-600" title="Admin only">
+              <Clock className="w-4 h-4" /> {t('wo_reopen_btn')}
+            </button>
+            <button onClick={handleDelete} className="btn-secondary text-red-500" title="Admin only">
+              <Trash2 className="w-4 h-4" /> {t('btn_delete')}
+            </button>
+          </>
         )}
       {/* No-parts confirmation modal */}
       {noPartsModal && wo && (
@@ -398,6 +418,21 @@ export default function WorkOrderDetail() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
           <div className="card w-full max-w-sm p-6 space-y-4">
             <h2 className="font-semibold text-gray-900">{t('wo_edit_mechanics_title')}</h2>
+            {isAdmin && (
+              <div className="grid grid-cols-2 gap-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                <div>
+                  <label className="label text-xs">{t('wo_car_plate')}</label>
+                  <input className="input font-mono" value={mechForm.car_plate}
+                    onChange={e => setMechForm(f => ({ ...f, car_plate: e.target.value }))} />
+                </div>
+                <div>
+                  <label className="label text-xs">{t('lbl_model')} *</label>
+                  <input className="input" value={mechForm.car_model}
+                    style={{ textTransform: 'uppercase' }}
+                    onChange={e => setMechForm(f => ({ ...f, car_model: e.target.value.toUpperCase() }))} />
+                </div>
+              </div>
+            )}
             <div>
               <label className="label">{t('wo_mechanic')} *</label>
               <select className="input" value={mechForm.mechanic_id}
