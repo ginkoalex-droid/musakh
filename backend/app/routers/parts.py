@@ -393,6 +393,29 @@ async def add_car_application(
     return result.scalars().all()
 
 
+@router.get("/{part_id}/wo-models")
+async def get_wo_models_for_part(
+    part_id: int,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """Return distinct car models from work orders where this part was issued."""
+    from app.models import IssueItem, IssueOrder, WorkOrder
+    from sqlalchemy import distinct
+    result = await db.execute(
+        select(distinct(WorkOrder.car_model))
+        .join(IssueOrder, IssueOrder.work_order_id == WorkOrder.id)
+        .join(IssueItem, IssueItem.issue_order_id == IssueOrder.id)
+        .where(
+            IssueItem.part_id == part_id,
+            WorkOrder.car_model.isnot(None),
+            WorkOrder.car_model != '',
+        )
+        .order_by(WorkOrder.car_model)
+    )
+    return [row[0] for row in result.fetchall()]
+
+
 @router.delete("/{part_id}/cars/{car_id}")
 async def delete_car_application(
     part_id: int,

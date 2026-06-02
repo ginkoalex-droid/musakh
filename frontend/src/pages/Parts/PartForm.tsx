@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories, fetchParts, fetchLocations, fetchBrands } from '../../api/parts'
+import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories, fetchParts, fetchLocations, fetchBrands, fetchWoModelsForPart } from '../../api/parts'
 import api from '../../api/client'
-import { ArrowLeft, Plus, Trash2, ScanLine, Car, Copy } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, ScanLine, Car, Copy, Zap } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
 import { translateUnit } from '../../utils/units'
@@ -218,6 +218,28 @@ export default function PartForm() {
     } catch (err: any) {
       toast.error(err.response?.data?.detail || t('err_generic'))
     }
+  }
+
+  const [woModels, setWoModels] = useState<string[]>([])
+  const [woModelsLoading, setWoModelsLoading] = useState(false)
+  const [woModelsShown, setWoModelsShown] = useState(false)
+
+  async function loadWoModels() {
+    if (!existing) return
+    setWoModelsLoading(true)
+    try {
+      const models = await fetchWoModelsForPart(existing.id)
+      setWoModels(models)
+      setWoModelsShown(true)
+    } catch { /* ignore */ }
+    finally { setWoModelsLoading(false) }
+  }
+
+  async function addWoModel(model: string) {
+    if (!existing) return
+    const alreadyAdded = existing.car_applications.some(c => c.model?.toUpperCase() === model.toUpperCase())
+    if (alreadyAdded) { toast('Уже добавлено'); return }
+    await handleAddCar('', model)
   }
 
   return (
@@ -481,9 +503,48 @@ export default function PartForm() {
 
 
           <div className="card p-6 space-y-3">
-            <h2 className="font-semibold text-gray-700 flex items-center gap-2">
-              <Car className="w-4 h-4 text-blue-600" /> {t('parts_cars_title')}
-            </h2>
+            <div className="flex items-center justify-between flex-wrap gap-2">
+              <h2 className="font-semibold text-gray-700 flex items-center gap-2">
+                <Car className="w-4 h-4 text-blue-600" /> {t('parts_cars_title')}
+              </h2>
+              <button
+                className="btn-secondary text-xs py-1 px-2.5 flex items-center gap-1.5"
+                onClick={loadWoModels}
+                disabled={woModelsLoading}
+                title="Показать модели из истории ЗН"
+              >
+                <Zap className="w-3.5 h-3.5 text-yellow-500" />
+                {woModelsLoading ? '...' : 'Из ЗН'}
+              </button>
+            </div>
+
+            {/* Suggestions from WO history */}
+            {woModelsShown && woModels.length > 0 && (
+              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg space-y-2">
+                <div className="text-xs font-medium text-yellow-800">Модели из истории ЗН — нажми чтобы добавить:</div>
+                <div className="flex flex-wrap gap-2">
+                  {woModels.map(model => {
+                    const added = existing.car_applications.some(c => c.model?.toUpperCase() === model.toUpperCase())
+                    return (
+                      <button key={model}
+                        onClick={() => !added && addWoModel(model)}
+                        className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                          added
+                            ? 'bg-green-100 text-green-700 border-green-300 cursor-default'
+                            : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50 hover:border-blue-400 hover:text-blue-700 cursor-pointer'
+                        }`}
+                      >
+                        {added ? '✓ ' : '+ '}{model}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+            {woModelsShown && woModels.length === 0 && (
+              <div className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">Эта запчасть ещё не списывалась на ЗН</div>
+            )}
+
             {existing.car_applications.map(car => (
               <div key={car.id} className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
                 <span className="text-sm font-medium text-blue-800">

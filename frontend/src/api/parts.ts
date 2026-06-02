@@ -30,6 +30,11 @@ export const deleteCarApplication = async (partId: number, carId: number): Promi
   await api.delete(`/parts/${partId}/cars/${carId}`)
 }
 
+export const fetchWoModelsForPart = async (partId: number): Promise<string[]> => {
+  const res = await api.get(`/parts/${partId}/wo-models`)
+  return res.data
+}
+
 export const fetchPart = async (id: number): Promise<Part> => {
   const res = await api.get(`/parts/${id}`)
   return res.data

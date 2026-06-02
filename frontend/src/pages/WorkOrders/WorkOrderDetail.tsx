@@ -214,7 +214,12 @@ export default function WorkOrderDetail() {
         {(wo.car_make || wo.car_model) && (
           <div>
             <span className="text-gray-500">{t('wo_car')}:</span>
-            <span className="ml-2">{wo.car_make} {wo.car_model}</span>
+            <Link
+              to={`/work-orders?q=${encodeURIComponent([wo.car_make, wo.car_model].filter(Boolean).join(' '))}`}
+              className="font-semibold ml-2 text-blue-700 hover:underline"
+            >
+              {wo.car_make} {wo.car_model}
+            </Link>
           </div>
         )}
         {wo.car_mileage && (
