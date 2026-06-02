@@ -137,7 +137,6 @@ export default function WorkOrderDetail() {
 
   if (!wo) return <div className="text-center py-16 text-gray-400">{t('rec_loading')}</div>
 
-  const totalParts = issues.reduce((s, i) => s + i.total_qty, 0)
   const totalPositions = issues.reduce((s, i) => s + i.item_count, 0)
 
   return (
@@ -263,7 +262,7 @@ export default function WorkOrderDetail() {
             {t('nav_issues')}
             {issues.length > 0 && (
               <span className="text-xs text-gray-400 font-normal">
-                — {issues.length} {t('issue_title').toLowerCase()}, {totalPositions} {t('lbl_positions')}, {totalParts} {t('lbl_pieces')}
+                — {issues.length} {t('issue_title').toLowerCase()}, {totalPositions} {t('lbl_positions')}
               </span>
             )}
           </h2>
@@ -327,7 +326,7 @@ export default function WorkOrderDetail() {
                 <IssueItemsPreview issueId={issue.id} />
 
                 <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 text-right text-sm font-semibold text-red-700">
-                  -{issue.total_qty} {t('lbl_pieces')} ({issue.item_count} {t('lbl_positions')})
+                  {issue.item_count} {t('lbl_positions')}
                 </div>
               </div>
             ))}
