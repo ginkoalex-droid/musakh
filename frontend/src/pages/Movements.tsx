@@ -78,7 +78,6 @@ export default function Movements() {
       partId: partFilter?.id,
       limit: 2000,
     }),
-    enabled: viewMode === 'summary',
   })
 
   const { data: users = [] } = useQuery({
@@ -169,7 +168,7 @@ export default function Movements() {
       }))
 
     return { partSummary: parts, brandGroups: groups }
-  }, [movements])
+  }, [summaryMovements, stockMap])
 
   const [summaryCollapsed, setSummaryCollapsed] = useState<Set<string>>(new Set())
 
