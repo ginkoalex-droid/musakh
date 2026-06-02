@@ -32,6 +32,8 @@ export const he: Record<TranslationKey, string> = {
   wo_mileage: 'קילומטראז\' (ק"מ)',
   wo_mileage_ph: '12500',
   wo_client_phone: 'טלפון לקוח',
+  wo_status_all: 'הכל',
+  wo_open_included: '+ פתוחים מימים אחרים',
   wo_no_parts_title: 'לסגור ללא חלפים?',
   wo_no_parts_desc: 'לא קיימות הוצאות מאושרות לכרטיס זה. לסגור ללא חלפים?',
   wo_no_parts_confirm: 'מאשר — לא נעשה שימוש בחלפים',

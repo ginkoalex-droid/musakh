@@ -32,6 +32,8 @@ export const en: Record<TranslationKey, string> = {
   wo_mileage: 'Mileage (km)',
   wo_mileage_ph: '12500',
   wo_client_phone: 'Client phone',
+  wo_status_all: 'All',
+  wo_open_included: '+ open from other days',
   wo_no_parts_title: 'Close without parts?',
   wo_no_parts_desc: 'No confirmed issues are linked to this WO. Close without parts?',
   wo_no_parts_confirm: 'Confirmed — no parts were used',

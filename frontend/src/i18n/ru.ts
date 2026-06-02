@@ -31,6 +31,8 @@ export const ru = {
   wo_mileage: 'Пробег (км)',
   wo_mileage_ph: '12500',
   wo_client_phone: 'Телефон клиента',
+  wo_status_all: 'Все',
+  wo_open_included: '+ открытые из других дней',
   wo_no_parts_title: 'Закрыть без запчастей?',
   wo_no_parts_desc: 'К этому ЗН не привязано ни одного проведённого списания. Закрыть без запчастей?',
   wo_no_parts_confirm: 'Подтверждаю — запчасти не использовались',

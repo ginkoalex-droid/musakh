@@ -115,37 +115,55 @@ async def list_work_orders(
     to_date: Optional[str] = Query(None),
     confirmed_only: bool = False,
     open_only: bool = False,
+    include_open: bool = False,
     work_type: Optional[str] = Query(None),
     q: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
-    stmt = (
-        select(WorkOrder)
-        .options(*_load_opts())
-        .order_by(desc(WorkOrder.date))
-    )
+    from sqlalchemy import or_, and_
+
+    base_filters = []
     if mechanic_id:
-        stmt = stmt.where(WorkOrder.mechanic_id == mechanic_id)
-    if from_date:
-        stmt = stmt.where(WorkOrder.date >= datetime.strptime(from_date, "%Y-%m-%d"))
-    if to_date:
-        stmt = stmt.where(WorkOrder.date <= datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59))
-    if confirmed_only:
-        stmt = stmt.where(WorkOrder.is_confirmed == True)
-    if open_only:
-        stmt = stmt.where(WorkOrder.is_confirmed == False)
+        base_filters.append(WorkOrder.mechanic_id == mechanic_id)
     if work_type:
-        stmt = stmt.where(WorkOrder.work_type == work_type)
+        base_filters.append(WorkOrder.work_type == work_type)
     if q:
         q_like = f"%{q}%"
-        from sqlalchemy import or_
-        stmt = stmt.where(or_(
+        base_filters.append(or_(
             WorkOrder.work_order_number.ilike(q_like),
             WorkOrder.car_plate.ilike(q_like),
             WorkOrder.car_make.ilike(q_like),
             WorkOrder.car_model.ilike(q_like),
         ))
+
+    stmt = (
+        select(WorkOrder)
+        .options(*_load_opts())
+        .order_by(desc(WorkOrder.date))
+    )
+
+    # Date range filter: when include_open=True, also pull all unconfirmed WOs
+    if from_date or to_date:
+        date_conds = []
+        if from_date:
+            date_conds.append(WorkOrder.date >= datetime.strptime(from_date, "%Y-%m-%d"))
+        if to_date:
+            date_conds.append(WorkOrder.date <= datetime.strptime(to_date, "%Y-%m-%d").replace(hour=23, minute=59, second=59))
+        date_filter = and_(*date_conds)
+        if include_open and not open_only and not confirmed_only:
+            # WOs within date range OR any open WO
+            stmt = stmt.where(or_(date_filter, WorkOrder.is_confirmed == False))
+        else:
+            stmt = stmt.where(date_filter)
+
+    if confirmed_only:
+        stmt = stmt.where(WorkOrder.is_confirmed == True)
+    if open_only:
+        stmt = stmt.where(WorkOrder.is_confirmed == False)
+
+    for f in base_filters:
+        stmt = stmt.where(f)
 
     result = await db.execute(stmt)
     return [_wo_to_out(wo) for wo in result.scalars().all()]

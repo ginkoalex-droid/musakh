@@ -42,7 +42,7 @@ export default function WorkOrders() {
   const canClose = me ? canManageWO(me.role) : false
   const isAdmin = me ? canAdmin(me.role) : false
 
-  const [period, setPeriod] = useState<Period>('month')
+  const [period, setPeriod] = useState<Period>('today')
   const [customFrom, setCustomFrom] = useState('')
   const [customTo, setCustomTo] = useState('')
   const [mechFilter, setMechFilter] = useState<number | ''>('')
@@ -93,6 +93,8 @@ export default function WorkOrders() {
       q: debouncedSearch || undefined,
       confirmed_only: statusFilter === 'closed',
       open_only: statusFilter === 'open',
+      // Always include all open WOs when filtering by date (they're currently in service)
+      include_open: !debouncedSearch && statusFilter !== 'open' && statusFilter !== 'closed',
       work_type: workTypeFilter || undefined,
     }),
   })
@@ -354,13 +356,19 @@ export default function WorkOrders() {
             </div>
           </div>
         )}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
           {(['all', 'open', 'closed'] as const).map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${statusFilter === s ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}>
-              {s === 'all' ? 'Все' : s === 'open' ? `${t('wo_open')}` : `${t('wo_confirmed')}`}
+              {s === 'all' ? t('wo_status_all') : s === 'open' ? t('wo_open') : t('wo_confirmed')}
             </button>
           ))}
+          {/* When showing "all" with a date filter — open WOs from other days are always included */}
+          {statusFilter === 'all' && !debouncedSearch && (
+            <span className="text-xs text-orange-600 font-medium flex items-center gap-1">
+              <Clock className="w-3 h-3" /> {t('wo_open_included')}
+            </span>
+          )}
         </div>
         <select value={workTypeFilter} onChange={e => setWorkTypeFilter(e.target.value)} className="input w-auto">
           <option value="">{t('mov_all_types')}</option>
