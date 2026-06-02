@@ -55,26 +55,17 @@ export default function Movements() {
     ? { from: customFrom, to: customTo }
     : getPeriodDates(period)
 
-  const { data: movements = [], isLoading } = useQuery({
-    queryKey: ['movements', from, to, userId, movType, partFilter?.id],
-    refetchInterval: 30_000,
-    queryFn: () => fetchMovements({
-      fromDate: from || undefined,
-      toDate: to || undefined,
-      userId: userId ? parseInt(userId) : undefined,
-      movementType: movType || undefined,
-      partId: partFilter?.id,
-    }),
-  })
+  // In summary mode — ignore type filter so all movements are visible
+  const effectiveMovType = viewMode === 'summary' ? undefined : (movType || undefined)
 
-  // Summary always uses ALL types (ignores movType filter) — to show complete picture
-  const { data: summaryMovements = [] } = useQuery({
-    queryKey: ['movements-summary', from, to, userId, partFilter?.id],
+  const { data: movements = [], isLoading } = useQuery({
+    queryKey: ['movements', from, to, userId, effectiveMovType, partFilter?.id, viewMode],
     refetchInterval: 30_000,
     queryFn: () => fetchMovements({
       fromDate: from || undefined,
       toDate: to || undefined,
       userId: userId ? parseInt(userId) : undefined,
+      movementType: effectiveMovType,
       partId: partFilter?.id,
       limit: 2000,
     }),
@@ -124,7 +115,7 @@ export default function Movements() {
 
   const { partSummary, brandGroups } = useMemo(() => {
     const map = new Map<number, PartSummary & { category?: string }>()
-    for (const mv of summaryMovements) {
+    for (const mv of movements) {
       const key = mv.part_id
       if (!map.has(key)) map.set(key, { part_id: key, part_name: mv.part_name, part_brand: mv.part_brand, unit: mv.part_unit || 'шт', received: 0, issued: 0, adjusted: 0, net: 0, balance: 0 })
       const entry = map.get(key)!
@@ -168,7 +159,7 @@ export default function Movements() {
       }))
 
     return { partSummary: parts, brandGroups: groups }
-  }, [summaryMovements, stockMap])
+  }, [movements, stockMap])
 
   const [summaryCollapsed, setSummaryCollapsed] = useState<Set<string>>(new Set())
 
