@@ -4,10 +4,13 @@ import { fetchParts, fetchCategories, fetchMakes, fetchModelsForMake } from '../
 import { Plus, Package, Search, Car, Printer, Copy } from 'lucide-react'
 import { Link, useNavigate } from 'react-router-dom'
 import { useT } from '../../i18n'
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
+import KeyHints from '../../components/KeyHints'
 
 export default function Parts() {
   const { t } = useT()
   const navigate = useNavigate()
+  useKeyboardShortcuts({ insert: () => navigate('/parts/new') })
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>('none')
@@ -244,6 +247,7 @@ export default function Parts() {
           </table>
         </div>
       </div>
+      <KeyHints hints={[{ key: 'Insert', label: t('parts_new') }]} />
     </div>
   )
 }

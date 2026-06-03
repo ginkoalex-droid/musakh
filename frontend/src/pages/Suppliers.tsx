@@ -3,14 +3,17 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchSuppliers, createSupplier, updateSupplier, deleteSupplier } from '../api/suppliers'
 import { Plus, Edit2, Trash2, Phone } from 'lucide-react'
 import Modal from '../components/Modal'
+import KeyHints from '../components/KeyHints'
 import toast from 'react-hot-toast'
 import type { Supplier } from '../types'
 import { useT } from '../i18n'
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcuts'
 
 export default function Suppliers() {
   const qc = useQueryClient()
   const { t } = useT()
   const [modal, setModal] = useState<Supplier | null | 'new'>(null)
+  useKeyboardShortcuts({ insert: () => setModal('new') })
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ name: '', phone: '', contact_name: '', email: '', notes: '' })
 
@@ -111,6 +114,7 @@ export default function Suppliers() {
           </div>
         </Modal>
       )}
+      <KeyHints hints={[{ key: 'Insert', label: t('sup_new_title') }]} />
     </div>
   )
 }

@@ -3,13 +3,16 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchMechanics, createMechanic, updateMechanic, toggleMechanic } from '../../api/workOrders'
 import { Plus, Edit2, ToggleLeft, ToggleRight, Phone } from 'lucide-react'
 import Modal from '../../components/Modal'
+import KeyHints from '../../components/KeyHints'
 import { useT } from '../../i18n'
 import toast from 'react-hot-toast'
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 
 export default function Mechanics() {
   const { t } = useT()
   const qc = useQueryClient()
   const [modal, setModal] = useState<any>(null)
+  useKeyboardShortcuts({ insert: () => { setModal('new'); setForm({ name: '', phone: '', notes: '' }) } })
   const [loading, setLoading] = useState(false)
   const [form, setForm] = useState({ name: '', phone: '', notes: '' })
 
@@ -104,6 +107,7 @@ export default function Mechanics() {
           </div>
         </Modal>
       )}
+      <KeyHints hints={[{ key: 'Insert', label: t('mech_new') }]} />
     </div>
   )
 }
