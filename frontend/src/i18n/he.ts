@@ -33,7 +33,7 @@ export const he: Record<TranslationKey, string> = {
   wo_mileage_ph: '12500',
   wo_client_phone: 'טלפון לקוח',
   wo_status_all: 'הכל',
-  wo_open_included: '+ פתוחים מימים אחרים',
+  wo_open_included: '+ פתוחים מתאריכים קודמים',
   wo_reopen_btn: 'פתח מחדש',
   wo_reopen_confirm: 'לפתוח מחדש? הכרטיס יהפוך לפעיל שוב.',
   wo_reopened_toast: 'הכרטיס נפתח מחדש',
