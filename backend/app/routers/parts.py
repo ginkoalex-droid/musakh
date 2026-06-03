@@ -413,6 +413,22 @@ async def add_car_application(
     return result.scalars().all()
 
 
+@router.get("/wo-models-all")
+async def list_all_car_models(
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    """All distinct car models from car_applications across all parts."""
+    from app.models import CarApplication
+    from sqlalchemy import distinct
+    result = await db.execute(
+        select(distinct(CarApplication.model))
+        .where(CarApplication.model.isnot(None), CarApplication.model != '')
+        .order_by(CarApplication.model)
+    )
+    return [row[0] for row in result.fetchall()]
+
+
 @router.get("/{part_id}/wo-models")
 async def get_wo_models_for_part(
     part_id: int,

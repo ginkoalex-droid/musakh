@@ -1,10 +1,11 @@
 import api from './client'
 import type { StockRow, Movement } from '../types'
 
-export const fetchStock = async (lowOnly?: boolean, category?: string): Promise<StockRow[]> => {
+export const fetchStock = async (lowOnly?: boolean, category?: string, carModel?: string): Promise<StockRow[]> => {
   const params: Record<string, string | boolean> = {}
   if (lowOnly) params.low_only = true
   if (category) params.category = category
+  if (carModel) params.car_model = carModel
   const res = await api.get('/stock', { params })
   return res.data
 }

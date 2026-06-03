@@ -2,7 +2,8 @@ import { useState, useRef, Fragment } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchStock, adjustStock, issueParts, exportStock, exportMovements, searchUnified } from '../api/stock'
 import { fetchCategories } from '../api/parts'
-import { AlertTriangle, Download, Settings, Minus, Search, BookOpen } from 'lucide-react'
+import api from '../api/client'
+import { AlertTriangle, Download, Settings, Minus, Search, BookOpen, Car } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useMemo } from 'react'
 import { fmtQty } from '../utils/format'
@@ -23,6 +24,7 @@ export default function Stock() {
   const isWarehouse = me ? canWarehouse(me.role) : false
   const [needOrder, setNeedOrder] = useState(false)
   const [category, setCategory] = useState('')
+  const [carModel, setCarModel] = useState('')
   const [adjustModal, setAdjustModal] = useState<StockRow | null>(null)
   const [issueModal, setIssueModal] = useState(false)
   const [issuePart, setIssuePart] = useState<Part | null>(null)
@@ -43,14 +45,21 @@ export default function Stock() {
     searchTimer.current = setTimeout(() => setDebouncedSearch(val), 300)
   }
 
+  // List of car models from car_applications for filter dropdown
+  const { data: carModels = [] } = useQuery({
+    queryKey: ['car-models-for-stock'],
+    queryFn: async () => {
+      const res = await api.get('/parts/wo-models-all')
+      return res.data as string[]
+    },
+  })
+
   const { data: stock = [], isLoading } = useQuery({
-    queryKey: ['stock', category, debouncedSearch],
+    queryKey: ['stock', category, carModel, debouncedSearch],
     refetchInterval: 30_000,
     queryFn: async () => {
-      if (debouncedSearch) {
-        return searchUnified(debouncedSearch)
-      }
-      return fetchStock(false, category || undefined)
+      if (debouncedSearch) return searchUnified(debouncedSearch)
+      return fetchStock(false, category || undefined, carModel || undefined)
     },
   })
 
@@ -237,6 +246,20 @@ export default function Stock() {
           <option value="">{t('stock_all_categories')}</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
+        {/* Filter by car model applicability */}
+        <select
+          value={carModel}
+          onChange={e => { setCarModel(e.target.value); setSearch(''); setDebouncedSearch('') }}
+          className={`input w-auto flex items-center gap-1 ${carModel ? 'border-blue-500 bg-blue-50' : ''}`}
+        >
+          <option value="">🏍 Все модели</option>
+          {carModels.map(m => <option key={m} value={m}>{m}</option>)}
+        </select>
+        {carModel && (
+          <button onClick={() => setCarModel('')} className="text-xs text-blue-600 hover:text-blue-800">
+            ✕ {carModel}
+          </button>
+        )}
       </div>
 
       <div className="card overflow-hidden">

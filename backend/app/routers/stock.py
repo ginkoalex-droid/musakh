@@ -26,9 +26,11 @@ router = APIRouter(prefix="/api/stock", tags=["stock"])
 async def list_stock(
     low_only: bool = False,
     category: Optional[str] = None,
+    car_model: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
     _: User = Depends(get_current_user),
 ):
+    from app.models import CarApplication
     stmt = (
         select(Part)
         .options(
@@ -42,6 +44,10 @@ async def list_stock(
     )
     if category:
         stmt = stmt.where(Part.category == category)
+    if car_model:
+        stmt = stmt.where(
+            Part.car_applications.any(CarApplication.model.ilike(f"%{car_model}%"))
+        )
 
     result = await db.execute(stmt)
     parts = result.scalars().all()
