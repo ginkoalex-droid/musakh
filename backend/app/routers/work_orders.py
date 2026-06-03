@@ -274,8 +274,9 @@ async def confirm_work_order(
         raise HTTPException(status_code=400, detail="Уже проведён")
 
     # Auto-confirm all draft issue orders linked to this WO
-    from app.models import IssueOrder, IssueItem, Stock, StockMovement, MovementType
+    from app.models import IssueOrder, IssueItem, Stock, StockMovement, MovementType, CarApplication
     from sqlalchemy.orm import selectinload as _sl
+    from sqlalchemy import func as sqlfunc
     issues_result = await db.execute(
         select(IssueOrder)
         .options(_sl(IssueOrder.items).selectinload(IssueItem.part))
@@ -286,6 +287,9 @@ async def confirm_work_order(
         )
     )
     draft_issues = issues_result.scalars().all()
+
+    # Determine car model for auto car-application
+    car_model = wo.car_model.strip().upper() if wo.car_model and wo.car_model.strip() else None
 
     for issue in draft_issues:
         for item in issue.items:
@@ -315,7 +319,19 @@ async def confirm_work_order(
                 created_by=current_user.id,
             ))
 
+            # Auto-add car application (case-insensitive dedup)
+            if car_model:
+                existing_app = await db.execute(
+                    select(CarApplication).where(
+                        CarApplication.part_id == item.part_id,
+                        sqlfunc.upper(CarApplication.model) == car_model,
+                    )
+                )
+                if not existing_app.scalar_one_or_none():
+                    db.add(CarApplication(part_id=item.part_id, make='', model=car_model))
+
         issue.is_confirmed = True
+        issue.confirmed_at = datetime.utcnow()
 
     wo.is_confirmed = True
     wo.confirmed_at = datetime.utcnow()
