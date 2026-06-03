@@ -148,6 +148,7 @@ class ReceivingItemOut(BaseModel):
     barcode: Optional[str] = None
     oem_number: Optional[str] = None
     part_unit: Optional[str] = None
+    part_location: Optional[str] = None
 
     model_config = {"from_attributes": True}
 

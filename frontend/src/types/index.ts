@@ -64,6 +64,7 @@ export interface ReceivingItem {
   barcode?: string
   oem_number?: string
   part_unit?: string
+  part_location?: string
 }
 
 export interface ReceivingOrder {

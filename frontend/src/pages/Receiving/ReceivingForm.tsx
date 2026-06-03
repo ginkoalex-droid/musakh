@@ -6,7 +6,7 @@ import {
   deleteReceivingOrder, cancelReceivingOrder, reopenReceivingOrder, updateReceivingItems
 } from '../../api/receiving'
 import { fetchSuppliers } from '../../api/suppliers'
-import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle, RotateCcw, Save } from 'lucide-react'
+import { ArrowLeft, Trash2, CheckCircle, XCircle, RotateCcw, Save, MapPin } from 'lucide-react'
 import PartSearch from '../../components/PartSearch'
 import type { Part } from '../../types'
 import toast from 'react-hot-toast'
@@ -15,12 +15,13 @@ import { canAdmin, canWarehouse } from '../../store/permissions'
 import { getUser } from '../../store/auth'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import KeyHints from '../../components/KeyHints'
+import { updatePart, fetchLocations } from '../../api/parts'
 
 interface LineItem { part: Part; quantity: number; notes: string }
 
 // Minimal Part stub used when reconstructing items from existing order
-function stubPart(id: number, name: string, unit = 'шт'): Part {
-  return { id, name, unit, brand: '', category: '', location: '', min_stock: 0, track_min_stock: false, default_issue_qty: 1, stock_qty: 0, barcodes: [], oem_numbers: [], car_applications: [], created_at: '' }
+function stubPart(id: number, name: string, unit = 'шт', location = ''): Part {
+  return { id, name, unit, brand: '', category: '', location, min_stock: 0, track_min_stock: false, default_issue_qty: 1, stock_qty: 0, barcodes: [], oem_numbers: [], car_applications: [], created_at: '' }
 }
 
 export default function ReceivingForm() {
@@ -56,12 +57,31 @@ export default function ReceivingForm() {
 
   const [loading, setLoading] = useState(false)
   const [qtyDisplay, setQtyDisplay] = useState<Record<string, string>>({})
+  // Inline location editing: partId → current location value being edited
+  const [editingLocation, setEditingLocation] = useState<number | null>(null)
+  const [locationVal, setLocationVal] = useState('')
+  // Locations for autocomplete
+  const { data: locations = [] } = useQuery({ queryKey: ['locations'], queryFn: fetchLocations })
+
+  async function saveLocation(partId: number, newLocation: string) {
+    try {
+      await updatePart(partId, { location: newLocation || undefined })
+      // Update local draftItems part location
+      setDraftItems(prev => prev.map(i =>
+        i.part.id === partId ? { ...i, part: { ...i.part, location: newLocation } } : i
+      ))
+      toast.success('Место хранения обновлено', { duration: 1500 })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
+    }
+    setEditingLocation(null)
+  }
 
   // Initialize draftItems when existing draft loads
   useEffect(() => {
     if (!isNew && existing && !existing.is_confirmed && !existing.is_cancelled && !draftInitialized) {
       setDraftItems(existing.items.map(i => ({
-        part: stubPart(i.part_id, i.part_name, i.part_unit || 'шт'),
+        part: stubPart(i.part_id, i.part_name, i.part_unit || 'шт', i.part_location || ''),
         quantity: i.quantity,
         notes: i.notes || '',
       })))
@@ -320,10 +340,11 @@ export default function ReceivingForm() {
           <table className="w-full">
             <thead>
               <tr>
-                <th className="table-th">{t('lbl_name')}</th>
-                <th className="table-th w-28 text-right">{t('lbl_quantity')}</th>
-                <th className="table-th hidden sm:table-cell">{t('lbl_notes')}</th>
-                {isDraft && isWarehouse && <th className="table-th w-10" />}
+                    <th className="table-th">{t('lbl_name')}</th>
+                    <th className="table-th w-28 text-right">{t('lbl_quantity')}</th>
+                    <th className="table-th hidden md:table-cell">Место</th>
+                    <th className="table-th hidden sm:table-cell">{t('lbl_notes')}</th>
+                    {isDraft && isWarehouse && <th className="table-th w-10" />}
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-100">
@@ -356,6 +377,37 @@ export default function ReceivingForm() {
                         />
                         <span className="text-xs text-gray-500 shrink-0">{item.part.unit}</span>
                       </div>
+                    </td>
+                    {/* Inline location edit */}
+                    <td className="table-td hidden md:table-cell">
+                      {editingLocation === item.part.id ? (
+                        <div className="flex gap-1 items-center">
+                          <input
+                            type="text"
+                            className="input text-sm w-28"
+                            autoFocus
+                            value={locationVal}
+                            onChange={e => setLocationVal(e.target.value)}
+                            list={`loc-list-${item.part.id}`}
+                            onBlur={() => saveLocation(item.part.id, locationVal)}
+                            onKeyDown={e => {
+                              if (e.key === 'Enter') e.currentTarget.blur()
+                              if (e.key === 'Escape') setEditingLocation(null)
+                            }}
+                          />
+                          <datalist id={`loc-list-${item.part.id}`}>
+                            {locations.map(l => <option key={l} value={l} />)}
+                          </datalist>
+                        </div>
+                      ) : (
+                        <button
+                          className="flex items-center gap-1 text-sm text-gray-500 hover:text-blue-600 group"
+                          onClick={() => { setEditingLocation(item.part.id); setLocationVal(item.part.location || '') }}
+                        >
+                          <MapPin className="w-3 h-3 shrink-0" />
+                          <span className="truncate max-w-[100px]">{item.part.location || <span className="text-gray-300">—</span>}</span>
+                        </button>
+                      )}
                     </td>
                     <td className="table-td hidden sm:table-cell">
                       <input
