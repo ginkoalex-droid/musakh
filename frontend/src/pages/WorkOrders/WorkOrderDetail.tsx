@@ -120,8 +120,8 @@ export default function WorkOrderDetail() {
 
   async function handleConfirmWithCheck() {
     if (!wo) return
-    // If no confirmed issues linked to this WO, show "no parts" modal first
-    const hasIssues = issues.some(i => i.is_confirmed && !i.is_cancelled)
+    // Draft issues count too — backend auto-confirms them when WO is closed
+    const hasIssues = issues.some(i => !i.is_cancelled)
     if (!hasIssues) {
       setNoPartsConfirmed(false)
       setNoPartsModal(true)
@@ -135,8 +135,11 @@ export default function WorkOrderDetail() {
     try {
       await confirmWorkOrder(wo.id)
       toast.success(t('wo_confirmed_toast'))
-      qc.invalidateQueries({ queryKey: ['work-orders-all'] })
+      // Invalidate the current WO detail AND the list
+      qc.invalidateQueries({ queryKey: ['work-order', id] })
+      qc.invalidateQueries({ queryKey: ['work-orders'] })
       qc.invalidateQueries({ queryKey: ['wo-summary'] })
+      qc.invalidateQueries({ queryKey: ['issues-for-wo', id] })
     } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
   }
 

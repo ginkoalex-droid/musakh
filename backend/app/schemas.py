@@ -298,6 +298,7 @@ class IssueOrderOut(BaseModel):
     date: datetime
     notes: Optional[str] = None
     is_confirmed: bool
+    confirmed_at: Optional[datetime] = None
     is_cancelled: bool = False
     cancelled_by_name: Optional[str] = None
     cancelled_at: Optional[datetime] = None
@@ -316,6 +317,7 @@ class IssueOrderList(BaseModel):
     date: datetime
     notes: Optional[str] = None
     is_confirmed: bool
+    confirmed_at: Optional[datetime] = None
     is_cancelled: bool = False
     item_count: int = 0
     total_qty: float = 0

@@ -139,11 +139,11 @@ export default function WorkOrders() {
       return
     }
 
-    // Check if there are confirmed issues linked to this WO
+    // Check if there are any non-cancelled issues (draft counts — backend auto-confirms them)
     try {
       const issues = await fetchIssueOrders({ work_order_id: woId })
-      const hasConfirmedIssues = issues.some(i => i.is_confirmed)
-      if (!hasConfirmedIssues) {
+      const hasIssues = issues.some(i => !i.is_cancelled)
+      if (!hasIssues) {
         // Show "no parts" confirmation modal
         setNoPartsWO(wo)
         setNoPartsOk(false)

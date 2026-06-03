@@ -264,6 +264,7 @@ async def confirm_order(
         ))
 
     order.is_confirmed = True
+    order.confirmed_at = datetime.utcnow()
 
     # Auto-add car application for each part based on WO car model
     if order.work_order_id:
