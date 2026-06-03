@@ -340,6 +340,31 @@ async def cancel_order(
     return _to_out(result.scalar_one(), cancelled_by_name=current_user.name)
 
 
+@router.post("/{order_id}/reopen", response_model=IssueOrderOut)
+async def reopen_order(
+    order_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Reopen a cancelled issue order so it can be edited again. Admin only."""
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Только администратор")
+    result = await db.execute(select(IssueOrder).options(*_load_opts()).where(IssueOrder.id == order_id))
+    order = result.scalar_one_or_none()
+    if not order:
+        raise HTTPException(status_code=404, detail="Списание не найдено")
+    if not order.is_cancelled:
+        raise HTTPException(status_code=400, detail="Документ не отменён")
+    order.is_cancelled = False
+    order.is_confirmed = False
+    order.cancelled_by = None
+    order.cancelled_at = None
+    order.confirmed_at = None
+    await db.commit()
+    result = await db.execute(select(IssueOrder).options(*_load_opts()).where(IssueOrder.id == order.id))
+    return _to_out(result.scalar_one())
+
+
 @router.delete("/{order_id}")
 async def delete_order(
     order_id: int,

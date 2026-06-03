@@ -79,6 +79,11 @@ export const cancelIssueOrder = async (id: number): Promise<IssueOrder> => {
   return res.data
 }
 
+export const reopenIssueOrder = async (id: number): Promise<IssueOrder> => {
+  const res = await api.post(`/issues/${id}/reopen`)
+  return res.data
+}
+
 export const deleteIssueOrder = async (id: number): Promise<void> => {
   await api.delete(`/issues/${id}`)
 }

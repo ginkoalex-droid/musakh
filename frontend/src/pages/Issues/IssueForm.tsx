@@ -3,9 +3,9 @@ import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchIssueOrder, createIssueOrder, confirmIssueOrder,
-  cancelIssueOrder, deleteIssueOrder, addIssueItem, removeIssueItem, updateIssueItemQty
+  cancelIssueOrder, reopenIssueOrder, deleteIssueOrder, addIssueItem, removeIssueItem, updateIssueItemQty
 } from '../../api/issues'
-import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, CheckCircle, XCircle, RotateCcw } from 'lucide-react'
 import PartSearch from '../../components/PartSearch'
 import type { Part } from '../../types'
 import toast from 'react-hot-toast'
@@ -225,6 +225,21 @@ export default function IssueForm() {
     }
   }
 
+  async function handleReopen() {
+    if (!existing || !confirm('Открыть заново? Документ вернётся в статус черновика и его можно будет отредактировать.')) return
+    setLoading(true)
+    try {
+      await reopenIssueOrder(existing.id)
+      toast.success('Списание открыто заново')
+      qc.invalidateQueries({ queryKey: ['issues'] })
+      qc.invalidateQueries({ queryKey: ['issue-order', id] })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
+    } finally {
+      setLoading(false)
+    }
+  }
+
   async function handleDelete() {
     if (!existing || !confirm(t('issue_delete_confirm'))) return
     try {
@@ -396,6 +411,15 @@ export default function IssueForm() {
           <div className="flex gap-3 justify-end">
             <button className="btn-secondary text-red-500" onClick={handleCancel} disabled={loading}>
               <XCircle className="w-4 h-4" /> {t('issue_cancel_btn')}
+            </button>
+          </div>
+        )}
+
+        {/* Cancelled — admin can reopen to edit */}
+        {existing.is_cancelled && isAdmin && (
+          <div className="flex gap-3 justify-end">
+            <button className="btn-secondary" onClick={handleReopen} disabled={loading}>
+              <RotateCcw className="w-4 h-4" /> Открыть заново
             </button>
           </div>
         )}
