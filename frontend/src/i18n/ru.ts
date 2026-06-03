@@ -338,6 +338,47 @@ export const ru = {
   err_not_enough: 'Недостаточно на складе',
   err_invalid_qty: 'Введите корректное количество',
   err_generic: 'Ошибка',
+
+  // Summary cards
+  wo_summary_closed_total: 'закрыт · всего',
+  wo_work_type_required: 'Укажите тип работы перед закрытием ЗН',
+
+  // Grouping
+  group_none: 'Нет',
+  group_category: 'Категория',
+  group_brand: 'Бренд',
+
+  // Locations page
+  locations_title: 'Места хранения',
+  locations_desc: 'Нажми на карандаш чтобы переименовать место. Изменение применится ко всем товарам с этим местом.',
+  locations_empty: 'Нет мест хранения',
+  locations_updated: 'обновлено товаров',
+
+  // Nav
+  nav_catalogs: 'Справочники',
+  nav_locations: 'Места хранения',
+  nav_car_models: 'Модели техники',
+
+  // Permissions table
+  users_perm_all: 'Всё без ограничений',
+  users_perm_cancel_docs: 'Отмена проведённых документов',
+  users_perm_delete_wo: 'Удаление ЗН',
+  users_perm_reopen: 'Открыть заново (ЗН, списание)',
+  users_perm_stock_adj: 'Корректировки склада',
+  users_perm_issue_sale_other: 'Списание (Продажа / Другое)',
+  users_perm_view_only: 'просмотр',
+  users_perm_no_wo_manage: 'Создавать/закрывать ЗН',
+  users_perm_no_delete: 'Удаление, отмена проводок',
+  users_perm_open_close: 'открыть/закрыть',
+  users_perm_issue_wo_only: 'Списание только на ЗН',
+  users_perm_no_sale_other: 'Продажа/Другое',
+  users_perm_no_receiving: 'Приёмка, справочники',
+
+  // Car models page
+  car_models_title: 'Модели техники',
+  car_models_desc: 'Переименование применяется ко всем запчастям с этой моделью. Модели заполняются автоматически при списании на ЗН.',
+  car_models_empty: 'Нет моделей — они появятся после первых списаний на ЗН',
+  car_models_updated: 'позиций обновлено',
 }
 
 export type TranslationKey = keyof typeof ru

@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { BarChart3, Truck, Package, ArrowLeftRight, Users, LogOut, Menu, X, Wrench, Key, Minus, ClipboardList } from 'lucide-react'
-import { useState } from 'react'
+import { BarChart3, Truck, Package, ArrowLeftRight, Users, LogOut, Menu, X, Wrench, Key, Minus, ClipboardList, ChevronDown, BookOpen } from 'lucide-react'
+import { useState, useRef, useEffect } from 'react'
 import { logout, getUser } from '../store/auth'
 import { useT, langNames, type Lang } from '../i18n'
 import { canAdmin, canWarehouse } from '../store/permissions'
@@ -12,6 +12,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [refOpen, setRefOpen] = useState(false)
+  const refRef = useRef<HTMLDivElement>(null)
   const [pwModal, setPwModal] = useState(false)
   const [curPw, setCurPw] = useState('')
   const [newPw, setNewPw] = useState('')
@@ -20,22 +22,37 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const { t, setLang, lang, dir } = useT()
 
   const isAdmin = user ? canAdmin(user.role) : false
-
   const isWarehouse = user ? canWarehouse(user.role) : false
-  const isMechanic = user?.role === 'mechanic'
 
+  // Close ref dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (!refRef.current?.contains(e.target as Node)) setRefOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Main nav items
   const nav = [
     { to: '/', label: t('nav_stock'), icon: BarChart3, show: true },
     { to: '/work-orders', label: t('nav_workorders'), icon: ClipboardList, show: true },
     { to: '/issues', label: t('nav_issues'), icon: Minus, show: true },
     { to: '/movements', label: t('nav_movements'), icon: ArrowLeftRight, show: true },
     { to: '/receiving', label: t('nav_receiving'), icon: Truck, show: isWarehouse },
-    { to: '/parts', label: t('nav_parts'), icon: Package, show: isWarehouse },
-    { to: '/suppliers', label: t('nav_suppliers'), icon: Users, show: isWarehouse },
-    { to: '/mechanics', label: t('mech_title'), icon: Users, show: isWarehouse },
-    { to: '/locations', label: 'Места хранения', icon: BarChart3, show: isWarehouse },
     { to: '/users', label: t('nav_users'), icon: Users, show: isAdmin },
   ].filter(n => n.show)
+
+  // Справочники dropdown items
+  const refItems = [
+    { to: '/parts', label: t('nav_parts'), icon: Package },
+    { to: '/suppliers', label: t('nav_suppliers'), icon: Users },
+    { to: '/mechanics', label: t('mech_title'), icon: Users },
+    { to: '/locations', label: t('nav_locations'), icon: BarChart3 },
+    { to: '/car-models', label: t('nav_car_models'), icon: BarChart3 },
+  ]
+
+  const refActive = refItems.some(r => location.pathname === r.to)
 
   function handleLogout() {
     logout()
@@ -87,6 +104,39 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 {label}
               </Link>
             ))}
+            {isWarehouse && (
+              <div ref={refRef} className="relative">
+                <button
+                  onClick={() => setRefOpen(v => !v)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                    refActive ? 'bg-white/20 text-white' : 'text-blue-100 hover:bg-white/10'
+                  }`}
+                >
+                  <BookOpen className="w-4 h-4" />
+                  {t('nav_catalogs')}
+                  <ChevronDown className={`w-3 h-3 transition-transform ${refOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {refOpen && (
+                  <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
+                    {refItems.map(({ to, label, icon: Icon }) => (
+                      <Link
+                        key={to}
+                        to={to}
+                        onClick={() => setRefOpen(false)}
+                        className={`flex items-center gap-2 px-4 py-2.5 text-sm transition-colors ${
+                          location.pathname === to
+                            ? 'bg-blue-50 text-blue-700 font-medium'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4 shrink-0" />
+                        {label}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </nav>
 
           <div className="flex items-center gap-1 shrink-0">
@@ -121,18 +171,24 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         {open && (
           <div className="md:hidden border-t border-blue-600 px-4 py-2 flex flex-col gap-1">
             {nav.map(({ to, label, icon: Icon }) => (
-              <Link
-                key={to}
-                to={to}
-                onClick={() => setOpen(false)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${
-                  location.pathname === to ? 'bg-white/20' : 'text-blue-100 hover:bg-white/10'
-                }`}
+              <Link key={to} to={to} onClick={() => setOpen(false)}
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium ${location.pathname === to ? 'bg-white/20' : 'text-blue-100 hover:bg-white/10'}`}
               >
-                <Icon className="w-4 h-4" />
-                {label}
+                <Icon className="w-4 h-4" /> {label}
               </Link>
             ))}
+            {isWarehouse && (
+              <>
+                <div className="text-xs text-blue-300 px-3 pt-2 pb-1 font-medium">{t('nav_catalogs')}</div>
+                {refItems.map(({ to, label, icon: Icon }) => (
+                  <Link key={to} to={to} onClick={() => setOpen(false)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium pl-5 ${location.pathname === to ? 'bg-white/20' : 'text-blue-100 hover:bg-white/10'}`}
+                  >
+                    <Icon className="w-4 h-4" /> {label}
+                  </Link>
+                ))}
+              </>
+            )}
           </div>
         )}
       </header>

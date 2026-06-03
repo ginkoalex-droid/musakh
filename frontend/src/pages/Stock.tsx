@@ -221,7 +221,7 @@ export default function Stock() {
         <input
           type="text"
           className="input pl-9"
-          placeholder="Поиск по названию, OEM, штрихкоду..."
+          placeholder={t('stock_search_placeholder')}
           value={search}
           onChange={e => handleSearch(e.target.value)}
         />
@@ -238,7 +238,7 @@ export default function Stock() {
           {(['none', 'category', 'brand'] as const).map(g => (
             <button key={g} onClick={() => setGroupBy(g)}
               className={`px-2 py-1.5 font-medium transition-colors ${groupBy === g ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-              {g === 'none' ? 'Нет' : g === 'category' ? 'Категория' : 'Бренд'}
+              {g === 'none' ? t('group_none') : g === 'category' ? t('group_category') : t('group_brand')}
             </button>
           ))}
         </div>

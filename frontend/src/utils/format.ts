@@ -1,4 +1,13 @@
 /**
+ * Sanitize car model input: keep only Latin letters, digits, spaces, hyphens, slashes, dots.
+ * Converts to UPPERCASE. Rejects Cyrillic/Hebrew chars.
+ */
+export function sanitizeCarModel(val: string): string {
+  // Strip non-Latin, non-digit, non-separator characters, then uppercase
+  return val.replace(/[^\x00-\x7F\s\-/.]/g, '').toUpperCase()
+}
+
+/**
  * Format quantity: remove trailing zeros, max 3 decimals
  * 9.500 → "9.5", 1.000 → "1", 0.250 → "0.25"
  */

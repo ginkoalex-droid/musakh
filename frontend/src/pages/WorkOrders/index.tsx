@@ -111,10 +111,10 @@ export default function WorkOrders() {
   const [showModelSugg, setShowModelSugg] = useState(false)
 
   function handleModelInput(val: string) {
-    const upper = val.toUpperCase()
+    const upper = val.replace(/[^\x00-\x7F]/g, '').toUpperCase()
     setForm(f => ({ ...f, car_model: upper }))
     if (val.length >= 1) {
-      const sugg = existingModels.filter(m => m.toLowerCase().includes(val.toLowerCase()))
+      const sugg = existingModels.filter(m => m.toLowerCase().includes(upper.toLowerCase()))
       setModelSuggestions(sugg.slice(0, 8))
       setShowModelSugg(sugg.length > 0)
     } else {
@@ -135,7 +135,7 @@ export default function WorkOrders() {
 
     // Check work type — required
     if (!wo.work_type) {
-      toast.error('Укажите тип работы перед закрытием ЗН')
+      toast.error(t('wo_work_type_required'))
       return
     }
 
@@ -430,7 +430,7 @@ export default function WorkOrders() {
                 <div className="font-semibold text-gray-900 text-sm">{s.mechanic_name}</div>
                 <div className="text-3xl font-bold text-blue-700 mt-1">{s.confirmed}</div>
                 <div className="text-xs text-gray-500 mt-0.5">
-                  закрыт · всего: <span className="text-gray-600 font-medium">{s.total}</span>
+                  {t('wo_summary_closed_total')}: <span className="text-gray-600 font-medium">{s.total}</span>
                 </div>
               </div>
             ))}

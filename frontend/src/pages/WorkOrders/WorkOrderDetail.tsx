@@ -237,14 +237,23 @@ export default function WorkOrderDetail() {
           </div>
         )}
         {(wo.car_make || wo.car_model) && (
-          <div>
+          <div className="flex items-center gap-2 flex-wrap">
             <span className="text-gray-500">{t('wo_car')}:</span>
             <Link
               to={`/work-orders?q=${encodeURIComponent([wo.car_make, wo.car_model].filter(Boolean).join(' '))}`}
-              className="font-semibold ml-2 text-blue-700 hover:underline"
+              className="font-semibold text-blue-700 hover:underline"
             >
               {wo.car_make} {wo.car_model}
             </Link>
+            {isAdmin && wo.car_model && (
+              <Link
+                to="/car-models"
+                className="text-xs text-gray-400 hover:text-blue-600"
+                title="Переименовать модель"
+              >
+                <Edit2 className="w-3 h-3" />
+              </Link>
+            )}
           </div>
         )}
         {wo.car_mileage && (
@@ -501,7 +510,7 @@ export default function WorkOrderDetail() {
                   <label className="label text-xs">{t('lbl_model')} *</label>
                   <input className="input" value={mechForm.car_model}
                     style={{ textTransform: 'uppercase' }}
-                    onChange={e => setMechForm(f => ({ ...f, car_model: e.target.value.toUpperCase() }))} />
+                    onChange={e => setMechForm(f => ({ ...f, car_model: e.target.value.replace(/[^\x00-\x7F]/g, '').toUpperCase() }))} />
                 </div>
               </div>
             )}

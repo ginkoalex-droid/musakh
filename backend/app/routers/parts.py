@@ -131,6 +131,26 @@ async def list_locations(
     return [row[0] for row in result.all()]
 
 
+@router.post("/car-models/rename")
+async def rename_car_model(
+    old_name: str,
+    new_name: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.models import UserRole, CarApplication
+    if current_user.role not in (UserRole.admin, UserRole.warehouse):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    from sqlalchemy import update as sql_update, func as sqlfunc
+    result = await db.execute(
+        sql_update(CarApplication)
+        .where(sqlfunc.upper(CarApplication.model) == old_name.strip().upper())
+        .values(model=new_name.strip().upper() if new_name.strip() else None)
+    )
+    await db.commit()
+    return {"updated": result.rowcount}
+
+
 @router.post("/locations/rename")
 async def rename_location(
     old_name: str,
@@ -452,6 +472,28 @@ async def get_wo_models_for_part(
         .order_by(WorkOrder.car_model)
     )
     return [row[0] for row in result.fetchall()]
+
+
+@router.put("/{part_id}/cars/{car_id}")
+async def update_car_application(
+    part_id: int,
+    car_id: int,
+    make: str = "",
+    model: Optional[str] = None,
+    db: AsyncSession = Depends(get_db),
+    _: User = Depends(get_current_user),
+):
+    result = await db.execute(
+        select(CarApplication).where(CarApplication.id == car_id, CarApplication.part_id == part_id)
+    )
+    car = result.scalar_one_or_none()
+    if not car:
+        raise HTTPException(status_code=404, detail="Применимость не найдена")
+    car.make = make.strip()
+    car.model = model.strip().upper() if model and model.strip() else None
+    await db.commit()
+    result2 = await db.execute(select(CarApplication).where(CarApplication.part_id == part_id))
+    return result2.scalars().all()
 
 
 @router.delete("/{part_id}/cars/{car_id}")

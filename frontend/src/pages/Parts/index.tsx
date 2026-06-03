@@ -134,7 +134,7 @@ export default function Parts() {
           {(['none', 'category', 'brand'] as const).map(g => (
             <button key={g} onClick={() => { setGroupBy(g); saveFilters({ groupBy: g }) }}
               className={`px-2 py-1.5 font-medium transition-colors ${groupBy === g ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
-              {g === 'none' ? 'Нет' : g === 'category' ? 'Категория' : 'Бренд'}
+              {g === 'none' ? t('group_none') : g === 'category' ? t('group_category') : t('group_brand')}
             </button>
           ))}
         </div>

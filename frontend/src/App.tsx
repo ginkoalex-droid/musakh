@@ -17,6 +17,7 @@ import ReceivingForm from './pages/Receiving/ReceivingForm'
 import Suppliers from './pages/Suppliers'
 import Users from './pages/Users'
 import Locations from './pages/Locations'
+import CarModels from './pages/CarModels'
 import IssueList from './pages/Issues'
 import IssueForm from './pages/Issues/IssueForm'
 import WorkOrders from './pages/WorkOrders'
@@ -73,6 +74,7 @@ export default function App() {
                   <Route path="/receiving/:id" element={<RequireWarehouse><ReceivingForm /></RequireWarehouse>} />
                   <Route path="/suppliers" element={<RequireWarehouse><Suppliers /></RequireWarehouse>} />
                   <Route path="/locations" element={<RequireWarehouse><Locations /></RequireWarehouse>} />
+                  <Route path="/car-models" element={<RequireWarehouse><CarModels /></RequireWarehouse>} />
                   <Route path="/issues" element={<IssueList />} />
                   <Route path="/issues/:id" element={<IssueForm />} />
                   <Route path="/work-orders" element={<WorkOrders />} />

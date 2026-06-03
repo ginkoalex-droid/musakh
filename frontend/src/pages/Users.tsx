@@ -115,28 +115,29 @@ export default function Users() {
               <span className={`badge ${roleBadgeColor[role]}`}>{getRoleLabel(role)}</span>
               <ul className="text-xs text-gray-500 space-y-0.5 mt-1">
                 {role === 'admin' && <>
-                  <li>✓ Всё без ограничений</li>
-                  <li>✓ Удаление ЗН</li>
-                  <li>✓ Отмена проводок</li>
+                  <li>✓ {t('users_perm_all')}</li>
+                  <li>✓ {t('users_perm_cancel_docs')}</li>
+                  <li>✓ {t('users_perm_delete_wo')}</li>
+                  <li>✓ {t('users_perm_reopen')}</li>
                   <li>✓ {t('nav_users')}</li>
-                  <li>✓ Корректировки склада</li>
+                  <li>✓ {t('users_perm_stock_adj')}</li>
                 </>}
                 {role === 'warehouse' && <>
-                  <li>✓ {t('nav_stock')} + корректировки</li>
+                  <li>✓ {t('nav_stock')} + {t('users_perm_stock_adj')}</li>
                   <li>✓ {t('nav_receiving')}</li>
-                  <li>✓ {t('nav_parts')}</li>
-                  <li>✓ Списание (ЗН, продажа, другое)</li>
-                  <li>✓ {t('nav_workorders')} — просмотр</li>
-                  <li>— Создать/закрыть/редактировать ЗН</li>
-                  <li>— Удаление, отмена проводок</li>
+                  <li>✓ {t('nav_parts')} / {t('nav_suppliers')}</li>
+                  <li>✓ {t('users_perm_issue_sale_other')}</li>
+                  <li>✓ {t('nav_workorders')} — {t('users_perm_view_only')}</li>
+                  <li>— {t('users_perm_no_wo_manage')}</li>
+                  <li>— {t('users_perm_no_delete')}</li>
                 </>}
                 {role === 'mechanic' && <>
-                  <li>✓ Склад и движения (просмотр)</li>
-                  <li>✓ {t('nav_workorders')} — открыть/закрыть</li>
-                  <li>✓ Списание только на ЗН</li>
-                  <li>— Продажа/другое</li>
-                  <li>— Приёмка, справочники</li>
-                  <li>— Корректировки, удаление</li>
+                  <li>✓ {t('nav_stock')} + {t('nav_movements')} ({t('users_perm_view_only')})</li>
+                  <li>✓ {t('nav_workorders')} — {t('users_perm_open_close')}</li>
+                  <li>✓ {t('users_perm_issue_wo_only')}</li>
+                  <li>— {t('users_perm_no_sale_other')}</li>
+                  <li>— {t('users_perm_no_receiving')}</li>
+                  <li>— {t('users_perm_no_delete')}</li>
                 </>}
               </ul>
             </div>

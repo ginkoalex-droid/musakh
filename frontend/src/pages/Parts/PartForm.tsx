@@ -1,9 +1,9 @@
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, fetchCategories, fetchParts, fetchLocations, fetchBrands } from '../../api/parts'
+import { fetchPart, createPart, updatePart, addBarcode, deleteBarcode, addOem, deleteOem, addCarApplication, deleteCarApplication, updateCarApplication, fetchCategories, fetchParts, fetchLocations, fetchBrands } from '../../api/parts'
 import api from '../../api/client'
-import { ArrowLeft, Plus, Trash2, ScanLine, Car, Copy } from 'lucide-react'
+import { ArrowLeft, Plus, Trash2, ScanLine, Car, Copy, Edit2, Check, X } from 'lucide-react'
 import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
 import { translateUnit } from '../../utils/units'
@@ -215,6 +215,22 @@ export default function PartForm() {
     try {
       await deleteCarApplication(partId, carId)
       qc.invalidateQueries({ queryKey: ['part', id] })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
+    }
+  }
+
+  const [editingCarId, setEditingCarId] = useState<number | null>(null)
+  const [editCarMake, setEditCarMake] = useState('')
+  const [editCarModel, setEditCarModel] = useState('')
+
+  async function handleUpdateCar(partId: number, carId: number) {
+    try {
+      await updateCarApplication(partId, carId, editCarMake, editCarModel || undefined)
+      toast.success('Обновлено')
+      setEditingCarId(null)
+      qc.invalidateQueries({ queryKey: ['part', id] })
+      qc.invalidateQueries({ queryKey: ['car-models-for-stock'] })
     } catch (err: any) {
       toast.error(err.response?.data?.detail || t('err_generic'))
     }
@@ -488,13 +504,48 @@ export default function PartForm() {
             </h2>
 
             {existing.car_applications.map(car => (
-              <div key={car.id} className="flex items-center justify-between bg-blue-50 rounded-lg px-3 py-2">
-                <span className="text-sm font-medium text-blue-800">
-                  {car.make}{car.model ? ` — ${car.model}` : ''}
-                </span>
-                <button onClick={() => handleDelCar(existing.id, car.id)} className="p-1 hover:text-red-600">
-                  <Trash2 className="w-4 h-4" />
-                </button>
+              <div key={car.id} className="flex items-center gap-2 bg-blue-50 rounded-lg px-3 py-2">
+                {editingCarId === car.id ? (
+                  <>
+                    <input
+                      className="input text-sm w-24"
+                      placeholder="Марка"
+                      value={editCarMake}
+                      onChange={e => setEditCarMake(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') handleUpdateCar(existing.id, car.id); if (e.key === 'Escape') setEditingCarId(null) }}
+                    />
+                    <input
+                      className="input text-sm flex-1"
+                      placeholder="Модель"
+                      autoFocus
+                      value={editCarModel}
+                      style={{ textTransform: 'uppercase' }}
+                      onChange={e => setEditCarModel(e.target.value.replace(/[^\x00-\x7F]/g, '').toUpperCase())}
+                      onKeyDown={e => { if (e.key === 'Enter') handleUpdateCar(existing.id, car.id); if (e.key === 'Escape') setEditingCarId(null) }}
+                    />
+                    <button onClick={() => handleUpdateCar(existing.id, car.id)} className="p-1 text-green-600 hover:text-green-800">
+                      <Check className="w-4 h-4" />
+                    </button>
+                    <button onClick={() => setEditingCarId(null)} className="p-1 text-gray-400 hover:text-gray-600">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-sm font-medium text-blue-800 flex-1">
+                      {car.make}{car.model ? (car.make ? ` — ${car.model}` : car.model) : ''}
+                    </span>
+                    <button
+                      onClick={() => { setEditingCarId(car.id); setEditCarMake(car.make || ''); setEditCarModel(car.model || '') }}
+                      className="p-1 text-blue-400 hover:text-blue-700"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button onClick={() => handleDelCar(existing.id, car.id)} className="p-1 text-gray-300 hover:text-red-600">
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
               </div>
             ))}
             <div className="flex gap-2">
@@ -502,8 +553,9 @@ export default function PartForm() {
                 onChange={e => setNewCarMake(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter') { handleAddCar(newCarMake, newCarModel); setNewCarMake(''); setNewCarModel('') } }}
               />
-              <input className="input" placeholder={`${t('car_model_placeholder')} (${t('rec_optional_note')})`} value={newCarModel}
-                onChange={e => setNewCarModel(e.target.value)}
+              <input className="input" placeholder={`${t('car_model_placeholder')} (EN)`} value={newCarModel}
+                style={{ textTransform: 'uppercase' }}
+                onChange={e => setNewCarModel(e.target.value.replace(/[^\x00-\x7F]/g, '').toUpperCase())}
                 onKeyDown={e => { if (e.key === 'Enter') { handleAddCar(newCarMake, newCarModel); setNewCarMake(''); setNewCarModel('') } }}
               />
               <button className="btn-secondary" onClick={() => { handleAddCar(newCarMake, newCarModel); setNewCarMake(''); setNewCarModel('') }}>
