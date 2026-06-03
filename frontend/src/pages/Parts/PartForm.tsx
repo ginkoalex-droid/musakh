@@ -136,8 +136,8 @@ export default function PartForm() {
       } else if (existing) {
         await updatePart(existing.id, form)
         toast.success(t('parts_saved'))
-        qc.invalidateQueries({ queryKey: ['part', id] })
         qc.invalidateQueries({ queryKey: ['parts'] })
+        navigate(returnTo ?? '/parts', { state: { highlightId: existing.id } })
       }
     } catch (err: any) {
       toast.error(err.response?.data?.detail || t('err_generic'))
