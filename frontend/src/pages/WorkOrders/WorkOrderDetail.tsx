@@ -298,11 +298,12 @@ export default function WorkOrderDetail() {
               </span>
             )}
           </h2>
-          {canClose && !wo.is_confirmed && (
+          {/* New issue: always available for open WOs (mechanic/admin), and for admin even on confirmed WOs */}
+          {(canClose && !wo.is_confirmed) || isAdmin ? (
             <Link to="/issues/new" state={{ preselect_wo_id: wo.id }} className="btn-danger py-1.5 text-sm">
               <Plus className="w-3.5 h-3.5" /> {t('issue_new')}
             </Link>
-          )}
+          ) : null}
         </div>
 
         {issues.length === 0 ? (
@@ -390,6 +391,20 @@ export default function WorkOrderDetail() {
                 </div>
               </div>
             ))}
+          </div>
+        )}
+
+        {/* When no draft issues exist — admin can still add a new one (e.g. after cancelling) */}
+        {isAdmin && !issues.some(i => !i.is_confirmed && !i.is_cancelled) && (
+          <div className="mt-3">
+            <Link
+              to="/issues/new"
+              state={{ preselect_wo_id: wo.id }}
+              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
+            >
+              <Plus className="w-4 h-4" />
+              Добавить новое списание к этому ЗН
+            </Link>
           </div>
         )}
       </div>
