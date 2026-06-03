@@ -33,6 +33,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     { to: '/parts', label: t('nav_parts'), icon: Package, show: isWarehouse },
     { to: '/suppliers', label: t('nav_suppliers'), icon: Users, show: isWarehouse },
     { to: '/mechanics', label: t('mech_title'), icon: Users, show: isWarehouse },
+    { to: '/locations', label: 'Места хранения', icon: BarChart3, show: isWarehouse },
     { to: '/users', label: t('nav_users'), icon: Users, show: isAdmin },
   ].filter(n => n.show)
 

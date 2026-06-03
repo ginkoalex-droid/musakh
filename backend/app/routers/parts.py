@@ -131,6 +131,26 @@ async def list_locations(
     return [row[0] for row in result.all()]
 
 
+@router.post("/locations/rename")
+async def rename_location(
+    old_name: str,
+    new_name: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.models import UserRole
+    if current_user.role not in (UserRole.admin, UserRole.warehouse):
+        raise HTTPException(status_code=403, detail="Недостаточно прав")
+    from sqlalchemy import update as sql_update
+    result = await db.execute(
+        sql_update(Part)
+        .where(Part.location == old_name)
+        .values(location=new_name.strip() if new_name.strip() else None)
+    )
+    await db.commit()
+    return {"updated": result.rowcount}
+
+
 @router.get("/categories", response_model=list[str])
 async def list_categories(
     db: AsyncSession = Depends(get_db),
