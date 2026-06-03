@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchWorkOrder, confirmWorkOrder, reopenWorkOrder, deleteWorkOrder, updateWorkOrder, fetchMechanics } from '../../api/workOrders'
-import { fetchIssueOrders, fetchIssueOrder, confirmIssueOrder, deleteIssueOrder } from '../../api/issues'
-import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus, Edit2 } from 'lucide-react'
+import { fetchIssueOrders, fetchIssueOrder, confirmIssueOrder, deleteIssueOrder, addIssueItem } from '../../api/issues'
+import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus, Edit2, ScanLine } from 'lucide-react'
+import PartSearch from '../../components/PartSearch'
+import type { Part } from '../../types'
 import { WORK_TYPES } from '../../api/workOrders'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
@@ -22,6 +24,7 @@ export default function WorkOrderDetail() {
 
   const [editMechanics, setEditMechanics] = useState(false)
   const [noPartsModal, setNoPartsModal] = useState(false)
+  const [addingToIssue, setAddingToIssue] = useState<number | null>(null) // issue id being added to
   const [noPartsConfirmed, setNoPartsConfirmed] = useState(false)
   const [mechForm, setMechForm] = useState({ mechanic_id: 0, mechanic_id_2: 0, mechanic_share: 50, work_type: '', car_model: '', car_plate: '' })
   const [editNotes, setEditNotes] = useState(false)
@@ -76,6 +79,16 @@ export default function WorkOrderDetail() {
     queryFn: () => fetchIssueOrders(parseInt(id!)),
     enabled: !!id,
   })
+
+  async function handleAddPartToIssue(issueId: number, part: Part) {
+    const qty = part.default_issue_qty ?? 1
+    try {
+      await addIssueItem(issueId, part.id, qty)
+      qc.invalidateQueries({ queryKey: ['issues-for-wo', id] })
+      qc.invalidateQueries({ queryKey: ['issue-order', String(issueId)] })
+      toast.success(`+ ${part.name}: ${qty} ${part.unit}`, { duration: 1500 })
+    } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
+  }
 
   async function handleConfirmIssue(issueId: number) {
     if (!confirm(t('issue_confirm_title'))) return
@@ -330,6 +343,34 @@ export default function WorkOrderDetail() {
 
                 {/* Fetch full issue to show items - use IssueOrderOut */}
                 <IssueItemsPreview issueId={issue.id} />
+
+                {/* Inline part add for draft issues */}
+                {!issue.is_confirmed && !issue.is_cancelled && canClose && (
+                  <div className="px-4 py-3 border-t border-gray-100 bg-blue-50">
+                    {addingToIssue === issue.id ? (
+                      <div className="flex gap-2 items-center">
+                        <div className="flex-1">
+                          <PartSearch
+                            autoFocus
+                            placeholder="Сканируй штрихкод или введи название..."
+                            onSelect={part => handleAddPartToIssue(issue.id, part)}
+                          />
+                        </div>
+                        <button
+                          onClick={() => setAddingToIssue(null)}
+                          className="btn-secondary py-1.5 px-2 text-xs text-gray-500"
+                        >✕</button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setAddingToIssue(issue.id)}
+                        className="flex items-center gap-2 text-sm text-blue-700 font-medium hover:text-blue-900"
+                      >
+                        <ScanLine className="w-4 h-4" /> Добавить запчасть
+                      </button>
+                    )}
+                  </div>
+                )}
 
                 <div className="px-4 py-2 bg-gray-50 border-t border-gray-100 text-right text-sm font-semibold text-red-700">
                   {issue.item_count} {t('lbl_positions')}
