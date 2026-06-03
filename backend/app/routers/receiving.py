@@ -228,6 +228,7 @@ async def confirm_order(
         db.add(movement)
 
     order.is_confirmed = True
+    order.confirmed_at = datetime.utcnow()
     await db.commit()
 
     result = await db.execute(

@@ -188,6 +188,7 @@ class ReceivingOrderList(BaseModel):
     total_qty: float = 0
     created_by_name: str
     created_at: datetime
+    confirmed_at: Optional[datetime] = None
 
     model_config = {"from_attributes": True}
 

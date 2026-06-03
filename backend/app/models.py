@@ -121,6 +121,7 @@ class ReceivingOrder(Base):
     notes: Mapped[str | None] = mapped_column(Text)
     is_confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
     is_cancelled: Mapped[bool] = mapped_column(Boolean, default=False)
+    confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     cancelled_by: Mapped[int | None] = mapped_column(ForeignKey("users.id"), nullable=True)
     cancelled_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))

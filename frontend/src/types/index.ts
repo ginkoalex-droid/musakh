@@ -92,6 +92,7 @@ export interface ReceivingOrderList {
   total_qty: number
   created_by_name: string
   created_at: string
+  confirmed_at?: string
 }
 
 export type MovementType = 'receiving' | 'issue' | 'adjustment' | 'return' | 'cancellation'

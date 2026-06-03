@@ -31,7 +31,7 @@ export default function ReceivingList() {
               <tr>
                 <th className="table-th">№</th>
                 <th className="table-th">{t('lbl_supplier')}</th>
-                <th className="table-th hidden sm:table-cell">{t('lbl_date')}</th>
+                  <th className="table-th hidden sm:table-cell">Дата</th>
                 <th className="table-th hidden md:table-cell">{t('lbl_invoice')}</th>
                 <th className="table-th hidden sm:table-cell text-right">{t('lbl_positions')}</th>
                 <th className="table-th hidden sm:table-cell text-right">{t('lbl_pieces')}</th>
@@ -50,8 +50,21 @@ export default function ReceivingList() {
                     <Link to={`/receiving/${o.id}`} className="text-blue-700 hover:underline">#{o.id}</Link>
                   </td>
                   <td className="table-td">{o.supplier_name || <span className="text-gray-400">—</span>}</td>
-                  <td className="table-td hidden sm:table-cell text-gray-500">
-                    {new Date(o.date).toLocaleDateString('ru-RU')}
+                  <td className="table-td hidden sm:table-cell text-gray-500 text-sm">
+                    {o.confirmed_at ? (
+                      <>
+                        <div className="font-medium text-gray-700">
+                          {new Date(o.confirmed_at).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                        </div>
+                        <div className="text-xs text-gray-400">
+                          {new Date(o.confirmed_at).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
+                        </div>
+                      </>
+                    ) : (
+                      <span className="text-gray-400 text-xs">
+                        {new Date(o.date).toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit', year: '2-digit' })}
+                      </span>
+                    )}
                   </td>
                   <td className="table-td hidden md:table-cell font-mono text-sm text-gray-500">
                     {o.invoice_number || '—'}
