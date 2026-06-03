@@ -107,6 +107,7 @@ class Supplier(Base):
     email: Mapped[str | None] = mapped_column(String(200))
     notes: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     receiving_orders: Mapped[list["ReceivingOrder"]] = relationship(back_populates="supplier")
 
@@ -154,6 +155,7 @@ class Mechanic(Base):
     notes: Mapped[str | None] = mapped_column(Text)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     work_orders: Mapped[list["WorkOrder"]] = relationship(back_populates="mechanic", foreign_keys="WorkOrder.mechanic_id")
 
@@ -178,6 +180,7 @@ class WorkOrder(Base):
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     created_by: Mapped[int] = mapped_column(ForeignKey("users.id"))
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     mechanic: Mapped["Mechanic"] = relationship("Mechanic", back_populates="work_orders", foreign_keys=[mechanic_id])
     mechanic2: Mapped["Mechanic | None"] = relationship("Mechanic", foreign_keys=[mechanic_id_2])
