@@ -74,6 +74,8 @@ def _to_out(order: IssueOrder, cancelled_by_name: str | None = None) -> IssueOrd
                 notes=i.notes,
                 barcode=i.part.barcodes[0].barcode if i.part and i.part.barcodes else None,
                 oem_number=i.part.oem_numbers[0].oem_number if i.part and i.part.oem_numbers else None,
+                part_unit=i.part.unit if i.part else None,
+                default_issue_qty=float(i.part.default_issue_qty) if i.part and i.part.default_issue_qty else None,
             )
             for i in order.items
         ],

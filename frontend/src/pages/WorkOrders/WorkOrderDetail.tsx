@@ -85,9 +85,10 @@ export default function WorkOrderDetail() {
     try {
       // Check if this part already exists in the issue — increment instead of duplicate
       const existingIssue = qc.getQueryData<import('../../api/issues').IssueOrder>(['issue-order', String(issueId)])
-      const existingItem = existingIssue?.items.find(i => i.part_id === part.id)
+      const existingItem = existingIssue?.items.find((i: import('../../api/issues').IssueItem) => i.part_id === part.id)
       if (existingItem) {
-        const newQty = Math.round((existingItem.quantity + defaultQty) * 1000) / 1000
+        const step = existingItem.default_issue_qty ?? defaultQty
+        const newQty = Math.round((existingItem.quantity + step) * 1000) / 1000
         await updateIssueItemQty(issueId, existingItem.id, newQty)
         toast.success(`${part.name}: ${existingItem.quantity} → ${newQty} ${part.unit}`, { duration: 1800 })
       } else {
@@ -583,7 +584,7 @@ function IssueItemsPreview({ issueId, isDraft }: { issueId: number; isDraft?: bo
               <input
                 type="number"
                 min="0"
-                step="any"
+                step={item.default_issue_qty ?? (item.part_unit && item.part_unit !== 'шт' && item.part_unit !== 'pcs' ? 0.05 : 1)}
                 className="input text-right w-20 text-sm font-semibold text-red-700 py-1"
                 defaultValue={item.quantity}
                 key={item.id + '-' + item.quantity}

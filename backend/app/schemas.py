@@ -275,6 +275,8 @@ class IssueItemOut(BaseModel):
     notes: Optional[str] = None
     barcode: Optional[str] = None
     oem_number: Optional[str] = None
+    part_unit: Optional[str] = None
+    default_issue_qty: Optional[float] = None
 
     model_config = {"from_attributes": True}
 

@@ -8,6 +8,8 @@ export interface IssueItem {
   notes?: string
   barcode?: string
   oem_number?: string
+  part_unit?: string
+  default_issue_qty?: number
 }
 
 export interface IssueOrder {
