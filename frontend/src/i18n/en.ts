@@ -337,6 +337,7 @@ export const en: Record<TranslationKey, string> = {
   locations_empty: 'No locations',
   locations_updated: 'parts updated',
   nav_catalogs: 'Catalogs',
+  filter_all_models_moto: '🏍 All models',
   nav_locations: 'Storage Locations',
   nav_car_models: 'Vehicle Models',
   users_perm_all: 'All without restrictions',

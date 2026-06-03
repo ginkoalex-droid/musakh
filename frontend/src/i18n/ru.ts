@@ -356,6 +356,7 @@ export const ru = {
 
   // Nav
   nav_catalogs: 'Справочники',
+  filter_all_models_moto: '🏍 Все модели',
   nav_locations: 'Места хранения',
   nav_car_models: 'Модели техники',
 

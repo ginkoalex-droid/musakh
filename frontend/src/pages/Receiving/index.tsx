@@ -31,7 +31,7 @@ export default function ReceivingList() {
               <tr>
                 <th className="table-th">№</th>
                 <th className="table-th">{t('lbl_supplier')}</th>
-                  <th className="table-th hidden sm:table-cell">Дата</th>
+                  <th className="table-th hidden sm:table-cell">{t('lbl_date')}</th>
                 <th className="table-th hidden md:table-cell">{t('lbl_invoice')}</th>
                 <th className="table-th hidden sm:table-cell text-right">{t('lbl_positions')}</th>
                 <th className="table-th hidden sm:table-cell text-right">{t('lbl_pieces')}</th>

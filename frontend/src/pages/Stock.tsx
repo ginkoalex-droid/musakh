@@ -252,7 +252,7 @@ export default function Stock() {
           onChange={e => { setCarModel(e.target.value); setSearch(''); setDebouncedSearch('') }}
           className={`input w-auto flex items-center gap-1 ${carModel ? 'border-blue-500 bg-blue-50' : ''}`}
         >
-          <option value="">🏍 Все модели</option>
+          <option value="">{t('filter_all_models_moto')}</option>
           {carModels.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
         {carModel && (

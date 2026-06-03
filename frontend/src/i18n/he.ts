@@ -337,6 +337,7 @@ export const he: Record<TranslationKey, string> = {
   locations_empty: 'אין מיקומי אחסון',
   locations_updated: 'פריטים עודכנו',
   nav_catalogs: 'ספרי עזר',
+  filter_all_models_moto: '🏍 כל הדגמים',
   nav_locations: 'מיקומי אחסון',
   nav_car_models: 'דגמי כלי רכב',
   users_perm_all: 'הכל ללא הגבלות',
