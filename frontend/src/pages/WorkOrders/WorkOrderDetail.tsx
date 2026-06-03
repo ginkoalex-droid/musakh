@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { fetchWorkOrder, confirmWorkOrder, reopenWorkOrder, deleteWorkOrder, updateWorkOrder, fetchMechanics } from '../../api/workOrders'
-import { fetchIssueOrders, fetchIssueOrder, confirmIssueOrder, deleteIssueOrder, addIssueItem } from '../../api/issues'
+import { fetchIssueOrders, fetchIssueOrder, confirmIssueOrder, deleteIssueOrder, addIssueItem, updateIssueItemQty, removeIssueItem } from '../../api/issues'
 import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus, Edit2, ScanLine } from 'lucide-react'
 import PartSearch from '../../components/PartSearch'
 import type { Part } from '../../types'
@@ -81,12 +81,21 @@ export default function WorkOrderDetail() {
   })
 
   async function handleAddPartToIssue(issueId: number, part: Part) {
-    const qty = part.default_issue_qty ?? 1
+    const defaultQty = part.default_issue_qty ?? 1
     try {
-      await addIssueItem(issueId, part.id, qty)
+      // Check if this part already exists in the issue — increment instead of duplicate
+      const existingIssue = qc.getQueryData<import('../../api/issues').IssueOrder>(['issue-order', String(issueId)])
+      const existingItem = existingIssue?.items.find(i => i.part_id === part.id)
+      if (existingItem) {
+        const newQty = Math.round((existingItem.quantity + defaultQty) * 1000) / 1000
+        await updateIssueItemQty(issueId, existingItem.id, newQty)
+        toast.success(`${part.name}: ${existingItem.quantity} → ${newQty} ${part.unit}`, { duration: 1800 })
+      } else {
+        await addIssueItem(issueId, part.id, defaultQty)
+        toast.success(`+ ${part.name}: ${defaultQty} ${part.unit}`, { duration: 1500 })
+      }
       qc.invalidateQueries({ queryKey: ['issues-for-wo', id] })
       qc.invalidateQueries({ queryKey: ['issue-order', String(issueId)] })
-      toast.success(`+ ${part.name}: ${qty} ${part.unit}`, { duration: 1500 })
     } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
   }
 
@@ -342,7 +351,7 @@ export default function WorkOrderDetail() {
                 </div>
 
                 {/* Fetch full issue to show items - use IssueOrderOut */}
-                <IssueItemsPreview issueId={issue.id} />
+                <IssueItemsPreview issueId={issue.id} isDraft={!issue.is_confirmed && !issue.is_cancelled} />
 
                 {/* Inline part add for draft issues */}
                 {!issue.is_confirmed && !issue.is_cancelled && canClose && (
@@ -529,9 +538,10 @@ export default function WorkOrderDetail() {
 }
 
 // Sub-component to show items of a specific issue
-function IssueItemsPreview({ issueId }: { issueId: number }) {
+function IssueItemsPreview({ issueId, isDraft }: { issueId: number; isDraft?: boolean }) {
   const me = getUser()
   const canViewPart = me?.role === 'admin' || me?.role === 'warehouse'
+  const qc = useQueryClient()
   const { data: issue } = useQuery({
     queryKey: ['issue-order', String(issueId)],
     queryFn: () => fetchIssueOrder(issueId),
@@ -539,26 +549,57 @@ function IssueItemsPreview({ issueId }: { issueId: number }) {
 
   if (!issue) return <div className="px-4 py-3 text-sm text-gray-400">...</div>
 
+  async function handleQtyChange(itemId: number, newQty: number) {
+    if (newQty <= 0) return
+    await updateIssueItemQty(issueId, itemId, newQty)
+    qc.invalidateQueries({ queryKey: ['issue-order', String(issueId)] })
+    qc.invalidateQueries({ queryKey: ['issues-for-wo'] })
+  }
+
+  async function handleRemoveItem(itemId: number) {
+    await removeIssueItem(issueId, itemId)
+    qc.invalidateQueries({ queryKey: ['issue-order', String(issueId)] })
+    qc.invalidateQueries({ queryKey: ['issues-for-wo'] })
+  }
+
   return (
     <div className="divide-y divide-gray-50">
       {issue.items.map(item => (
-        <div key={item.id} className="px-4 py-2 flex items-center justify-between">
-          <div>
+        <div key={item.id} className="px-4 py-2 flex items-center justify-between gap-3">
+          <div className="flex-1 min-w-0">
             {canViewPart ? (
               <Link to={`/parts/${item.part_id}`} className="text-sm font-medium text-blue-700 hover:underline">{item.part_name}</Link>
             ) : (
               <span className="text-sm font-medium text-gray-900">{item.part_name}</span>
             )}
             <div className="flex gap-2 mt-0.5">
-              {item.oem_number && (
-                <span className="text-xs font-mono bg-gray-100 text-gray-600 px-1 rounded">{item.oem_number}</span>
-              )}
               {item.barcode && (
                 <span className="text-xs font-mono bg-blue-50 text-blue-700 px-1 rounded">▌{item.barcode}</span>
               )}
             </div>
           </div>
-          <span className="text-sm font-semibold text-red-700">-{item.quantity}</span>
+          {isDraft ? (
+            <div className="flex items-center gap-2 shrink-0">
+              <input
+                type="number"
+                min="0"
+                step="any"
+                className="input text-right w-20 text-sm font-semibold text-red-700 py-1"
+                defaultValue={item.quantity}
+                key={item.id + '-' + item.quantity}
+                onBlur={e => {
+                  const v = parseFloat(e.target.value)
+                  if (!isNaN(v) && v > 0 && v !== item.quantity) handleQtyChange(item.id, v)
+                }}
+                onKeyDown={e => { if (e.key === 'Enter') e.currentTarget.blur() }}
+              />
+              <button onClick={() => handleRemoveItem(item.id)} className="p-1 text-gray-300 hover:text-red-500">
+                <Trash2 className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          ) : (
+            <span className="text-sm font-semibold text-red-700 shrink-0">-{item.quantity}</span>
+          )}
         </div>
       ))}
     </div>
