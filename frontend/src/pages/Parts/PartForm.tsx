@@ -132,7 +132,7 @@ export default function PartForm() {
           oem_numbers: oems.filter(o => o.oem_number.trim()),
         })
         toast.success(t('parts_created'))
-        navigate(returnTo ?? '/parts')
+        navigate(returnTo ?? '/parts', { state: { highlightId: part.id } })
       } else if (existing) {
         await updatePart(existing.id, form)
         toast.success(t('parts_saved'))

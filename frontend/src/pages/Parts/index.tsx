@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchParts, fetchCategories, fetchMakes, fetchModelsForMake } from '../../api/parts'
+import { fetchParts, fetchCategories } from '../../api/parts'
+import api from '../../api/client'
 import { Plus, Package, Search, Car, Printer, Copy } from 'lucide-react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useT } from '../../i18n'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import KeyHints from '../../components/KeyHints'
@@ -10,7 +11,23 @@ import KeyHints from '../../components/KeyHints'
 export default function Parts() {
   const { t } = useT()
   const navigate = useNavigate()
+  const location = useLocation()
+  const highlightId = (location.state as any)?.highlightId as number | undefined
+  const [highlighted, setHighlighted] = useState<number | null>(highlightId ?? null)
+  const highlightRef = useRef<HTMLTableRowElement>(null)
   useKeyboardShortcuts({ insert: () => navigate('/parts/new') })
+
+  // Scroll to and briefly highlight newly created part
+  useEffect(() => {
+    if (highlightId) {
+      setHighlighted(highlightId)
+      setTimeout(() => {
+        highlightRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      }, 300)
+      const timer = setTimeout(() => setHighlighted(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [highlightId])
   const [q, setQ] = useState('')
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>('none')
@@ -42,6 +59,7 @@ export default function Parts() {
   const [category, setCategory] = useState('')
   const [make, setMake] = useState('')
   const [model, setModel] = useState('')
+  const [carModel, setCarModel] = useState('')
   const [debouncedQ, setDebouncedQ] = useState('')
   const timer = useState<ReturnType<typeof setTimeout>>()[0]
 
@@ -52,8 +70,8 @@ export default function Parts() {
   }
 
   const { data: parts = [], isLoading } = useQuery({
-    queryKey: ['parts', debouncedQ, category, make, model],
-    queryFn: () => fetchParts(debouncedQ || undefined, category || undefined, false, make || undefined, model || undefined),
+    queryKey: ['parts', debouncedQ, category, make, model, carModel],
+    queryFn: () => fetchParts(debouncedQ || undefined, category || undefined, false, make || undefined, carModel || model || undefined),
   })
 
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
@@ -68,15 +86,14 @@ export default function Parts() {
     }
     return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0]))
   }, [parts, groupBy])
-  const { data: makes = [] } = useQuery({ queryKey: ['makes'], queryFn: fetchMakes })
-  const { data: models = [] } = useQuery({
-    queryKey: ['models', make],
-    queryFn: () => fetchModelsForMake(make),
-    enabled: !!make,
+  // Car models from applicability for filtering
+  const { data: carModels = [] } = useQuery({
+    queryKey: ['car-models-for-stock'],
+    queryFn: async () => {
+      const res = await api.get('/parts/wo-models-all')
+      return res.data as string[]
+    },
   })
-
-  // Reset model when make changes
-  useEffect(() => { setModel('') }, [make])
 
   return (
     <div className="space-y-4">
@@ -113,15 +130,18 @@ export default function Parts() {
             </button>
           ))}
         </div>
-        <select value={make} onChange={e => setMake(e.target.value)} className="input w-auto">
-          <option value="">{t('filter_all_makes')}</option>
-          {makes.map(m => <option key={m} value={m}>{m}</option>)}
+        <select
+          value={carModel}
+          onChange={e => setCarModel(e.target.value)}
+          className={`input w-auto ${carModel ? 'border-blue-500 bg-blue-50' : ''}`}
+        >
+          <option value="">🏍 Все модели</option>
+          {carModels.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
-        {make && (
-          <select value={model} onChange={e => setModel(e.target.value)} className="input w-auto">
-            <option value="">{t('filter_all_models')}</option>
-            {models.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
+        {carModel && (
+          <button onClick={() => setCarModel('')} className="text-xs text-blue-600 hover:text-blue-800">
+            ✕ {carModel}
+          </button>
         )}
       </div>
 
@@ -169,7 +189,10 @@ export default function Parts() {
                       </td>
                     </tr>
                     {!isCollapsed && rows.map(p => (
-                      <tr key={p.id} className="hover:bg-gray-50">
+                      <tr key={p.id}
+                        ref={highlighted === p.id ? highlightRef : null}
+                        className={`transition-colors duration-700 ${highlighted === p.id ? 'bg-green-100 ring-2 ring-inset ring-green-400' : 'hover:bg-gray-50'}`}
+                      >
                         <td className="table-td">
                           {p.barcodes.length > 0 ? <input type="checkbox" checked={selected.has(p.id)} onChange={() => toggleSelect(p.id)} className="rounded" /> : <span className="text-gray-300 text-xs">—</span>}
                         </td>
@@ -192,7 +215,10 @@ export default function Parts() {
                   </>
                 )})
               ) : parts.map(p => (
-                <tr key={p.id} className="hover:bg-gray-50 group">
+                <tr key={p.id}
+                  ref={highlighted === p.id ? highlightRef : null}
+                  className={`group transition-colors duration-700 ${highlighted === p.id ? 'bg-green-100 ring-2 ring-inset ring-green-400' : 'hover:bg-gray-50'}`}
+                >
                   <td className="table-td">
                     {p.barcodes.length > 0 ? (
                       <input type="checkbox" checked={selected.has(p.id)}
