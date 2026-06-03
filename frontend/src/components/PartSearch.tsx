@@ -21,6 +21,7 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
   const timer = useRef<ReturnType<typeof setTimeout>>()
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const processing = useRef(false) // lock against double Enter/scan
   const navigate = useNavigate()
 
   // Always keep focus on this input so scanner goes here
@@ -42,9 +43,12 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
   async function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Enter') {
       e.preventDefault()
+      if (processing.current) return // block double scan
       // Read directly from DOM — React state may lag behind fast scanner input
       const val = ((e.target as HTMLInputElement).value || query).trim()
       if (!val) return
+      processing.current = true
+      setTimeout(() => { processing.current = false }, 600)
 
       // Sync state if DOM is ahead
       if (val !== query) setQuery(val)

@@ -43,6 +43,7 @@ def _order_to_out(order: ReceivingOrder) -> ReceivingOrderOut:
             notes=i.notes,
             barcode=i.part.barcodes[0].barcode if i.part and i.part.barcodes else None,
             oem_number=i.part.oem_numbers[0].oem_number if i.part and i.part.oem_numbers else None,
+            part_unit=i.part.unit if i.part else None,
         )
         for i in order.items
     ]
