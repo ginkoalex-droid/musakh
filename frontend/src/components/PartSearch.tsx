@@ -18,11 +18,25 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
   const [unknownBarcode, setUnknownBarcode] = useState<string | null>(null)
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0, width: 0 })
   const timer = useRef<ReturnType<typeof setTimeout>>()
   const containerRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const processing = useRef(false) // lock against double Enter/scan
   const navigate = useNavigate()
+
+  // Calculate position for fixed dropdown (avoids overflow:hidden clipping)
+  function updateDropdownPos() {
+    const el = inputRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const maxH = 288 // max-h-72
+    const spaceBelow = window.innerHeight - rect.bottom - 8
+    const top = spaceBelow >= maxH
+      ? rect.bottom + 4           // open downward
+      : rect.top - maxH - 4       // flip upward if no space
+    setDropdownPos({ top, left: rect.left, width: rect.width })
+  }
 
   // Always keep focus on this input so scanner goes here
   useEffect(() => {
@@ -49,6 +63,7 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
       if (!val) return
       processing.current = true
       setTimeout(() => { processing.current = false }, 600)
+      updateDropdownPos()
 
       // Sync state if DOM is ahead
       if (val !== query) setQuery(val)
@@ -107,6 +122,7 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
     clearTimeout(timer.current)
     if (!val.trim()) { setResults([]); setOpen(false); return }
     setLoading(true)
+    updateDropdownPos()
     timer.current = setTimeout(async () => {
       try {
         const parts = await fetchParts(val)
@@ -139,7 +155,10 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
       </div>
 
       {open && results.length > 0 && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 max-h-64 overflow-y-auto">
+        <div
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-xl z-50 max-h-72 overflow-y-auto"
+          style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+        >
           {results.map(p => (
             <button
               key={p.id}
@@ -165,13 +184,19 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
       )}
 
       {open && results.length === 0 && !loading && query.length > 1 && !unknownBarcode && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30">
+        <div
+          className="fixed bg-white border border-gray-200 rounded-lg shadow-xl z-50"
+          style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+        >
           <div className="px-4 py-3 text-sm text-gray-500">Ничего не найдено</div>
         </div>
       )}
 
       {unknownBarcode && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-orange-200 rounded-lg shadow-lg z-30">
+        <div
+          className="fixed bg-white border border-orange-200 rounded-lg shadow-xl z-50"
+          style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+        >
           <div className="px-4 py-3">
             <div className="text-sm font-medium text-orange-700 mb-2">
               Штрихкод <span className="font-mono bg-orange-50 px-1 rounded">{unknownBarcode}</span> не найден

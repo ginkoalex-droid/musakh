@@ -135,11 +135,9 @@ export default function WorkOrderDetail() {
     try {
       await confirmWorkOrder(wo.id)
       toast.success(t('wo_confirmed_toast'))
-      // Invalidate the current WO detail AND the list
-      qc.invalidateQueries({ queryKey: ['work-order', id] })
       qc.invalidateQueries({ queryKey: ['work-orders'] })
       qc.invalidateQueries({ queryKey: ['wo-summary'] })
-      qc.invalidateQueries({ queryKey: ['issues-for-wo', id] })
+      navigate('/work-orders')
     } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
   }
 

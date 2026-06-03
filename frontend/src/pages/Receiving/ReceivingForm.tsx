@@ -323,8 +323,8 @@ export default function ReceivingForm() {
           {existing.notes && <div className="sm:col-span-2"><span className="text-gray-500">{t('lbl_notes')}:</span> {existing.notes}</div>}
         </div>
 
-        {/* Items — always editable for draft */}
-        <div className="card overflow-hidden">
+        {/* Items — always editable for draft; no overflow-hidden so PartSearch dropdown isn't clipped */}
+        <div className="card">
           {isDraft && isWarehouse && (
             <div className="px-6 py-4 border-b border-gray-100 bg-blue-50">
               <div className="part-search-wrapper">
