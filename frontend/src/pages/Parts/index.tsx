@@ -28,9 +28,16 @@ export default function Parts() {
       return () => clearTimeout(timer)
     }
   }, [highlightId])
-  const [q, setQ] = useState('')
+  // Persist filters in localStorage
+  const saved = (() => { try { return JSON.parse(localStorage.getItem('parts_filters') || '{}') } catch { return {} } })()
+  function saveFilters(patch: Record<string, string>) {
+    const cur = (() => { try { return JSON.parse(localStorage.getItem('parts_filters') || '{}') } catch { return {} } })()
+    localStorage.setItem('parts_filters', JSON.stringify({ ...cur, ...patch }))
+  }
+
+  const [q, setQ] = useState(saved.q || '')
   const [selected, setSelected] = useState<Set<number>>(new Set())
-  const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>('none')
+  const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>(saved.groupBy || 'none')
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   function toggleCollapse(key: string) {
     setCollapsed(prev => { const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next })
@@ -56,17 +63,18 @@ export default function Parts() {
     const ids = Array.from(selected).join(',')
     navigate(`/parts/print?ids=${ids}`)
   }
-  const [category, setCategory] = useState('')
-  const [make, setMake] = useState('')
-  const [model, setModel] = useState('')
-  const [carModel, setCarModel] = useState('')
-  const [debouncedQ, setDebouncedQ] = useState('')
-  const timer = useState<ReturnType<typeof setTimeout>>()[0]
+  const [category, setCategory] = useState(saved.category || '')
+  const [make, setMake] = useState(saved.make || '')
+  const [model, setModel] = useState(saved.model || '')
+  const [carModel, setCarModel] = useState(saved.carModel || '')
+  const [debouncedQ, setDebouncedQ] = useState(saved.q || '')
+  const searchTimer = useRef<ReturnType<typeof setTimeout>>()
 
   function handleSearch(val: string) {
     setQ(val)
-    clearTimeout(timer as any)
-    setTimeout(() => setDebouncedQ(val), 300)
+    saveFilters({ q: val })
+    clearTimeout(searchTimer.current)
+    searchTimer.current = setTimeout(() => setDebouncedQ(val), 300)
   }
 
   const { data: parts = [], isLoading } = useQuery({
@@ -117,14 +125,14 @@ export default function Parts() {
           <input type="text" placeholder={t('parts_search')} className="input pl-9"
             value={q} onChange={e => handleSearch(e.target.value)} />
         </div>
-        <select value={category} onChange={e => setCategory(e.target.value)} className="input w-auto">
+        <select value={category} onChange={e => { setCategory(e.target.value); saveFilters({ category: e.target.value }) }} className="input w-auto">
           <option value="">{t('stock_all_categories')}</option>
           {categories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
         <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden text-xs">
           <span className="px-2 py-1.5 text-gray-500 bg-gray-50">{t('group_label')}</span>
           {(['none', 'category', 'brand'] as const).map(g => (
-            <button key={g} onClick={() => setGroupBy(g)}
+            <button key={g} onClick={() => { setGroupBy(g); saveFilters({ groupBy: g }) }}
               className={`px-2 py-1.5 font-medium transition-colors ${groupBy === g ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
               {g === 'none' ? 'Нет' : g === 'category' ? 'Категория' : 'Бренд'}
             </button>
@@ -132,14 +140,14 @@ export default function Parts() {
         </div>
         <select
           value={carModel}
-          onChange={e => setCarModel(e.target.value)}
+          onChange={e => { setCarModel(e.target.value); saveFilters({ carModel: e.target.value }) }}
           className={`input w-auto ${carModel ? 'border-blue-500 bg-blue-50' : ''}`}
         >
           <option value="">🏍 Все модели</option>
           {carModels.map(m => <option key={m} value={m}>{m}</option>)}
         </select>
         {carModel && (
-          <button onClick={() => setCarModel('')} className="text-xs text-blue-600 hover:text-blue-800">
+          <button onClick={() => { setCarModel(''); saveFilters({ carModel: '' }) }} className="text-xs text-blue-600 hover:text-blue-800">
             ✕ {carModel}
           </button>
         )}
