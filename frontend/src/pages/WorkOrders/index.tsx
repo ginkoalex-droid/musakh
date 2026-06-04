@@ -4,7 +4,7 @@ import { fetchWorkOrders, fetchWOSummary, fetchMechanics, confirmWorkOrder, dele
 import { fetchIssueOrders } from '../../api/issues'
 import { Plus, CheckCircle, Clock, Users, Trash2, Search, ChevronDown, AlertTriangle } from 'lucide-react'
 import { Link, useSearchParams } from 'react-router-dom'
-import { WORK_TYPES, fetchWOModels } from '../../api/workOrders'
+import { WORK_TYPES, SHIRUT_TYPE, fetchWOModels } from '../../api/workOrders'
 import { canManageWO } from '../../store/permissions'
 import { useT } from '../../i18n'
 import { getUser } from '../../store/auth'
@@ -69,7 +69,7 @@ export default function WorkOrders() {
     work_order_number: '', work_type: '', mechanic_id: 0,
     mechanic_id_2: 0, mechanic_share: 100,
     car_plate: '', car_make: '', car_model: '',
-    car_mileage: '', client_phone: '', notes: ''
+    car_mileage: '', client_phone: '', client_materials: '', notes: ''
   })
 
   function handleWONumber(val: string) {
@@ -194,13 +194,14 @@ export default function WorkOrders() {
         car_model: form.car_model || undefined,
         car_mileage: form.car_mileage ? parseInt(form.car_mileage) : undefined,
         client_phone: form.client_phone || undefined,
+        client_materials: form.client_materials || undefined,
         notes: form.notes || undefined,
       })
       toast.success(t('wo_created_toast'))
       qc.invalidateQueries({ queryKey: ['work-orders'] })
       qc.invalidateQueries({ queryKey: ['wo-summary'] })
       setNewModal(false)
-      setForm({ work_order_number: '', work_type: '', mechanic_id: 0, mechanic_id_2: 0, mechanic_share: 100, car_plate: '', car_make: '', car_model: '', car_mileage: '', client_phone: '', notes: '' })
+      setForm({ work_order_number: '', work_type: '', mechanic_id: 0, mechanic_id_2: 0, mechanic_share: 100, car_plate: '', car_make: '', car_model: '', car_mileage: '', client_phone: '', client_materials: '', notes: '' })
     } catch (err: any) { toast.error(err.response?.data?.detail || t('err_generic')) }
     finally { setLoading(false) }
   }
@@ -406,6 +407,12 @@ export default function WorkOrders() {
             <span className="text-gray-500">{t('wo_open')}:</span>
             <span className="font-bold text-orange-500 text-lg">{orders.filter(o => !o.is_confirmed).length}</span>
           </div>
+          {orders.filter(o => o.work_type === SHIRUT_TYPE).length > 0 && (
+            <div className="flex items-center gap-2 border-l border-gray-300 pl-4">
+              <span className="text-gray-500">{t('wo_shirut_label')}:</span>
+              <span className="font-bold text-amber-600 text-lg">{orders.filter(o => o.work_type === SHIRUT_TYPE).length}</span>
+            </div>
+          )}
           {summary.length > 0 && (
             <div className="flex items-center gap-2 border-l border-gray-300 pl-4">
               <span className="text-gray-500">{t('wo_by_mechanics')}:</span>
@@ -474,7 +481,11 @@ export default function WorkOrders() {
                               <Link to={`/work-orders/${o.id}`} className="font-mono font-semibold text-blue-700 hover:underline">
                                 {o.work_order_number}
                               </Link>
-                              {o.work_type && <span className="badge bg-purple-100 text-purple-700 text-xs">{o.work_type}</span>}
+                              {o.work_type && (
+                                <span className={`badge text-xs ${o.work_type === SHIRUT_TYPE ? 'bg-amber-100 text-amber-700' : 'bg-purple-100 text-purple-700'}`}>
+                                  {o.work_type}
+                                </span>
+                              )}
                               {o.mechanic_id_2 && (
                                 <span className={`badge text-xs ${role === 'primary' ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
                                   {share}%
@@ -631,6 +642,16 @@ export default function WorkOrders() {
                 <input className="input" type="tel" placeholder="+972 50 000 0000"
                   value={form.client_phone}
                   onChange={e => setForm(f => ({ ...f, client_phone: e.target.value }))} />
+              </div>
+              <div className="col-span-2">
+                <label className="label flex items-center gap-1.5">
+                  📦 {t('wo_client_materials')}
+                  <span className="text-xs font-normal text-gray-400">({t('wo_no_stock_impact')})</span>
+                </label>
+                <textarea className="input resize-none" rows={2}
+                  placeholder="DID 520, Honda OEM filter..."
+                  value={form.client_materials}
+                  onChange={e => setForm(f => ({ ...f, client_materials: e.target.value }))} />
               </div>
               <div className="relative">
                 <label className="label">{t('lbl_model')} *</label>

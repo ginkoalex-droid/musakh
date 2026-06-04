@@ -175,6 +175,7 @@ class WorkOrder(Base):
     car_model: Mapped[str | None] = mapped_column(String(100))
     car_mileage: Mapped[int | None] = mapped_column(Integer, nullable=True)
     client_phone: Mapped[str | None] = mapped_column(String(50), nullable=True)
+    client_materials: Mapped[str | None] = mapped_column(Text, nullable=True)  # pass-through / client-supplied parts
     notes: Mapped[str | None] = mapped_column(Text)
     is_confirmed: Mapped[bool] = mapped_column(Boolean, default=False)
     confirmed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)

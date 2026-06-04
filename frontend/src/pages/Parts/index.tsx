@@ -5,11 +5,13 @@ import api from '../../api/client'
 import { Plus, Package, Search, Car, Printer, Copy } from 'lucide-react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { useT } from '../../i18n'
+import { useUnit } from '../../utils/useUnit'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts'
 import KeyHints from '../../components/KeyHints'
 
 export default function Parts() {
   const { t } = useT()
+  const u = useUnit()
   const navigate = useNavigate()
   const location = useLocation()
   const highlightId = (location.state as any)?.highlightId as number | undefined
@@ -217,7 +219,7 @@ export default function Parts() {
                         <td className="table-td hidden md:table-cell">{p.category ? <span className="badge bg-gray-100 text-gray-600">{p.category}</span> : '—'}</td>
                         <td className="table-td hidden lg:table-cell text-xs font-mono text-gray-500">{p.oem_numbers[0]?.oem_number || p.barcodes[0]?.barcode || '—'}</td>
                         <td className="table-td hidden sm:table-cell text-gray-500">{p.location || '—'}</td>
-                        <td className="table-td text-right"><span className={`font-semibold ${p.stock_qty <= p.min_stock ? 'text-red-600' : 'text-gray-900'}`}>{p.stock_qty} {p.unit}</span></td>
+                        <td className="table-td text-right"><span className={`font-semibold ${p.stock_qty <= p.min_stock ? 'text-red-600' : 'text-gray-900'}`}>{p.stock_qty} {u(p.unit)}</span></td>
                       </tr>
                     ))}
                   </>
@@ -272,7 +274,7 @@ export default function Parts() {
                   <td className="table-td hidden sm:table-cell text-gray-500">{p.location || '—'}</td>
                   <td className="table-td text-right">
                     <span className={`font-semibold ${p.stock_qty <= p.min_stock ? 'text-red-600' : 'text-gray-900'}`}>
-                      {p.stock_qty} {p.unit}
+                      {p.stock_qty} {u(p.unit)}
                     </span>
                   </td>
                 </tr>

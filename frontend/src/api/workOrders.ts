@@ -10,6 +10,7 @@ export interface Mechanic {
 }
 
 export const WORK_TYPES = [
+  'שירות – Shirut',
   'טיפול – Service',
   'שיפוץ – Repair',
   'התקנה – Installation',
@@ -20,6 +21,8 @@ export const WORK_TYPES = [
   'חשמל – Electrical',
   'ריקולת – Recall',
 ] as const
+
+export const SHIRUT_TYPE = 'שירות – Shirut'
 
 export interface WorkOrder {
   id: number
@@ -36,6 +39,7 @@ export interface WorkOrder {
   car_model?: string
   car_mileage?: number
   client_phone?: string
+  client_materials?: string
   notes?: string
   is_confirmed: boolean
   confirmed_at?: string

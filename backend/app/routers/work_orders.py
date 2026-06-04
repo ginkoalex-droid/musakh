@@ -92,6 +92,7 @@ def _wo_to_out(wo: WorkOrder) -> WorkOrderOut:
         car_model=wo.car_model,
         car_mileage=wo.car_mileage,
         client_phone=wo.client_phone,
+        client_materials=wo.client_materials,
         notes=wo.notes,
         is_confirmed=wo.is_confirmed,
         confirmed_at=wo.confirmed_at,
@@ -250,6 +251,7 @@ async def create_work_order(
         car_model=data.car_model,
         car_mileage=data.car_mileage,
         client_phone=data.client_phone,
+        client_materials=data.client_materials,
         notes=data.notes,
         created_by=current_user.id,
     )

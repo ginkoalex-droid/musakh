@@ -228,6 +228,7 @@ class WorkOrderCreate(BaseModel):
     car_model: Optional[str] = None
     car_mileage: Optional[int] = None
     client_phone: Optional[str] = None
+    client_materials: Optional[str] = None
     notes: Optional[str] = None
 
 
@@ -246,6 +247,7 @@ class WorkOrderOut(BaseModel):
     car_model: Optional[str] = None
     car_mileage: Optional[int] = None
     client_phone: Optional[str] = None
+    client_materials: Optional[str] = None
     notes: Optional[str] = None
     is_confirmed: bool
     confirmed_at: Optional[datetime] = None

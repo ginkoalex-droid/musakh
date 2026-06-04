@@ -5,6 +5,7 @@ import { fetchWorkOrder, confirmWorkOrder, reopenWorkOrder, deleteWorkOrder, upd
 import { fetchIssueOrders, fetchIssueOrder, confirmIssueOrder, deleteIssueOrder, addIssueItem, updateIssueItemQty, removeIssueItem } from '../../api/issues'
 import { ArrowLeft, CheckCircle, Clock, Package, Trash2, Plus, Edit2, ScanLine } from 'lucide-react'
 import PartSearch from '../../components/PartSearch'
+import PartsPicker from '../../components/PartsPicker'
 import type { Part } from '../../types'
 import { WORK_TYPES } from '../../api/workOrders'
 import { useT } from '../../i18n'
@@ -24,7 +25,8 @@ export default function WorkOrderDetail() {
 
   const [editMechanics, setEditMechanics] = useState(false)
   const [noPartsModal, setNoPartsModal] = useState(false)
-  const [addingToIssue, setAddingToIssue] = useState<number | null>(null) // issue id being added to
+  const [addingToIssue, setAddingToIssue] = useState<number | null>(null)
+  const [pickerForIssue, setPickerForIssue] = useState<number | null>(null)
   const [noPartsConfirmed, setNoPartsConfirmed] = useState(false)
   const [mechForm, setMechForm] = useState({ mechanic_id: 0, mechanic_id_2: 0, mechanic_share: 50, work_type: '', car_model: '', car_plate: '' })
   const [editNotes, setEditNotes] = useState(false)
@@ -79,6 +81,22 @@ export default function WorkOrderDetail() {
     queryFn: () => fetchIssueOrders(parseInt(id!)),
     enabled: !!id,
   })
+
+  async function handlePickerAdd(issueId: number, items: { part: Part; qty: number }[]) {
+    for (const { part, qty } of items) {
+      const existingIssue = qc.getQueryData<import('../../api/issues').IssueOrder>(['issue-order', String(issueId)])
+      const existingItem = existingIssue?.items.find((i: import('../../api/issues').IssueItem) => i.part_id === part.id)
+      if (existingItem) {
+        const newQty = Math.round((existingItem.quantity + qty) * 1000) / 1000
+        await updateIssueItemQty(issueId, existingItem.id, newQty)
+      } else {
+        await addIssueItem(issueId, part.id, qty)
+      }
+    }
+    qc.invalidateQueries({ queryKey: ['issues-for-wo', id] })
+    qc.invalidateQueries({ queryKey: ['issue-order', String(issueId)] })
+    toast.success(`+${items.length} ${t('lbl_positions')}`, { duration: 1500 })
+  }
 
   async function handleAddPartToIssue(issueId: number, part: Part) {
     const defaultQty = part.default_issue_qty ?? 1
@@ -268,6 +286,12 @@ export default function WorkOrderDetail() {
             <a href={`tel:${wo.client_phone}`} className="font-semibold ml-2 text-blue-600">{wo.client_phone}</a>
           </div>
         )}
+        {wo.client_materials && (
+          <div className="sm:col-span-2 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <span className="text-xs font-medium text-amber-700">📦 {t('wo_client_materials')}:</span>
+            <p className="text-sm text-amber-900 mt-0.5 whitespace-pre-wrap">{wo.client_materials}</p>
+          </div>
+        )}
           <div className="sm:col-span-2">
             <label className="text-gray-500 text-xs font-medium block mb-1">{t('lbl_notes')}</label>
             {(wo.is_confirmed ? isAdmin : canClose) ? (
@@ -367,28 +391,29 @@ export default function WorkOrderDetail() {
 
                 {/* Inline part add for draft issues */}
                 {!issue.is_confirmed && !issue.is_cancelled && canClose && (
-                  <div className="px-4 py-3 border-t border-gray-100 bg-blue-50">
+                  <div className="px-4 py-3 border-t border-gray-100 bg-blue-50 space-y-2">
                     {addingToIssue === issue.id ? (
                       <div className="flex gap-2 items-center">
                         <div className="flex-1">
                           <PartSearch
                             autoFocus
-                            placeholder="Сканируй штрихкод или введи название..."
+                            placeholder={t('issue_add_placeholder')}
                             onSelect={part => handleAddPartToIssue(issue.id, part)}
                           />
                         </div>
-                        <button
-                          onClick={() => setAddingToIssue(null)}
-                          className="btn-secondary py-1.5 px-2 text-xs text-gray-500"
-                        >✕</button>
+                        <button onClick={() => setAddingToIssue(null)} className="btn-secondary py-1.5 px-2 text-xs text-gray-500">✕</button>
                       </div>
                     ) : (
-                      <button
-                        onClick={() => setAddingToIssue(issue.id)}
-                        className="flex items-center gap-2 text-sm text-blue-700 font-medium hover:text-blue-900"
-                      >
-                        <ScanLine className="w-4 h-4" /> Добавить запчасть
-                      </button>
+                      <div className="flex gap-3 flex-wrap">
+                        <button onClick={() => setAddingToIssue(issue.id)}
+                          className="flex items-center gap-2 text-sm text-blue-700 font-medium hover:text-blue-900">
+                          <ScanLine className="w-4 h-4" /> {t('issue_add_placeholder').slice(0, 12)}...
+                        </button>
+                        <button onClick={() => setPickerForIssue(issue.id)}
+                          className="flex items-center gap-2 text-sm text-purple-700 font-medium hover:text-purple-900">
+                          <Package className="w-4 h-4" /> {t('parts_picker_add')}
+                        </button>
+                      </div>
                     )}
                   </div>
                 )}
@@ -440,6 +465,14 @@ export default function WorkOrderDetail() {
             </button>
           </>
         )}
+      {/* Parts picker modal */}
+      {pickerForIssue && (
+        <PartsPicker
+          onAdd={items => handlePickerAdd(pickerForIssue, items)}
+          onClose={() => setPickerForIssue(null)}
+        />
+      )}
+
       {/* No-parts confirmation modal */}
       {noPartsModal && wo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60">
