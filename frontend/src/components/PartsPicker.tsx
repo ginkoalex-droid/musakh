@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { fetchParts, fetchCategories } from '../api/parts'
+import { fetchParts, fetchCategories, fetchBrands } from '../api/parts'
+import api from '../api/client'
 import { Search, X, Plus, AlertTriangle } from 'lucide-react'
 import type { Part } from '../types'
 import { useT } from '../i18n'
@@ -11,14 +12,18 @@ interface SelectedItem { part: Part; qty: number }
 interface Props {
   onAdd: (items: SelectedItem[]) => void
   onClose: () => void
+  /** pre-filter by this car model */
+  preCarModel?: string
 }
 
-export default function PartsPicker({ onAdd, onClose }: Props) {
+export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
   const { t } = useT()
   const u = useUnit()
   const [q, setQ] = useState('')
   const [dq, setDq] = useState('')
   const [category, setCategory] = useState('')
+  const [brand, setBrand] = useState('')
+  const [carModel, setCarModel] = useState(preCarModel || '')
   const [selected, setSelected] = useState<Map<number, SelectedItem>>(new Map())
   const searchTimer = useRef<ReturnType<typeof setTimeout>>()
 
@@ -29,13 +34,18 @@ export default function PartsPicker({ onAdd, onClose }: Props) {
   }
 
   const { data: parts = [], isLoading } = useQuery({
-    queryKey: ['parts-picker', dq, category],
-    queryFn: () => fetchParts(dq || undefined, category || undefined),
+    queryKey: ['parts-picker', dq, category, brand, carModel],
+    queryFn: () => fetchParts(dq || undefined, category || undefined, false, brand || undefined, carModel || undefined),
   })
 
-  const { data: categories = [] } = useQuery({
-    queryKey: ['categories'],
-    queryFn: fetchCategories,
+  const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
+  const { data: brands = [] } = useQuery({ queryKey: ['brands'], queryFn: fetchBrands })
+  const { data: carModels = [] } = useQuery({
+    queryKey: ['car-models-for-stock'],
+    queryFn: async () => {
+      const res = await api.get('/parts/wo-models-all')
+      return res.data as string[]
+    },
   })
 
   function toggle(part: Part) {
@@ -99,6 +109,18 @@ export default function PartsPicker({ onAdd, onClose }: Props) {
           <select value={category} onChange={e => setCategory(e.target.value)} className="input w-auto text-sm">
             <option value="">{t('stock_all_categories')}</option>
             {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <select value={brand} onChange={e => setBrand(e.target.value)} className="input w-auto text-sm">
+            <option value="">{t('lbl_brand')} —</option>
+            {brands.map(b => <option key={b} value={b}>{b}</option>)}
+          </select>
+          <select
+            value={carModel}
+            onChange={e => setCarModel(e.target.value)}
+            className={`input w-auto text-sm ${carModel ? 'border-blue-400 bg-blue-50' : ''}`}
+          >
+            <option value="">{t('filter_all_models_moto')}</option>
+            {carModels.map(m => <option key={m} value={m}>{m}</option>)}
           </select>
         </div>
 

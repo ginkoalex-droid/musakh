@@ -469,11 +469,12 @@ export default function WorkOrderDetail() {
             </button>
           </>
         )}
-      {/* Parts picker modal */}
-      {pickerForIssue && (
+      {/* Parts picker modal — pre-filter by WO car model */}
+      {pickerForIssue !== null && (
         <PartsPicker
           onAdd={items => handlePickerAdd(pickerForIssue, items)}
           onClose={() => setPickerForIssue(null)}
+          preCarModel={wo?.car_model || undefined}
         />
       )}
 
