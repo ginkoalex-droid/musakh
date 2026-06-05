@@ -129,6 +129,7 @@ export const he: Record<TranslationKey, string> = {
   lbl_invoice: 'חשבונית / הזמנה',
   lbl_status: 'סטטוס',
   lbl_min_stock: 'מינימום מלאי',
+  lbl_in_stock: 'במלאי',
   lbl_current_stock: 'מלאי נוכחי',
   lbl_employee: 'עובד',
   lbl_before: 'לפני',

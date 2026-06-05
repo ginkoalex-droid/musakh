@@ -129,6 +129,7 @@ export const en: Record<TranslationKey, string> = {
   lbl_invoice: 'Invoice / Bill',
   lbl_status: 'Status',
   lbl_min_stock: 'Min. stock',
+  lbl_in_stock: 'In stock',
   lbl_current_stock: 'Current stock',
   lbl_employee: 'Employee',
   lbl_before: 'Before',

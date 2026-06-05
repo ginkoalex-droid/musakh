@@ -131,6 +131,7 @@ export const ru = {
   lbl_invoice: 'Накладная / счет',
   lbl_status: 'Статус',
   lbl_min_stock: 'Мин. остаток',
+  lbl_in_stock: 'Остаток',
   lbl_current_stock: 'Текущий остаток',
   lbl_employee: 'Сотрудник',
   lbl_before: 'До',

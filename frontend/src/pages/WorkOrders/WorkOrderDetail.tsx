@@ -82,20 +82,37 @@ export default function WorkOrderDetail() {
     enabled: !!id,
   })
 
-  async function handlePickerAdd(issueId: number, items: { part: Part; qty: number }[]) {
-    for (const { part, qty } of items) {
-      const existingIssue = qc.getQueryData<import('../../api/issues').IssueOrder>(['issue-order', String(issueId)])
-      const existingItem = existingIssue?.items.find((i: import('../../api/issues').IssueItem) => i.part_id === part.id)
-      if (existingItem) {
-        const newQty = Math.round((existingItem.quantity + qty) * 1000) / 1000
-        await updateIssueItemQty(issueId, existingItem.id, newQty)
+  async function handlePickerAdd(_issueId: number, items: { part: Part; qty: number }[]) {
+    if (items.length === 0) return
+    try {
+      // Find existing draft issue for this WO, or create one
+      const draftIssue = issues.find(i => !i.is_confirmed && !i.is_cancelled)
+      let targetIssueId: number
+
+      if (draftIssue) {
+        targetIssueId = draftIssue.id
       } else {
-        await addIssueItem(issueId, part.id, qty)
+        // Create new draft issue for this WO
+        const { createIssueOrder } = await import('../../api/issues')
+        const newIssue = await createIssueOrder({
+          work_order_id: wo!.id,
+          work_order_number: wo!.work_order_number,
+          items: [],
+        })
+        targetIssueId = newIssue.id
       }
+
+      // Add all items to the draft
+      for (const { part, qty } of items) {
+        await addIssueItem(targetIssueId, part.id, qty)
+      }
+
+      qc.invalidateQueries({ queryKey: ['issues-for-wo', id] })
+      qc.invalidateQueries({ queryKey: ['issue-order', String(targetIssueId)] })
+      toast.success(`+${items.length} ${t('lbl_positions')}`, { duration: 1500 })
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
     }
-    qc.invalidateQueries({ queryKey: ['issues-for-wo', id] })
-    qc.invalidateQueries({ queryKey: ['issue-order', String(issueId)] })
-    toast.success(`+${items.length} ${t('lbl_positions')}`, { duration: 1500 })
   }
 
   async function handleAddPartToIssue(issueId: number, part: Part) {
@@ -323,18 +340,18 @@ export default function WorkOrderDetail() {
           <h2 className="font-semibold text-gray-700 flex items-center gap-2">
             <Package className="w-4 h-4 text-red-500" />
             {t('nav_issues')}
-            {issues.length > 0 && (
+            {totalPositions > 0 && (
               <span className="text-xs text-gray-400 font-normal">
-                — {issues.length} {t('issue_title').toLowerCase()}, {totalPositions} {t('lbl_positions')}
+                — {totalPositions} {t('lbl_positions')}
               </span>
             )}
           </h2>
-          {/* New issue: always available for open WOs (mechanic/admin), and for admin even on confirmed WOs */}
-          {(canClose && !wo.is_confirmed) || isAdmin ? (
-            <Link to="/issues/new" state={{ preselect_wo_id: wo.id }} className="btn-danger py-1.5 text-sm">
-              <Plus className="w-3.5 h-3.5" /> {t('issue_new')}
-            </Link>
-          ) : null}
+          {/* Add parts via picker — stay in WO, no navigation */}
+          {((canClose && !wo.is_confirmed) || isAdmin) && (
+            <button onClick={() => setPickerForIssue(-1)} className="btn-danger py-1.5 text-sm">
+              <Plus className="w-3.5 h-3.5" /> {t('parts_picker_add')}
+            </button>
+          )}
         </div>
 
         {issues.length === 0 ? (
@@ -404,16 +421,10 @@ export default function WorkOrderDetail() {
                         <button onClick={() => setAddingToIssue(null)} className="btn-secondary py-1.5 px-2 text-xs text-gray-500">✕</button>
                       </div>
                     ) : (
-                      <div className="flex gap-3 flex-wrap">
-                        <button onClick={() => setAddingToIssue(issue.id)}
-                          className="flex items-center gap-2 text-sm text-blue-700 font-medium hover:text-blue-900">
-                          <ScanLine className="w-4 h-4" /> {t('issue_add_placeholder').slice(0, 12)}...
-                        </button>
-                        <button onClick={() => setPickerForIssue(issue.id)}
-                          className="flex items-center gap-2 text-sm text-purple-700 font-medium hover:text-purple-900">
-                          <Package className="w-4 h-4" /> {t('parts_picker_add')}
-                        </button>
-                      </div>
+                      <button onClick={() => setAddingToIssue(issue.id)}
+                        className="flex items-center gap-2 text-sm text-blue-700 font-medium hover:text-blue-900">
+                        <ScanLine className="w-4 h-4" /> {t('issue_add_placeholder')}
+                      </button>
                     )}
                   </div>
                 )}
@@ -426,17 +437,10 @@ export default function WorkOrderDetail() {
           </div>
         )}
 
-        {/* When no draft issues exist — admin can still add a new one (e.g. after cancelling) */}
-        {isAdmin && !issues.some(i => !i.is_confirmed && !i.is_cancelled) && (
-          <div className="mt-3">
-            <Link
-              to="/issues/new"
-              state={{ preselect_wo_id: wo.id }}
-              className="flex items-center gap-2 text-sm text-blue-600 hover:text-blue-800 font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              Добавить новое списание к этому ЗН
-            </Link>
+        {/* When no issues at all — show a hint */}
+        {issues.length === 0 && !wo.is_confirmed && (
+          <div className="text-sm text-gray-400 text-center py-4">
+            {t('issue_no_data')}
           </div>
         )}
       </div>
