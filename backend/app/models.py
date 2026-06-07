@@ -217,6 +217,7 @@ class IssueItem(Base):
     part_id: Mapped[int] = mapped_column(ForeignKey("parts.id"))
     quantity: Mapped[float] = mapped_column(Numeric(10, 3))
     notes: Mapped[str | None] = mapped_column(String(300))
+    is_passthrough: Mapped[bool] = mapped_column(Boolean, default=False)  # bypass stock
 
     order: Mapped["IssueOrder"] = relationship(back_populates="items")
     part: Mapped["Part"] = relationship()

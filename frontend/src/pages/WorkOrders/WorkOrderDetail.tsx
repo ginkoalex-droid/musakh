@@ -82,7 +82,7 @@ export default function WorkOrderDetail() {
     enabled: !!id,
   })
 
-  async function handlePickerAdd(_issueId: number, items: { part: Part; qty: number }[]) {
+  async function handlePickerAdd(_issueId: number, items: { part: Part; qty: number; passthrough?: boolean }[]) {
     if (items.length === 0) return
     try {
       // Find existing draft issue for this WO, or create one
@@ -103,8 +103,8 @@ export default function WorkOrderDetail() {
       }
 
       // Add all items to the draft
-      for (const { part, qty } of items) {
-        await addIssueItem(targetIssueId, part.id, qty)
+      for (const { part, qty, passthrough } of items) {
+        await addIssueItem(targetIssueId, part.id, qty, undefined, passthrough)
       }
 
       qc.invalidateQueries({ queryKey: ['issues-for-wo', id] })
@@ -631,11 +631,16 @@ function IssueItemsPreview({ issueId, isDraft }: { issueId: number; isDraft?: bo
       {issue.items.map(item => (
         <div key={item.id} className="px-4 py-2 flex items-center justify-between gap-3">
           <div className="flex-1 min-w-0">
-            {canViewPart ? (
-              <Link to={`/parts/${item.part_id}`} className="text-sm font-medium text-blue-700 hover:underline">{item.part_name}</Link>
-            ) : (
-              <span className="text-sm font-medium text-gray-900">{item.part_name}</span>
-            )}
+            <div className="flex items-center gap-2 flex-wrap">
+              {canViewPart ? (
+                <Link to={`/parts/${item.part_id}`} className="text-sm font-medium text-blue-700 hover:underline">{item.part_name}</Link>
+              ) : (
+                <span className="text-sm font-medium text-gray-900">{item.part_name}</span>
+              )}
+              {item.is_passthrough && (
+                <span className="text-xs bg-orange-100 text-orange-700 border border-orange-300 px-1.5 py-0.5 rounded font-medium">🔄 проходная</span>
+              )}
+            </div>
             <div className="flex gap-2 mt-0.5">
               {item.barcode && (
                 <span className="text-xs font-mono bg-blue-50 text-blue-700 px-1 rounded">▌{item.barcode}</span>

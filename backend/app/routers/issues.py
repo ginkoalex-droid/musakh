@@ -137,7 +137,7 @@ async def create_order(
         result = await db.execute(select(Part).where(Part.id == item_data.part_id))
         if not result.scalar_one_or_none():
             raise HTTPException(status_code=400, detail=f"Запчасть {item_data.part_id} не найдена")
-        db.add(IssueItem(order_id=order.id, part_id=item_data.part_id, quantity=item_data.quantity, notes=item_data.notes))
+        db.add(IssueItem(order_id=order.id, part_id=item_data.part_id, quantity=item_data.quantity, notes=item_data.notes, is_passthrough=item_data.is_passthrough))
 
     await db.commit()
 
@@ -163,7 +163,7 @@ async def add_item(
     if not part_result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Запчасть не найдена")
 
-    db.add(IssueItem(order_id=order.id, part_id=item_data.part_id, quantity=item_data.quantity, notes=item_data.notes))
+    db.add(IssueItem(order_id=order.id, part_id=item_data.part_id, quantity=item_data.quantity, notes=item_data.notes, is_passthrough=item_data.is_passthrough))
     await db.commit()
 
     result = await db.execute(select(IssueOrder).options(*_load_opts()).where(IssueOrder.id == order.id))
@@ -234,6 +234,10 @@ async def confirm_order(
         raise HTTPException(status_code=400, detail="Документ отменён")
 
     for item in order.items:
+        # Pass-through items bypass stock entirely
+        if item.is_passthrough:
+            continue
+
         stock_result = await db.execute(select(Stock).where(Stock.part_id == item.part_id))
         stock = stock_result.scalar_one_or_none()
         if not stock:

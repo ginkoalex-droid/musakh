@@ -270,6 +270,7 @@ class IssueItemCreate(BaseModel):
     part_id: int
     quantity: float
     notes: Optional[str] = None
+    is_passthrough: bool = False
 
 
 class IssueItemOut(BaseModel):
@@ -282,6 +283,7 @@ class IssueItemOut(BaseModel):
     oem_number: Optional[str] = None
     part_unit: Optional[str] = None
     default_issue_qty: Optional[float] = None
+    is_passthrough: bool = False
 
     model_config = {"from_attributes": True}
 

@@ -299,6 +299,8 @@ async def confirm_work_order(
 
     for issue in draft_issues:
         for item in issue.items:
+            if item.is_passthrough:
+                continue
             stock_result = await db.execute(select(Stock).where(Stock.part_id == item.part_id))
             stock = stock_result.scalar_one_or_none()
             if not stock:

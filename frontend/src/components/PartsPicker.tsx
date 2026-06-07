@@ -7,7 +7,7 @@ import type { Part } from '../types'
 import { useT } from '../i18n'
 import { useUnit } from '../utils/useUnit'
 
-interface SelectedItem { part: Part; qty: number }
+interface SelectedItem { part: Part; qty: number; passthrough?: boolean }
 
 interface Props {
   onAdd: (items: SelectedItem[]) => void
@@ -51,13 +51,13 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
     },
   })
 
-  function toggle(part: Part) {
+  function toggle(part: Part, passthrough = false) {
     setSelected(prev => {
       const next = new Map(prev)
       if (next.has(part.id)) {
         next.delete(part.id)
       } else {
-        next.set(part.id, { part, qty: part.default_issue_qty ?? 1 })
+        next.set(part.id, { part, qty: part.default_issue_qty ?? 1, passthrough })
       }
       return next
     })
@@ -175,7 +175,7 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
                         <input
                           type="checkbox"
                           checked={isSelected}
-                          onChange={() => toggle(p)}
+                          onChange={() => toggle(p, item?.passthrough)}
                           className="w-4 h-4 rounded accent-blue-600 cursor-pointer"
                         />
                       </td>
@@ -190,6 +190,19 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
                         <span className={`text-sm font-semibold ${p.stock_qty <= 0 ? 'text-red-500' : 'text-gray-700'}`}>
                           {p.stock_qty} {u(p.unit)}
                         </span>
+                        {/* Passthrough button for zero-stock parts */}
+                        {p.stock_qty <= 0 && !isSelected && (
+                          <div className="mt-0.5">
+                            <button type="button"
+                              onClick={e => { e.stopPropagation(); toggle(p, true) }}
+                              className="text-xs px-1.5 py-0.5 bg-orange-100 text-orange-700 border border-orange-300 rounded hover:bg-orange-200 font-medium">
+                              🔄 проходная
+                            </button>
+                          </div>
+                        )}
+                        {isSelected && item?.passthrough && (
+                          <div className="mt-0.5 text-xs text-orange-600 font-medium">🔄 проходная</div>
+                        )}
                       </td>
                       <td className="table-td" onClick={e => e.stopPropagation()}>
                         {isSelected && (

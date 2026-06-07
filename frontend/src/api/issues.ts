@@ -10,6 +10,7 @@ export interface IssueItem {
   oem_number?: string
   part_unit?: string
   default_issue_qty?: number
+  is_passthrough?: boolean
 }
 
 export interface IssueOrder {
@@ -88,8 +89,8 @@ export const deleteIssueOrder = async (id: number): Promise<void> => {
   await api.delete(`/issues/${id}`)
 }
 
-export const addIssueItem = async (orderId: number, part_id: number, quantity: number, notes?: string): Promise<IssueOrder> => {
-  const res = await api.post(`/issues/${orderId}/items`, { part_id, quantity, notes })
+export const addIssueItem = async (orderId: number, part_id: number, quantity: number, notes?: string, is_passthrough?: boolean): Promise<IssueOrder> => {
+  const res = await api.post(`/issues/${orderId}/items`, { part_id, quantity, notes, is_passthrough })
   return res.data
 }
 
