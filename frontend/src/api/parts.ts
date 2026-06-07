@@ -1,13 +1,14 @@
 import api from './client'
 import type { Part } from '../types'
 
-export const fetchParts = async (q?: string, category?: string, lowStock?: boolean, make?: string, model?: string): Promise<Part[]> => {
+export const fetchParts = async (q?: string, category?: string, lowStock?: boolean, make?: string, model?: string, brand?: string): Promise<Part[]> => {
   const params: Record<string, string | boolean> = {}
   if (q) params.q = q
   if (category) params.category = category
   if (lowStock) params.low_stock = true
   if (make) params.make = make
   if (model) params.model = model
+  if (brand) params.brand = brand
   const res = await api.get('/parts', { params })
   return res.data
 }

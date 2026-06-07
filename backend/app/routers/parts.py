@@ -35,6 +35,7 @@ def _build_part_list_item(part: Part) -> PartListItem:
 async def list_parts(
     q: Optional[str] = Query(None),
     category: Optional[str] = None,
+    brand: Optional[str] = None,
     make: Optional[str] = None,
     model: Optional[str] = None,
     low_stock: bool = False,
@@ -65,6 +66,9 @@ async def list_parts(
 
     if category:
         stmt = stmt.where(Part.category == category)
+
+    if brand:
+        stmt = stmt.where(Part.brand.ilike(brand))
 
     if make:
         stmt = stmt.where(Part.car_applications.any(CarApplication.make.ilike(make)))

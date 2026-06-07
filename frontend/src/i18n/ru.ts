@@ -132,6 +132,7 @@ export const ru = {
   lbl_status: 'Статус',
   lbl_min_stock: 'Мин. остаток',
   lbl_in_stock: 'Остаток',
+  parts_no_parts: 'Запчасти не найдены',
   lbl_current_stock: 'Текущий остаток',
   lbl_employee: 'Сотрудник',
   lbl_before: 'До',

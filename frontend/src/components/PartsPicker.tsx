@@ -23,7 +23,8 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
   const [dq, setDq] = useState('')
   const [category, setCategory] = useState('')
   const [brand, setBrand] = useState('')
-  const [carModel, setCarModel] = useState(preCarModel || '')
+  const [carModel, setCarModel] = useState('')
+  const [filterByWoModel, setFilterByWoModel] = useState(false) // unchecked by default
   const [selected, setSelected] = useState<Map<number, SelectedItem>>(new Map())
   const searchTimer = useRef<ReturnType<typeof setTimeout>>()
 
@@ -33,9 +34,11 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
     searchTimer.current = setTimeout(() => setDq(val), 300)
   }
 
+  const effectiveModel = filterByWoModel && preCarModel ? preCarModel : (carModel || undefined)
+
   const { data: parts = [], isLoading } = useQuery({
-    queryKey: ['parts-picker', dq, category, brand, carModel],
-    queryFn: () => fetchParts(dq || undefined, category || undefined, false, brand || undefined, carModel || undefined),
+    queryKey: ['parts-picker', dq, category, brand, effectiveModel],
+    queryFn: () => fetchParts(dq || undefined, category || undefined, false, undefined, effectiveModel, brand || undefined),
   })
 
   const { data: categories = [] } = useQuery({ queryKey: ['categories'], queryFn: fetchCategories })
@@ -114,22 +117,36 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
             <option value="">{t('lbl_brand')} —</option>
             {brands.map(b => <option key={b} value={b}>{b}</option>)}
           </select>
-          <select
-            value={carModel}
-            onChange={e => setCarModel(e.target.value)}
-            className={`input w-auto text-sm ${carModel ? 'border-blue-400 bg-blue-50' : ''}`}
-          >
-            <option value="">{t('filter_all_models_moto')}</option>
-            {carModels.map(m => <option key={m} value={m}>{m}</option>)}
-          </select>
+          {preCarModel ? (
+            /* When opened from WO — show a toggle checkbox for WO model */
+            <label className="flex items-center gap-2 cursor-pointer px-3 py-1.5 rounded-lg border text-sm select-none transition-colors"
+              style={{ borderColor: filterByWoModel ? '#3b82f6' : '#e5e7eb', background: filterByWoModel ? '#eff6ff' : '' }}>
+              <input
+                type="checkbox"
+                checked={filterByWoModel}
+                onChange={e => setFilterByWoModel(e.target.checked)}
+                className="w-4 h-4 rounded accent-blue-600"
+              />
+              <span className="font-mono text-blue-700">🏍 {preCarModel}</span>
+            </label>
+          ) : (
+            <select
+              value={carModel}
+              onChange={e => setCarModel(e.target.value)}
+              className={`input w-auto text-sm ${carModel ? 'border-blue-400 bg-blue-50' : ''}`}
+            >
+              <option value="">{t('filter_all_models_moto')}</option>
+              {carModels.map(m => <option key={m} value={m}>{m}</option>)}
+            </select>
+          )}
         </div>
 
         {/* Parts list */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="p-8 text-center text-gray-400">{t('rec_loading')}</div>
+            <div className="p-8 text-center text-gray-400">{t('parts_no_parts')}</div>
           ) : parts.length === 0 ? (
-            <div className="p-8 text-center text-gray-400">{t('rec_no_data')}</div>
+            <div className="p-8 text-center text-gray-400">{t('parts_no_parts')}</div>
           ) : (
             <table className="w-full">
               <thead className="sticky top-0 bg-gray-50 z-10">
