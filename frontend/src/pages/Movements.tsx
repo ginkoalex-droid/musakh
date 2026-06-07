@@ -117,15 +117,17 @@ export default function Movements() {
     return m
   }, [stockData])
 
-  // Summary by part_id: group by exact part, show in/out totals with unit
-  type PartSummary = { part_id: number; part_name: string; part_brand?: string; unit: string; received: number; issued: number; adjusted: number; net: number; balance: number }
-  type BrandGroup = { brand: string; categories: { category: string; parts: PartSummary[] }[] }
+  const [summaryGroupBy, setSummaryGroupBy] = useState<'brand' | 'category'>('brand')
 
-  const { partSummary, brandGroups } = useMemo(() => {
-    const map = new Map<number, PartSummary & { category?: string }>()
+  // Summary by part_id: group by exact part, show in/out totals with unit
+  type PartSummary = { part_id: number; part_name: string; part_brand?: string; part_category?: string; unit: string; received: number; issued: number; adjusted: number; net: number; balance: number }
+  type SummaryGroup = { name: string; parts: PartSummary[] }
+
+  const { partSummary, summaryGroups } = useMemo(() => {
+    const map = new Map<number, PartSummary>()
     for (const mv of allMovements) {
       const key = mv.part_id
-      if (!map.has(key)) map.set(key, { part_id: key, part_name: mv.part_name, part_brand: mv.part_brand, unit: mv.part_unit || 'шт', received: 0, issued: 0, adjusted: 0, net: 0, balance: 0 })
+      if (!map.has(key)) map.set(key, { part_id: key, part_name: mv.part_name, part_brand: mv.part_brand, part_category: mv.part_category, unit: mv.part_unit || 'шт', received: 0, issued: 0, adjusted: 0, net: 0, balance: 0 })
       const entry = map.get(key)!
       const qty = Number(mv.quantity)
       if (mv.movement_type === 'receiving') {
@@ -149,25 +151,26 @@ export default function Movements() {
     }
     const parts = Array.from(map.values()).sort((a, b) => a.part_name.localeCompare(b.part_name))
 
-    // Build brand → category groups
-    const brandMap = new Map<string, Map<string, PartSummary[]>>()
+    // Build groups by brand OR category
+    const groupMap = new Map<string, PartSummary[]>()
     for (const p of parts) {
-      const brand = p.part_brand || '—'
-      const cat = '—' // category not in movement data; group only by brand for now
-      if (!brandMap.has(brand)) brandMap.set(brand, new Map())
-      const catMap = brandMap.get(brand)!
-      if (!catMap.has(cat)) catMap.set(cat, [])
-      catMap.get(cat)!.push(p)
+      const key = summaryGroupBy === 'brand'
+        ? (p.part_brand || '—')
+        : (p.part_category || '—')
+      if (!groupMap.has(key)) groupMap.set(key, [])
+      groupMap.get(key)!.push(p)
     }
-    const groups: BrandGroup[] = Array.from(brandMap.entries())
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .map(([brand, catMap]) => ({
-        brand,
-        categories: Array.from(catMap.entries()).map(([category, ps]) => ({ category, parts: ps }))
-      }))
+    const summaryGroups: SummaryGroup[] = Array.from(groupMap.entries())
+      .sort((a, b) => {
+        // Put '—' (ungrouped) first
+        if (a[0] === '—') return -1
+        if (b[0] === '—') return 1
+        return a[0].localeCompare(b[0])
+      })
+      .map(([name, ps]) => ({ name, parts: ps }))
 
-    return { partSummary: parts, brandGroups: groups }
-  }, [allMovements, stockMap])
+    return { partSummary: parts, summaryGroups }
+  }, [allMovements, stockMap, summaryGroupBy])
 
   const [summaryCollapsed, setSummaryCollapsed] = useState<Set<string>>(new Set())
 
@@ -294,12 +297,25 @@ export default function Movements() {
             <span className="text-sm font-semibold text-gray-600">
               {t('mov_summary_total')}: {partSummary.length} {t('mov_positions')}
             </span>
-            {movType && (
-              <span className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
-                <AlertTriangle className="w-3.5 h-3.5" />
-                Сводка показывает все типы движений (фильтр по типу не применяется)
-              </span>
-            )}
+            <div className="flex items-center gap-3">
+              {movType && (
+                <span className="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-full">
+                  <AlertTriangle className="w-3.5 h-3.5" />
+                  Сводка показывает все типы
+                </span>
+              )}
+              <div className="flex items-center gap-1 border border-gray-200 rounded-lg overflow-hidden text-xs">
+                <span className="px-2 py-1.5 text-gray-500 bg-gray-50">{t('group_label')}</span>
+                <button onClick={() => setSummaryGroupBy('brand')}
+                  className={`px-2.5 py-1.5 font-medium transition-colors ${summaryGroupBy === 'brand' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                  {t('group_brand')}
+                </button>
+                <button onClick={() => setSummaryGroupBy('category')}
+                  className={`px-2.5 py-1.5 font-medium transition-colors ${summaryGroupBy === 'category' ? 'bg-blue-600 text-white' : 'text-gray-600 hover:bg-gray-100'}`}>
+                  {t('group_category')}
+                </button>
+              </div>
+            </div>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
@@ -315,24 +331,23 @@ export default function Movements() {
               <tbody className="divide-y divide-gray-100">
                 {allLoading ? (
                   <tr><td colSpan={5} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
-                ) : brandGroups.length === 0 ? (
+                ) : summaryGroups.length === 0 ? (
                   <tr><td colSpan={5} className="table-td text-center text-gray-400 py-8">{t('mov_no_data')}</td></tr>
-                ) : brandGroups.map(bg => {
-                  const bgCollapsed = summaryCollapsed.has(bg.brand)
-                  const bgTotal = bg.categories.reduce((s, c) => s + c.parts.length, 0)
+                ) : summaryGroups.map(grp => {
+                  const grpCollapsed = summaryCollapsed.has(grp.name)
                   return (
                     <>
-                      {/* Brand header */}
-                      <tr key={`bg-${bg.brand}`}
+                      {/* Group header */}
+                      <tr key={`grp-${grp.name}`}
                         className="bg-blue-600 cursor-pointer select-none hover:bg-blue-700"
-                        onClick={() => setSummaryCollapsed(prev => { const n = new Set(prev); n.has(bg.brand) ? n.delete(bg.brand) : n.add(bg.brand); return n })}>
+                        onClick={() => setSummaryCollapsed(prev => { const n = new Set(prev); n.has(grp.name) ? n.delete(grp.name) : n.add(grp.name); return n })}>
                         <td colSpan={5} className="px-4 py-2 text-xs font-bold text-white uppercase tracking-wide">
-                          <span className="mr-2">{bgCollapsed ? '▶' : '▼'}</span>
-                          {bg.brand} <span className="font-normal opacity-75 ml-1">({bgTotal})</span>
+                          <span className="mr-2">{grpCollapsed ? '▶' : '▼'}</span>
+                          {grp.name} <span className="font-normal opacity-75 ml-1">({grp.parts.length})</span>
                         </td>
                       </tr>
-                      {!bgCollapsed && bg.categories.map(cat => cat.parts.map(row => (
-                        <tr key={row.part_id} className="hover:bg-blue-50 cursor-pointer"
+                      {!grpCollapsed && grp.parts.map(row => (
+                        <tr key={`${grp.name}-${row.part_id}`} className="hover:bg-blue-50 cursor-pointer"
                           onClick={() => showPartMovements(row.part_id, row.part_name)}>
                           <td className="table-td pl-8">
                             <div className="font-medium text-sm text-blue-700">{row.part_name}</div>
@@ -352,7 +367,7 @@ export default function Movements() {
                             {row.balance} <span className="text-xs font-normal text-gray-400">{u(row.unit)}</span>
                           </td>
                         </tr>
-                      )))}
+                      ))}
                     </>
                   )
                 })}

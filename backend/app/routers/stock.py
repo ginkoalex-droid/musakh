@@ -318,6 +318,7 @@ async def list_movements(
             part_id=mv.part_id,
             part_name=part.name,
             part_brand=part.brand,
+            part_category=part.category,
             part_unit=part.unit,
             movement_type=mv.movement_type,
             quantity=mv.quantity,

@@ -104,6 +104,7 @@ export interface Movement {
   part_id: number
   part_name: string
   part_brand?: string
+  part_category?: string
   part_unit: string
   movement_type: MovementType
   quantity: number   // float
