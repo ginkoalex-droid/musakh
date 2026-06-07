@@ -2,10 +2,11 @@ import { useState, useRef } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { fetchParts, fetchCategories, fetchBrands } from '../api/parts'
 import api from '../api/client'
-import { Search, X, Plus, AlertTriangle } from 'lucide-react'
+import { Search, X, Plus, AlertTriangle, PackagePlus } from 'lucide-react'
 import type { Part } from '../types'
 import { useT } from '../i18n'
 import { useUnit } from '../utils/useUnit'
+import { useNavigate } from 'react-router-dom'
 
 interface SelectedItem { part: Part; qty: number; passthrough?: boolean }
 
@@ -27,6 +28,7 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
   const [filterByWoModel, setFilterByWoModel] = useState(false) // unchecked by default
   const [selected, setSelected] = useState<Map<number, SelectedItem>>(new Map())
   const searchTimer = useRef<ReturnType<typeof setTimeout>>()
+  const navigate = useNavigate()
 
   function handleSearch(val: string) {
     setQ(val)
@@ -144,9 +146,30 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
         {/* Parts list */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="p-8 text-center text-gray-400">{t('parts_no_parts')}</div>
+            <div className="p-8 text-center text-gray-400">{t('rec_loading')}</div>
           ) : parts.length === 0 ? (
-            <div className="p-8 text-center text-gray-400">{t('parts_no_parts')}</div>
+            <div className="p-8 text-center space-y-4">
+              <div className="text-gray-400">{t('parts_no_parts')}</div>
+              <button
+                onClick={() => {
+                  onClose()
+                  navigate('/parts/new', {
+                    state: {
+                      returnTo: window.location.pathname,
+                      prefill: { name: dq }
+                    }
+                  })
+                }}
+                className="flex items-center gap-2 mx-auto px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium text-sm"
+              >
+                <PackagePlus className="w-4 h-4" />
+                Создать новую запчасть в каталоге
+              </button>
+              <p className="text-xs text-gray-400">
+                Откроется карточка — заполнишь производителя, штрихкод, категорию.<br/>
+                После сохранения вернёшься в ЗН и сможешь добавить её.
+              </p>
+            </div>
           ) : (
             <table className="w-full">
               <thead className="sticky top-0 bg-gray-50 z-10">

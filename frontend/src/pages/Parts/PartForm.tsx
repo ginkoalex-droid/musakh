@@ -22,6 +22,7 @@ export default function PartForm() {
   const prefillBarcode = (location.state as any)?.barcode as string | undefined
   const returnTo = (location.state as any)?.returnTo as string | undefined
   const copyFrom = (location.state as any)?.copy as Record<string, any> | undefined
+  const prefill = (location.state as any)?.prefill as Record<string, any> | undefined
 
   const { data: existing } = useQuery({
     queryKey: ['part', id],
@@ -48,7 +49,7 @@ export default function PartForm() {
   const allCategories = Array.from(new Set([...DEFAULT_CATEGORIES, ...existingCategories]))
 
   const [form, setForm] = useState({
-    name: copyFrom?.name ?? '',
+    name: copyFrom?.name ?? prefill?.name ?? '',
     brand: copyFrom?.brand ?? '',
     category: copyFrom?.category ?? '',
     unit: copyFrom?.unit ?? 'шт',
