@@ -238,6 +238,10 @@ async def create_work_order(
     result = await db.execute(select(Mechanic).where(Mechanic.id == data.mechanic_id))
     if not result.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="Механик не найден")
+    if not data.car_model or not data.car_model.strip():
+        raise HTTPException(status_code=422, detail="Модель техники обязательна")
+    if not data.work_type or not data.work_type.strip():
+        raise HTTPException(status_code=422, detail="Тип работы обязателен")
 
     wo = WorkOrder(
         work_order_number=data.work_order_number,
@@ -359,18 +363,21 @@ async def update_work_order(
     # Open WO — admin or mechanic
     if not wo.is_confirmed and current_user.role not in (UserRole.admin, UserRole.mechanic):
         raise HTTPException(status_code=403, detail="Недостаточно прав")
-    d = data.model_dump()
+    # exclude_unset=True: only process fields actually sent by client
+    # This prevents Optional fields (not sent) from being treated as explicit None
+    d = data.model_dump(exclude_unset=True)
     for k, v in d.items():
         if v is not None:
             setattr(wo, k, v)
-    # Explicitly allow clearing nullable fields (e.g. removing second mechanic)
+    # Only clear nullable fields when client EXPLICITLY sent null
     nullable_clearable = ['mechanic_id_2', 'car_plate', 'car_make', 'car_model',
-                          'car_mileage', 'client_phone', 'notes', 'work_type']
+                          'car_mileage', 'client_phone', 'notes', 'work_type',
+                          'client_materials']
     for k in nullable_clearable:
         if k in d and d[k] is None:
             setattr(wo, k, None)
     # Reset share to 100% when second mechanic is removed
-    if d.get('mechanic_id_2') is None:
+    if d.get('mechanic_id_2') is None and 'mechanic_id_2' in d:
         wo.mechanic_share = 100
     await db.commit()
     result = await db.execute(select(WorkOrder).options(*_load_opts()).where(WorkOrder.id == wo.id))

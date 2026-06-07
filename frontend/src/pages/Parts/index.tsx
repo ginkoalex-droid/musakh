@@ -39,7 +39,7 @@ export default function Parts() {
 
   const [q, setQ] = useState(saved.q || '')
   const [selected, setSelected] = useState<Set<number>>(new Set())
-  const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>(saved.groupBy || 'none')
+  const [groupBy, setGroupBy] = useState<'none' | 'category' | 'brand'>(saved.groupBy || 'brand')
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
   function toggleCollapse(key: string) {
     setCollapsed(prev => { const next = new Set(prev); next.has(key) ? next.delete(key) : next.add(key); return next })
@@ -178,10 +178,10 @@ export default function Parts() {
             </thead>
             <tbody className="divide-y divide-gray-100">
               {isLoading ? (
-                <tr><td colSpan={7} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
+                <tr><td colSpan={8} className="table-td text-center text-gray-400 py-8">{t('rec_loading')}</td></tr>
               ) : parts.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="table-td text-center py-12">
+                  <td colSpan={8} className="table-td text-center py-12">
                     <Package className="w-10 h-10 text-gray-300 mx-auto mb-2" />
                     <div className="text-gray-400">{t('parts_no_results')}</div>
                   </td>
@@ -193,7 +193,7 @@ export default function Parts() {
                   <>
                     <tr key={`g-${groupName}`} className="bg-blue-50 cursor-pointer select-none hover:bg-blue-100"
                       onClick={() => toggleCollapse(groupName)}>
-                      <td colSpan={7} className="px-4 py-2 text-xs font-bold text-blue-700 uppercase tracking-wide">
+                      <td colSpan={8} className="px-4 py-2 text-xs font-bold text-blue-700 uppercase tracking-wide">
                         <span className="mr-2">{isCollapsed ? '▶' : '▼'}</span>
                         {groupName} <span className="font-normal text-blue-500 ml-1">({rows.length})</span>
                       </td>
@@ -219,7 +219,7 @@ export default function Parts() {
                         <td className="table-td hidden md:table-cell">{p.category ? <span className="badge bg-gray-100 text-gray-600">{p.category}</span> : '—'}</td>
                         <td className="table-td hidden lg:table-cell text-xs font-mono text-gray-500">{p.oem_numbers[0]?.oem_number || p.barcodes[0]?.barcode || '—'}</td>
                         <td className="table-td hidden sm:table-cell text-gray-500">{p.location || '—'}</td>
-                        <td className="table-td text-right"><span className={`font-semibold ${p.stock_qty <= p.min_stock ? 'text-red-600' : 'text-gray-900'}`}>{p.stock_qty} {u(p.unit)}</span></td>
+                        <td className="table-td text-right"><span className={`font-semibold ${p.track_min_stock && p.stock_qty <= 0 ? 'text-red-600' : p.track_min_stock && p.stock_qty <= p.min_stock ? 'text-orange-500' : 'text-gray-900'}`}>{p.stock_qty} {u(p.unit)}</span></td>
                       </tr>
                     ))}
                   </>
@@ -273,7 +273,7 @@ export default function Parts() {
                   </td>
                   <td className="table-td hidden sm:table-cell text-gray-500">{p.location || '—'}</td>
                   <td className="table-td text-right">
-                    <span className={`font-semibold ${p.stock_qty <= p.min_stock ? 'text-red-600' : 'text-gray-900'}`}>
+                    <span className={`font-semibold ${p.track_min_stock && p.stock_qty <= 0 ? 'text-red-600' : p.track_min_stock && p.stock_qty <= p.min_stock ? 'text-orange-500' : 'text-gray-900'}`}>
                       {p.stock_qty} {u(p.unit)}
                     </span>
                   </td>

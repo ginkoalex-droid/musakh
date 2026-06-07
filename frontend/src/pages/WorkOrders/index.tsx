@@ -110,10 +110,14 @@ export default function WorkOrders() {
   const [modelSuggestions, setModelSuggestions] = useState<string[]>([])
   const [showModelSugg, setShowModelSugg] = useState(false)
 
+  const [modelLatinWarn, setModelLatinWarn] = useState(false)
+
   function handleModelInput(val: string) {
     const upper = val.replace(/[^\x00-\x7F]/g, '').toUpperCase()
+    // Warn if characters were stripped (non-Latin input)
+    setModelLatinWarn(val.length > 0 && upper.length === 0)
     setForm(f => ({ ...f, car_model: upper }))
-    if (val.length >= 1) {
+    if (upper.length >= 1) {
       const sugg = existingModels.filter(m => m.toLowerCase().includes(upper.toLowerCase()))
       setModelSuggestions(sugg.slice(0, 8))
       setShowModelSugg(sugg.length > 0)
@@ -659,11 +663,14 @@ export default function WorkOrders() {
                   placeholder="R1200GS, CBR600, MT-07..."
                   value={form.car_model}
                   style={{ textTransform: 'uppercase' }}
-                  onChange={e => handleModelInput(e.target.value.toUpperCase())}
+                  onChange={e => handleModelInput(e.target.value)}
                   onFocus={() => form.car_model && setShowModelSugg(modelSuggestions.length > 0)}
                   onBlur={() => setTimeout(() => setShowModelSugg(false), 150)}
                   autoComplete="off"
                 />
+                {modelLatinWarn && (
+                  <p className="text-xs text-red-500 mt-1">⚠ Только латинские буквы: CRF250, R1200GS...</p>
+                )}
                 {showModelSugg && (
                   <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-30 max-h-40 overflow-y-auto">
                     {modelSuggestions.map(m => (

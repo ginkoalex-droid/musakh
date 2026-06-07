@@ -117,7 +117,7 @@ export const ru = {
 
   // Common labels
   lbl_name: 'Название',
-  lbl_brand: 'Бренд',
+  lbl_brand: 'Производитель',
   lbl_category: 'Категория',
   lbl_unit: 'Ед. изм.',
   lbl_location: 'Место',
@@ -229,7 +229,7 @@ export const ru = {
   // Parts
   parts_title: 'Справочник запчастей',
   parts_new: 'Новая запчасть',
-  parts_search: 'Поиск по названию, бренду, OEM, штрихкоду...',
+  parts_search: 'Поиск по названию, производителю, OEM, штрихкоду...',
   parts_no_results: 'Ничего не найдено',
   parts_oem_barcodes: 'OEM / Штрихкод',
   parts_stock_qty: 'Остаток',
@@ -317,7 +317,7 @@ export const ru = {
 
   // Misc hardcoded strings
   btn_copy: 'Копировать',
-  add_new_brand: '+ Добавить новый бренд',
+  add_new_brand: '+ Добавить производителя',
   add_new_location: '+ Добавить новое место',
   add_new_category: '+ Добавить свою категорию',
   enter_category: 'Введите категорию...',
@@ -354,7 +354,7 @@ export const ru = {
   // Grouping
   group_none: 'Нет',
   group_category: 'Категория',
-  group_brand: 'Бренд',
+  group_brand: 'Производитель',
 
   // Locations page
   locations_title: 'Места хранения',
