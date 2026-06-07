@@ -7,6 +7,7 @@ import { ArrowLeft, Plus, Trash2, ScanLine, Car, Copy, Edit2, Check, X } from 'l
 import toast from 'react-hot-toast'
 import { useT } from '../../i18n'
 import { translateUnit } from '../../utils/units'
+import { getUser } from '../../store/auth'
 
 const UNITS = ['шт', 'л', 'кг', 'г', 'м', 'компл', 'пара', 'набор']
 const DEFAULT_CATEGORIES = ['Filters', 'Brakes', 'Suspension', 'Engine', 'Transmission', 'Electrical', 'Wheels & Tyres', 'Chain & Sprockets', 'Exhaust', 'Body & Fairings', 'Oils & Fluids', 'Consumables', 'Other']
@@ -18,6 +19,21 @@ export default function PartForm() {
   const location = useLocation()
   const qc = useQueryClient()
   const { t, lang } = useT()
+  const me = getUser()
+  const isAdmin = me?.role === 'admin'
+
+  async function handleDelete() {
+    if (!existing) return
+    if (!confirm(`Удалить запчасть «${existing.name}»? Это действие необратимо.`)) return
+    try {
+      await api.delete(`/parts/${existing.id}`)
+      toast.success('Запчасть удалена')
+      qc.invalidateQueries({ queryKey: ['parts'] })
+      navigate('/parts')
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || t('err_generic'))
+    }
+  }
   // Pre-fill barcode when coming from unknown scan
   const prefillBarcode = (location.state as any)?.barcode as string | undefined
   const returnTo = (location.state as any)?.returnTo as string | undefined
@@ -265,6 +281,11 @@ export default function PartForm() {
             className="btn-secondary text-sm"
           >
             <Copy className="w-4 h-4" /> {t('btn_copy')}
+          </button>
+        )}
+        {!isNew && existing && isAdmin && (
+          <button onClick={handleDelete} className="btn-secondary text-red-500 text-sm" title="Удалить (только если нет истории)">
+            <Trash2 className="w-4 h-4" />
           </button>
         )}
       </div>

@@ -500,6 +500,36 @@ async def update_car_application(
     return result2.scalars().all()
 
 
+@router.delete("/{part_id}")
+async def delete_part(
+    part_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    from app.models import UserRole, StockMovement
+    from sqlalchemy import func
+    if current_user.role != UserRole.admin:
+        raise HTTPException(status_code=403, detail="Только администратор")
+    # Block if part has any stock movements
+    mv_count = await db.scalar(select(func.count()).where(StockMovement.part_id == part_id))
+    if mv_count and mv_count > 0:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Нельзя удалить запчасть с историей движений ({mv_count} записей). Можно скрыть из поиска."
+        )
+    result = await db.execute(select(Part).where(Part.id == part_id))
+    part = result.scalar_one_or_none()
+    if not part:
+        raise HTTPException(status_code=404, detail="Запчасть не найдена")
+    # Delete related data first
+    from app.models import Stock
+    await db.execute(select(Stock).where(Stock.part_id == part_id))
+    await db.execute(__import__('sqlalchemy').delete(Stock).where(Stock.part_id == part_id))
+    await db.delete(part)
+    await db.commit()
+    return {"ok": True}
+
+
 @router.delete("/{part_id}/cars/{car_id}")
 async def delete_car_application(
     part_id: int,
