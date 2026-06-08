@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, desc, or_
 from sqlalchemy.orm import selectinload, outerjoin
 from app.database import get_db
-from app.models import Stock, Part, StockMovement, MovementType, User, UserRole, Barcode, OemNumber
+from app.models import Stock, Part, StockMovement, MovementType, User, UserRole, Barcode, OemNumber, CarApplication
 from app.schemas import StockRow, StockAdjustment, IssueRequest, MovementOut
 from app.auth import get_current_user
 
@@ -98,11 +98,12 @@ async def unified_search(
         return []
     qlike = f"%{q.strip().lower()}%"
 
-    # Search in parts + their barcodes/OEM numbers
+    # Search in parts + their barcodes/OEM numbers/car applications
     stmt = (
         select(Part)
         .outerjoin(Part.barcodes)
         .outerjoin(Part.oem_numbers)
+        .outerjoin(Part.car_applications)
         .options(
             selectinload(Part.stock),
             selectinload(Part.barcodes),
@@ -116,6 +117,7 @@ async def unified_search(
                 Part.category.ilike(qlike),
                 Barcode.barcode.ilike(qlike),
                 OemNumber.oem_number.ilike(qlike),
+                CarApplication.model.ilike(qlike),  # search by car model applicability
             )
         )
         .distinct()

@@ -73,15 +73,12 @@ export default function PartSearch({ onSelect, placeholder = 'Поиск...', au
         setUnknownBarcode(null)
         select(part)
       } catch {
-        // by-barcode failed — try search as fallback
-        let found = results
-        if (found.length === 0) {
-          // Results may not be ready yet (debounce) — search synchronously
-          try {
-            found = await fetchParts(val)
-          } catch {}
-        }
-        // Exact barcode match first
+        // by-barcode failed — always do a fresh search (never use stale results)
+        let found: typeof results = []
+        try {
+          found = await fetchParts(val)
+        } catch {}
+        // Exact barcode/OEM match first
         const exact = found.find(p =>
           p.barcodes.some(b => b.barcode === val) ||
           p.oem_numbers.some(o => o.oem_number === val)

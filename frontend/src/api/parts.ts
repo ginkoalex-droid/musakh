@@ -75,8 +75,9 @@ export const updatePart = async (id: number, data: Partial<Part>): Promise<Part>
   return res.data
 }
 
-export const addBarcode = async (partId: number, barcode: string, isPrimary = false): Promise<void> => {
-  await api.post(`/parts/${partId}/barcodes`, null, { params: { barcode, is_primary: isPrimary } })
+export const addBarcode = async (partId: number, barcode: string, isPrimary = false) => {
+  const res = await api.post(`/parts/${partId}/barcodes`, null, { params: { barcode, is_primary: isPrimary } })
+  return res.data  // returns updated barcodes list
 }
 
 export const deleteBarcode = async (partId: number, barcodeId: number): Promise<void> => {

@@ -61,6 +61,7 @@ async def list_parts(
                 Part.brand.ilike(q_like),
                 Part.barcodes.any(Barcode.barcode.ilike(q_like)),
                 Part.oem_numbers.any(OemNumber.oem_number.ilike(q_like)),
+                Part.car_applications.any(CarApplication.model.ilike(q_like)),
             )
         )
 

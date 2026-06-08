@@ -179,8 +179,12 @@ export default function PartForm() {
   async function handleAddBarcode(bc: string) {
     if (!bc.trim() || !existing) return
     try {
-      await addBarcode(existing.id, bc.trim())
+      const newBarcodes = await addBarcode(existing.id, bc.trim())
       toast.success(t('parts_barcode_added'))
+      // Immediately update cache so UI shows new barcode without waiting for refetch
+      qc.setQueryData(['part', id], (old: any) =>
+        old ? { ...old, barcodes: newBarcodes } : old
+      )
       qc.invalidateQueries({ queryKey: ['part', id] })
     } catch (err: any) {
       toast.error(err.response?.data?.detail || t('err_generic'))
@@ -190,6 +194,10 @@ export default function PartForm() {
   async function handleDelBarcode(partId: number, bcId: number) {
     try {
       await deleteBarcode(partId, bcId)
+      // Immediately remove from cache
+      qc.setQueryData(['part', id], (old: any) =>
+        old ? { ...old, barcodes: old.barcodes.filter((b: any) => b.id !== bcId) } : old
+      )
       qc.invalidateQueries({ queryKey: ['part', id] })
     } catch (err: any) {
       toast.error(err.response?.data?.detail || t('err_generic'))

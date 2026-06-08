@@ -13,7 +13,6 @@ interface SelectedItem { part: Part; qty: number; passthrough?: boolean }
 interface Props {
   onAdd: (items: SelectedItem[]) => void
   onClose: () => void
-  /** pre-filter by this car model */
   preCarModel?: string
 }
 
@@ -27,7 +26,9 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
   const [carModel, setCarModel] = useState('')
   const [filterByWoModel, setFilterByWoModel] = useState(false) // unchecked by default
   const [selected, setSelected] = useState<Map<number, SelectedItem>>(new Map())
+  const [scanned, setScanned] = useState<{ name: string; qty: number; unit: string }[]>([])  // scan log
   const searchTimer = useRef<ReturnType<typeof setTimeout>>()
+  const inputRef = useRef<HTMLInputElement>(null)
   const navigate = useNavigate()
 
   function handleSearch(val: string) {
@@ -74,9 +75,13 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
     })
   }
 
+  const [adding, setAdding] = useState(false)
+
   function handleAdd() {
+    if (adding) return
     const items = Array.from(selected.values()).filter(i => i.qty > 0)
     if (items.length === 0) return
+    setAdding(true)
     onAdd(items)
     onClose()
   }
@@ -103,12 +108,34 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
           <div className="relative flex-1 min-w-[180px]">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
+              ref={inputRef}
               autoFocus
               type="text"
               className="input pl-9 text-sm"
               placeholder={t('parts_search')}
               value={q}
               onChange={e => handleSearch(e.target.value)}
+              onKeyDown={async e => {
+                if (e.key !== 'Enter') return
+                e.preventDefault()
+                const val = (e.target as HTMLInputElement).value.trim()
+                if (!val) return
+                // Try exact barcode lookup → immediately add to WO
+                try {
+                  const { fetchPartByBarcode } = await import('../api/parts')
+                  const part = await fetchPartByBarcode(val)
+                  const qty = part.default_issue_qty ?? 1
+                  // Immediately add via onAdd (non-closing call via addSingle)
+                  onAdd([{ part, qty }])
+                  // Log in scan history
+                  setScanned(prev => [{ name: part.name, qty, unit: part.unit }, ...prev.slice(0, 4)])
+                  setQ('')
+                  setDq('')
+                  setTimeout(() => inputRef.current?.focus(), 50)
+                } catch {
+                  // Not found → show search results, let user browse
+                }
+              }}
             />
           </div>
           <select value={category} onChange={e => setCategory(e.target.value)} className="input w-auto text-sm">
@@ -142,6 +169,17 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
             </select>
           )}
         </div>
+
+        {/* Scan log — shows recently scanned items */}
+        {scanned.length > 0 && (
+          <div className="px-5 py-2 bg-green-50 border-b border-green-100 flex flex-wrap gap-2">
+            {scanned.map((s, i) => (
+              <span key={i} className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">
+                ✓ {s.name} {s.qty} {u(s.unit)}
+              </span>
+            ))}
+          </div>
+        )}
 
         {/* Parts list */}
         <div className="flex-1 overflow-y-auto">
@@ -259,13 +297,17 @@ export default function PartsPicker({ onAdd, onClose, preCarModel }: Props) {
           <span className="text-sm text-gray-500">
             {selectedCount > 0
               ? `${t('lbl_selected')}: ${selectedCount} ${t('lbl_positions')}`
-              : t('parts_picker_hint')}
+              : scanned.length > 0
+                ? `✓ Добавлено: ${scanned.length}`
+                : t('parts_picker_hint')}
           </span>
           <div className="flex gap-2">
             <button className="btn-secondary" onClick={onClose}>{t('btn_cancel')}</button>
-            <button className="btn-primary" disabled={selectedCount === 0} onClick={handleAdd}>
-              <Plus className="w-4 h-4" /> {t('parts_picker_add')} ({selectedCount})
-            </button>
+            {selectedCount > 0 && (
+              <button className="btn-primary" disabled={adding} onClick={handleAdd}>
+                <Plus className="w-4 h-4" /> {t('parts_picker_add')} ({selectedCount})
+              </button>
+            )}
           </div>
         </div>
 

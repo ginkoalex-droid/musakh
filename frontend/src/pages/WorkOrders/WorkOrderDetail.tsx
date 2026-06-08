@@ -348,7 +348,7 @@ export default function WorkOrderDetail() {
           </h2>
           {/* Add parts via picker — stay in WO, no navigation */}
           {((canClose && !wo.is_confirmed) || isAdmin) && (
-            <button onClick={() => setPickerForIssue(-1)} className="btn-danger py-1.5 text-sm">
+            <button onClick={() => { setAddingToIssue(null); setPickerForIssue(-1) }} className="btn-danger py-1.5 text-sm">
               <Plus className="w-3.5 h-3.5" /> {t('parts_picker_add')}
             </button>
           )}
@@ -473,7 +473,7 @@ export default function WorkOrderDetail() {
       {pickerForIssue !== null && (
         <PartsPicker
           onAdd={items => handlePickerAdd(pickerForIssue, items)}
-          onClose={() => setPickerForIssue(null)}
+          onClose={() => { setPickerForIssue(null); setAddingToIssue(null) }}
           preCarModel={wo?.car_model || undefined}
         />
       )}
